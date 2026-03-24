@@ -150,6 +150,7 @@ def render_challenge_panel(challenge: dict, zone: dict, challenge_num: int, tota
         "flag_quiz": "FLAG QUIZ",
         "fill_blank": "FILL IN THE BLANK",
         "live": "LIVE CHALLENGE",
+        "ordered": "SEQUENCE CHALLENGE",
     }
     type_label = "⚔  BOSS CHALLENGE" if is_boss else type_labels.get(ctype, ctype.upper())
 
@@ -210,6 +211,15 @@ def render_challenge_panel(challenge: dict, zone: dict, challenge_num: int, tota
         for j, opt in enumerate(options):
             letter = chr(ord("A") + j)
             content.append(f"  [bold cyan]{letter}.[/bold cyan]  {opt}")
+
+    # Ordered challenge: display shuffled items with numbers
+    items = challenge.get("items", [])
+    if items and ctype == "ordered":
+        content.append("")
+        content.append("[dim]Put these in the correct order:[/dim]")
+        content.append("")
+        for j, item in enumerate(items):
+            content.append(f"  [bold cyan]{j+1}.[/bold cyan]  {item}")
 
     if is_boss:
         title = f"[bold red]💀 {challenge['title']}[/bold red]"
@@ -427,6 +437,16 @@ def render_achievements_screen(engine):
     _press_enter()
 
 
+def _zone_star_str(stars: int) -> str:
+    if stars == 3:
+        return "[bold yellow]★★★[/bold yellow]"
+    if stars == 2:
+        return "[yellow]★★[/yellow][dim]☆[/dim]"
+    if stars == 1:
+        return "[dim yellow]★[/dim yellow][dim]☆☆[/dim]"
+    return ""
+
+
 def render_zone_select(engine, zones: list) -> Optional[str]:
     """Show zone selection menu. Returns zone_id or None."""
     zone_order = engine.skill_pack.zone_order
@@ -447,17 +467,19 @@ def render_zone_select(engine, zones: list) -> Optional[str]:
         is_complete = engine.is_zone_complete(zone_id)
         is_unlocked = zone_id in unlocked
         icon = zone.get("icon", "?")
+        stars = engine.get_zone_stars(zone_id)
 
         if is_complete:
-            status = "[green]✓ COMPLETE[/green]"
+            star_str = _zone_star_str(stars)
+            status = f"[green]✓[/green] {star_str}"
         elif zone_id == engine.current_zone:
             status = "[yellow]▶ CURRENT[/yellow]"
         elif is_unlocked:
             status = "[cyan]UNLOCKED[/cyan]"
         else:
-            status = "[dim]🔒 LOCKED[/dim]"
+            status = "[dim]🔒[/dim]"
 
-        label = f"[dim]{i+1}.[/dim] {icon} {zone['name']} [dim]- {zone['subtitle']}[/dim]  {status}"
+        label = f"[dim]{i+1}.[/dim] {icon} {zone['name']} [dim]- {zone.get('subtitle', '')}[/dim]  {status}"
         console.print(f"  {label}")
         if is_unlocked:
             menu_zones.append((str(i + 1), zone_id))
@@ -482,29 +504,50 @@ def render_main_menu(engine) -> str:
 
     stats = engine.get_stats_dict()
     if stats["challenges_completed"] > 0:
+        daily_str = ""
+        if stats.get("daily_streak", 0) > 1:
+            daily_str = f"  🔥 {stats['daily_streak']}-day streak"
         console.print(
             Align.center(
                 Text(
-                    f"Welcome back, {stats['name']}!  Level {stats['level']} {stats['title']}  |  {stats['total_xp']:,} XP",
+                    f"Welcome back, {stats['name']}!  Level {stats['level']} {stats['title']}  |  {stats['total_xp']:,} XP{daily_str}",
                     style="dim cyan",
                 )
             )
         )
+        # Today's Focus: suggest review if weak spots exist
+        if stats.get("weak_zones", 0) > 0:
+            console.print(
+                Align.center(
+                    Text(
+                        f"⚑  {stats['weak_zones']} zone(s) have challenges worth reviewing  [6] Review Weak Spots",
+                        style="dim yellow",
+                    )
+                )
+            )
         console.print()
 
     pack_title = engine.skill_pack.title if engine.skill_pack else "Quest Engine"
+    has_progress = stats["challenges_completed"] > 0
+    has_weak = stats.get("weak_zones", 0) > 0
+    has_completed = stats["zones_completed"] > 0
+
     options = [
         ("1", "New Game", "Start from the beginning"),
         ("2", "Continue", "Resume your quest"),
         ("3", "Zone Select", "Jump to an unlocked zone"),
         ("4", "Achievements", "View your accomplishments"),
-        ("5", "Stats", "View detailed statistics"),
-        ("0", "Quit", f"Exit {pack_title}"),
+        ("5", "Stats", "Detailed statistics & mastery"),
     ]
+    if has_weak:
+        options.append(("6", "Review Weak Spots", "Replay challenges you've struggled with"))
+    if has_completed:
+        options.append(("7", "Export Notes", "Save lessons to a text file"))
+    options.append(("0", "Quit", f"Exit {pack_title}"))
 
     table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
     table.add_column(style="bold yellow", width=4)
-    table.add_column(style="bold white", width=16)
+    table.add_column(style="bold white", width=20)
     table.add_column(style="dim")
 
     for key, label, desc in options:
@@ -513,12 +556,37 @@ def render_main_menu(engine) -> str:
     console.print(Align.center(table))
     console.print()
 
-    valid = {"1", "2", "3", "4", "5", "0"}
+    valid = {"1", "2", "3", "4", "5", "6", "7", "0"}
     while True:
         choice = console.input("[cyan]Your choice: [/cyan]").strip()
         if choice in valid:
             return choice
         console.print("[red]Invalid choice.[/red]")
+
+
+def render_session_summary(engine):
+    """Show what happened this session — shown on quit."""
+    sess = engine.get_session_stats()
+    if sess["total"] == 0:
+        return  # Nothing happened this session
+
+    acc_color = "green" if sess["accuracy"] >= 80 else "yellow" if sess["accuracy"] >= 50 else "red"
+    lines = [
+        f"[dim]Time played:[/dim]  [white]{sess['time_str']}[/white]",
+        f"[dim]XP earned:[/dim]    [bold yellow]+{sess['xp_earned']} XP[/bold yellow]",
+        f"[dim]Answered:[/dim]     [white]{sess['correct']} correct[/white]  [dim]/[/dim]  [white]{sess['total']} total[/white]",
+        f"[dim]Accuracy:[/dim]     [{acc_color}]{sess['accuracy']:.0f}%[/{acc_color}]",
+    ]
+    if sess["daily_streak"] > 1:
+        lines.append(f"[dim]Daily streak:[/dim]  [bold yellow]🔥 {sess['daily_streak']} days[/bold yellow]")
+
+    console.print(Panel(
+        "\n".join(lines),
+        title="[bold cyan]SESSION COMPLETE[/bold cyan]",
+        border_style="dim cyan",
+        box=box.ROUNDED,
+        padding=(1, 4),
+    ))
 
 
 def render_stats_screen(engine):
@@ -542,12 +610,32 @@ def render_stats_screen(engine):
     table.add_row("XP This Level:", f"[cyan]{stats['xp_this_level']}/{stats['xp_for_next_level']}[/cyan]")
     table.add_row("Current Streak:", f"[yellow]{stats['streak']}x[/yellow]")
     table.add_row("Best Streak:", f"[yellow]{stats['max_streak']}x[/yellow]")
+    table.add_row("Daily Streak:", f"[bold yellow]🔥 {stats.get('daily_streak', 0)} days[/bold yellow]")
     table.add_row("Zones Completed:", f"[green]{stats['zones_completed']}/{total_zones}[/green]")
     table.add_row("Challenges Done:", f"[white]{stats['challenges_completed']}[/white]")
     table.add_row("Achievements:", f"[magenta]{stats['achievements_count']}/{len(achievements)}[/magenta]")
+    if stats.get("weak_zones", 0):
+        table.add_row("Weak Zones:", f"[yellow]{stats['weak_zones']} zone(s) to review[/yellow]")
 
     console.print(Align.center(table))
     console.print()
+
+    # Zone mastery table
+    if stats["zones_completed"] > 0:
+        console.print("[bold cyan]  Zone Mastery[/bold cyan]")
+        console.print()
+        mast_table = Table(show_header=True, header_style="dim", box=box.SIMPLE, padding=(0, 2))
+        mast_table.add_column("Zone", style="white")
+        mast_table.add_column("Stars", justify="center")
+        for zone_id in engine.skill_pack.zone_order:
+            if not engine.is_zone_complete(zone_id):
+                continue
+            zone = engine.skill_pack.get_zone(zone_id)
+            stars = engine.get_zone_stars(zone_id)
+            mast_table.add_row(zone["name"] if zone else zone_id, _zone_star_str(stars))
+        console.print(Align.center(mast_table))
+        console.print()
+
     _press_enter()
 
 
@@ -582,6 +670,7 @@ def prompt_command(challenge_type: str = "live") -> str:
         "flag_quiz": "[cyan]Your flag/answer: [/cyan]",
         "fill_blank": "[cyan]Fill in the blank: [/cyan]",
         "live": "[cyan]$ [/cyan]",
+        "ordered": "[cyan]Enter the order (e.g. 2 4 1 3): [/cyan]",
     }
     prompt = prompts.get(challenge_type, "[cyan]Your answer: [/cyan]")
     return console.input(prompt)

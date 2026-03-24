@@ -1,9 +1,10 @@
 """
 challenges.py - Challenge runner for Terminal Quest
-Handles quiz, flag_quiz, fill_blank, and live challenge types.
+Handles quiz, flag_quiz, fill_blank, live, and ordered challenge types.
 """
 
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -11,6 +12,58 @@ import tempfile
 import uuid
 from pathlib import Path
 from typing import Any
+
+# Praise rotation — selected randomly on correct answer
+PRAISE_POOL = [
+    "Correct!",
+    "That's it!",
+    "Exactly right.",
+    "Nailed it.",
+    "Perfect.",
+    "Yes — you've got it.",
+    "Right on.",
+    "That's the one.",
+    "Well done.",
+    "Good instinct.",
+    "Sharp thinking.",
+    "Solid.",
+    "Locked in.",
+    "Clean answer.",
+    "You knew that.",
+    "No hesitation needed.",
+    "That's what we're looking for.",
+    "Correct — keep going.",
+    "Memory like a hawk.",
+    "That's exactly it.",
+]
+
+PRAISE_POOL_KIDS = [
+    "Yes! That's right!",
+    "Amazing job!",
+    "You got it!",
+    "Brilliant!",
+    "Puck is so proud of you!",
+    "That's exactly right!",
+    "Wow, you're so smart!",
+    "Wonderful!",
+    "You knew that one!",
+    "Super!",
+    "Perfect answer!",
+    "You're on fire!",
+    "That's it — great job!",
+    "Gold star!",
+    "Exactly right, well done!",
+    "You're really good at this!",
+    "Puck does a happy spin!",
+    "Right! Keep going!",
+    "Spectacular!",
+    "You make learning look easy!",
+]
+
+
+def get_praise(kids_mode: bool = False) -> str:
+    pool = PRAISE_POOL_KIDS if kids_mode else PRAISE_POOL
+    return random.choice(pool)
 
 SANDBOX_BASE = Path(tempfile.gettempdir())
 SANDBOX_TIMEOUT = 15  # seconds
@@ -166,6 +219,8 @@ class ChallengeRunner:
         """
         user_clean = user_answer.strip().lower()
 
+        kids_mode = bool(challenge.get("options"))  # primer-style challenges have options
+
         # ── Multiple-choice: answer letter + options list ──────────────────────
         answer = challenge.get("answer")
         options = challenge.get("options", [])
@@ -174,11 +229,11 @@ class ChallengeRunner:
             correct_idx = ord(answer_lower) - ord("a")
             correct_text = options[correct_idx].lower() if 0 <= correct_idx < len(options) else ""
             if user_clean == answer_lower or (correct_text and user_clean == correct_text):
-                return ChallengeResult(True, "Correct!")
+                return ChallengeResult(True, get_praise(kids_mode=kids_mode))
             # Also accept 1-based numeric input
             try:
                 if int(user_clean) - 1 == correct_idx:
-                    return ChallengeResult(True, "Correct!")
+                    return ChallengeResult(True, get_praise(kids_mode=kids_mode))
             except ValueError:
                 pass
             correct_option = options[correct_idx] if 0 <= correct_idx < len(options) else str(answer)
@@ -187,7 +242,7 @@ class ChallengeRunner:
         # ── Single-string fill-blank: answer only, no options ──────────────────
         if answer is not None:
             if user_clean == str(answer).lower():
-                return ChallengeResult(True, "Correct!")
+                return ChallengeResult(True, get_praise())
             return ChallengeResult(False, f"Not quite. The answer was: {answer}")
 
         # ── Free-text multi-answer (nexus format): answers list ────────────────
@@ -196,18 +251,18 @@ class ChallengeRunner:
             return ChallengeResult(False, "No valid answers configured for this challenge.")
 
         if user_clean in valid_answers:
-            return ChallengeResult(True, "Correct!")
+            return ChallengeResult(True, get_praise())
 
         # Strip leading dashes for flag quizzes
         user_stripped = user_clean.lstrip("-")
         for ans in valid_answers:
             if ans.lstrip("-") == user_stripped:
-                return ChallengeResult(True, "Correct! (with or without the dash prefix)")
+                return ChallengeResult(True, get_praise())
 
         # Substring match (e.g. "ls -la" contains "-la")
         for ans in valid_answers:
             if ans in user_clean:
-                return ChallengeResult(True, f"Correct! (contains '{ans}')")
+                return ChallengeResult(True, get_praise())
 
         return ChallengeResult(
             False,
@@ -245,6 +300,34 @@ class ChallengeRunner:
         finally:
             self.cleanup_sandbox(sandbox)
 
+    def run_ordered(self, challenge: dict, user_input: str) -> ChallengeResult:
+        """
+        Ordered challenge: player types the correct sequence of numbers.
+        Challenge format:
+          "items": ["Step A", "Step B", "Step C", "Step D"]  (shown in shuffled display order)
+          "answer": [2, 0, 3, 1]  (indices of items in correct order)
+
+        Player types something like: "2 4 1 3" or "2,4,1,3" (1-based display numbers)
+        """
+        items = challenge.get("items", [])
+        correct_order = challenge.get("answer", [])  # 0-based indices in correct sequence
+        if not items or not correct_order:
+            return ChallengeResult(False, "Ordered challenge is misconfigured.")
+
+        # Parse user input: accept space, comma, or dash separated numbers
+        raw = re.split(r"[\s,\-]+", user_input.strip())
+        try:
+            user_sequence = [int(x) - 1 for x in raw if x]  # convert to 0-based
+        except ValueError:
+            return ChallengeResult(False, "Please enter the step numbers in order (e.g. '2 4 1 3').")
+
+        if user_sequence == list(correct_order):
+            return ChallengeResult(True, get_praise())
+
+        # Show what the correct order should have been
+        correct_display = " → ".join(str(i + 1) for i in correct_order)
+        return ChallengeResult(False, f"Not quite. The correct order was: {correct_display}")
+
     def run_challenge(self, challenge: dict, user_input: str) -> tuple[ChallengeResult, str]:
         """Dispatch to the correct runner based on challenge type."""
         ctype = challenge.get("type", "quiz")
@@ -256,6 +339,8 @@ class ChallengeRunner:
             result = self.run_fill_blank(challenge, user_input)
         elif ctype == "live":
             result, output = self.run_live(challenge, user_input)
+        elif ctype == "ordered":
+            result = self.run_ordered(challenge, user_input)
         else:
             result = ChallengeResult(False, f"Unknown challenge type: {ctype}")
 

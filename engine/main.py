@@ -36,6 +36,7 @@ from .ui import (
     render_achievements_screen,
     render_zone_select,
     render_stats_screen,
+    render_session_summary,
     render_name_prompt,
     confirm_new_game,
     prompt_command,
@@ -72,6 +73,10 @@ class GameSession:
                 render_achievements_screen(self.engine)
             elif choice == "5":
                 render_stats_screen(self.engine)
+            elif choice == "6":
+                self._review_weak_spots()
+            elif choice == "7":
+                self._export_notes()
             elif choice == "0":
                 self._quit()
                 break
@@ -80,9 +85,96 @@ class GameSession:
         self.engine.save()
         console.clear()
         render_banner(self.skill_pack)
+        render_session_summary(self.engine)
         console.print(f"\n[bold cyan]{self.skill_pack.quit_message}[/bold cyan]\n")
         console.print("[dim]Your progress has been saved.[/dim]")
         console.print()
+
+    def _review_weak_spots(self):
+        """Play through challenges the player has previously answered wrong."""
+        weak_zones = self.engine.get_weak_zones()
+        if not weak_zones:
+            console.clear()
+            render_banner(self.skill_pack)
+            console.print(Panel(
+                "[bold green]No weak spots found![/bold green]\n\n"
+                "[dim]You've answered every practiced challenge correctly.\n"
+                "Keep playing to build your review list.[/dim]",
+                title="[bold green]★  CLEAN RECORD[/bold green]",
+                border_style="green",
+                padding=(1, 4),
+            ))
+            _press_enter()
+            return
+
+        from rich import box as rbox
+        console.clear()
+        render_banner(self.skill_pack)
+        zone_names = []
+        for zone_id in weak_zones:
+            zone = self.skill_pack.get_zone(zone_id)
+            if zone:
+                count = len(self.engine.wrong_answer_journal.get(zone_id, []))
+                zone_names.append(f"  • {zone['name']} — [yellow]{count} challenge(s)[/yellow]")
+
+        console.print(Panel(
+            "\n".join(zone_names),
+            title="[bold yellow]📋  REVIEW — WEAK SPOTS[/bold yellow]",
+            subtitle="[dim]Challenges you've previously missed[/dim]",
+            border_style="yellow",
+            padding=(1, 4),
+        ))
+        console.print()
+
+        # Let player pick a zone to review
+        for i, zone_id in enumerate(weak_zones):
+            zone = self.skill_pack.get_zone(zone_id)
+            console.print(f"  [bold cyan][{i+1}][/bold cyan]  {zone['name'] if zone else zone_id}")
+        console.print("  [dim][0]  Back[/dim]\n")
+
+        raw = console.input("[cyan]Choose a zone to review: [/cyan]").strip()
+        if not raw.isdigit() or int(raw) == 0:
+            return
+        idx = int(raw) - 1
+        if 0 <= idx < len(weak_zones):
+            self._review_zone(weak_zones[idx])
+
+    def _review_zone(self, zone_id: str):
+        """Play only the struggled challenges from a zone."""
+        challenges = self.engine.get_review_challenges(zone_id)
+        if not challenges:
+            return
+
+        zone = self.skill_pack.get_zone(zone_id)
+        total = len(challenges)
+        console.clear()
+        render_banner(self.skill_pack)
+        print_info(f"Reviewing {total} challenge(s) from {zone['name'] if zone else zone_id}...")
+        _press_enter()
+
+        for i, challenge in enumerate(challenges):
+            result = self._run_challenge_loop(zone, challenge, i + 1, total, zone_id, 0)
+            if result is None:
+                return  # Player quit
+
+    def _export_notes(self):
+        """Export lesson notes from completed zones."""
+        path = self.engine.export_notes()
+        console.clear()
+        render_banner(self.skill_pack)
+        if path:
+            console.print(Panel(
+                f"[bold green]Notes exported![/bold green]\n\n"
+                f"[white]All lessons from completed zones saved to:[/white]\n"
+                f"[bold cyan]{path}[/bold cyan]\n\n"
+                f"[dim]Open this file in any text editor to review your notes.[/dim]",
+                title="[bold cyan]📄  NOTES EXPORTED[/bold cyan]",
+                border_style="cyan",
+                padding=(1, 4),
+            ))
+        else:
+            console.print("[dim]No completed zones to export yet. Keep playing![/dim]")
+        _press_enter()
 
     # ── New Game ──────────────────────────────────────────────────────────────
 
@@ -248,6 +340,7 @@ class GameSession:
             if result.success:
                 self.engine.record_correct()
                 self.engine.check_speed_achievement()
+                self.engine.record_zone_attempt(zone_id, challenge["id"], correct=True, used_hint=hints_used > 0)
 
                 base_xp = challenge.get("xp", 50)
                 actual_xp, did_level_up = self.engine.award_xp(base_xp)
@@ -273,6 +366,7 @@ class GameSession:
                 return (xp_gained, leveled_up, hints_used)
             else:
                 self.engine.record_incorrect()
+                self.engine.record_zone_attempt(zone_id, challenge["id"], correct=False, used_hint=False)
                 attempts += 1
 
                 render_result(False, result.message)

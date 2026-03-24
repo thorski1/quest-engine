@@ -4,6 +4,7 @@ Manages state, XP, levels, progress, achievements.
 All skill-specific data comes from the SkillPack.
 """
 
+import datetime
 import json
 import time
 from pathlib import Path
@@ -61,9 +62,24 @@ class GameEngine:
         self.new_achievements = []
         self._prev_level = 1
 
+        # Zone mastery: tracks accuracy and hints per zone
+        self.zone_scores: dict = {}  # zone_id -> {"wrong": int, "hints": int}
+        # Wrong answer journal: challenges the player has struggled with
+        self.wrong_answer_journal: dict = {}  # zone_id -> [challenge_id, ...]
+        # Daily streak: consecutive days played
+        self.daily_streak: int = 0
+        self.last_played_date: str = ""
+
+        # Session stats (reset each run, not persisted)
+        self.session_start: float = time.time()
+        self.session_xp: int = 0
+        self.session_correct: int = 0
+        self.session_wrong: int = 0
+
         self._save_dir = SAVE_BASE / skill_pack.save_file_name
         self._save_file = self._save_dir / "progress.json"
         self.load()
+        self._update_daily_streak()
 
     # ── Persistence ──────────────────────────────────────────────────────────
 
@@ -82,6 +98,10 @@ class GameEngine:
                 self.completed_zones = set(data.get("completed_zones", []))
                 self.achievements = set(data.get("achievements", []))
                 self.hint_costs_paid = data.get("hint_costs_paid", 0)
+                self.zone_scores = data.get("zone_scores", {})
+                self.wrong_answer_journal = data.get("wrong_answer_journal", {})
+                self.daily_streak = data.get("daily_streak", 0)
+                self.last_played_date = data.get("last_played_date", "")
                 self._prev_level = self.level
             except (json.JSONDecodeError, KeyError):
                 pass
@@ -98,6 +118,10 @@ class GameEngine:
             "completed_zones": list(self.completed_zones),
             "achievements": list(self.achievements),
             "hint_costs_paid": self.hint_costs_paid,
+            "zone_scores": self.zone_scores,
+            "wrong_answer_journal": self.wrong_answer_journal,
+            "daily_streak": self.daily_streak,
+            "last_played_date": self.last_played_date,
         }
         with open(self._save_file, "w") as f:
             json.dump(data, f, indent=2)
@@ -114,6 +138,13 @@ class GameEngine:
         self.hint_costs_paid = 0
         self.new_achievements = []
         self._prev_level = 1
+        self.zone_scores = {}
+        self.wrong_answer_journal = {}
+        # Preserve daily streak and last_played_date across resets
+        self.session_xp = 0
+        self.session_correct = 0
+        self.session_wrong = 0
+        self.session_start = time.time()
         self.save()
 
     # ── Properties ───────────────────────────────────────────────────────────
@@ -154,6 +185,7 @@ class GameEngine:
         prev_level = self.level
         actual_xp = self.calculate_xp_gain(base_xp)
         self.total_xp += actual_xp
+        self.session_xp += actual_xp
         leveled_up = self.level > prev_level
         if leveled_up:
             self._check_level_achievements()
@@ -169,11 +201,13 @@ class GameEngine:
     def record_correct(self):
         self.streak += 1
         self.max_streak = max(self.max_streak, self.streak)
+        self.session_correct += 1
         self._check_streak_achievements()
         self.save()
 
     def record_incorrect(self):
         self.streak = 0
+        self.session_wrong += 1
         self.save()
 
     # ── Challenges & Zones ───────────────────────────────────────────────────
@@ -245,6 +279,128 @@ class GameEngine:
         self.new_achievements = []
         return ach
 
+    # ── Zone Mastery ──────────────────────────────────────────────────────────
+
+    def record_zone_attempt(self, zone_id: str, challenge_id: str, correct: bool, used_hint: bool = False):
+        """Track per-challenge accuracy for zone mastery stars."""
+        score = self.zone_scores.setdefault(zone_id, {"wrong": 0, "hints": 0, "wrong_ids": []})
+        journal = self.wrong_answer_journal.setdefault(zone_id, [])
+
+        if not correct:
+            if challenge_id not in score.get("wrong_ids", []):
+                score.setdefault("wrong_ids", []).append(challenge_id)
+                score["wrong"] += 1
+            if challenge_id not in journal:
+                journal.append(challenge_id)
+        else:
+            # On correct answer, remove from struggle journal
+            if challenge_id in journal:
+                journal.remove(challenge_id)
+
+        if used_hint:
+            score["hints"] += 1
+
+        self.save()
+
+    def get_zone_stars(self, zone_id: str) -> int:
+        """Return 0-3 stars for a zone. 0 = not completed."""
+        if zone_id not in self.completed_zones:
+            return 0
+        score = self.zone_scores.get(zone_id, {"wrong": 0, "hints": 0})
+        wrong = score.get("wrong", 0)
+        hints = score.get("hints", 0)
+        if wrong == 0 and hints == 0:
+            return 3
+        if wrong <= 1 and hints <= 2:
+            return 2
+        return 1
+
+    def get_weak_zones(self) -> list:
+        """Return zone_ids where the player has unanswered wrong questions."""
+        return [
+            zone_id for zone_id, entries in self.wrong_answer_journal.items()
+            if entries
+        ]
+
+    def get_review_challenges(self, zone_id: str) -> list:
+        """Return challenge dicts for all wrong-answer journal entries in a zone."""
+        challenge_ids = self.wrong_answer_journal.get(zone_id, [])
+        all_challenges = self.skill_pack.get_zone_challenges(zone_id)
+        return [c for c in all_challenges if c["id"] in challenge_ids]
+
+    # ── Daily Streak ──────────────────────────────────────────────────────────
+
+    def _update_daily_streak(self):
+        today = str(datetime.date.today())
+        if self.last_played_date == today:
+            return  # Already counted today
+        yesterday = str(datetime.date.today() - datetime.timedelta(days=1))
+        if self.last_played_date == yesterday:
+            self.daily_streak += 1
+        elif self.last_played_date == "":
+            self.daily_streak = 1
+        else:
+            self.daily_streak = 1  # Streak broken
+        self.last_played_date = today
+        if self.daily_streak >= 7:
+            self.unlock_achievement("week_streak")
+        if self.daily_streak >= 30:
+            self.unlock_achievement("month_streak")
+        self.save()
+
+    # ── Session Stats ─────────────────────────────────────────────────────────
+
+    def get_session_stats(self) -> dict:
+        elapsed = time.time() - self.session_start
+        total = self.session_correct + self.session_wrong
+        accuracy = (self.session_correct / total * 100) if total > 0 else 0
+        minutes = int(elapsed // 60)
+        seconds = int(elapsed % 60)
+        return {
+            "xp_earned": self.session_xp,
+            "correct": self.session_correct,
+            "wrong": self.session_wrong,
+            "total": total,
+            "accuracy": accuracy,
+            "time_str": f"{minutes}m {seconds}s" if minutes else f"{seconds}s",
+            "daily_streak": self.daily_streak,
+        }
+
+    # ── Notes Export ──────────────────────────────────────────────────────────
+
+    def export_notes(self) -> str:
+        """Export all lessons from completed zones to a text file. Returns the path."""
+        notes_path = self._save_dir / "notes.txt"
+        lines = [
+            f"═══════════════════════════════════════",
+            f"  {self.skill_pack.title} — Study Notes",
+            f"  Player: {self.player_name}",
+            f"═══════════════════════════════════════",
+            "",
+        ]
+
+        for zone_id in self.skill_pack.zone_order:
+            if zone_id not in self.completed_zones:
+                continue
+            zone = self.skill_pack.get_zone(zone_id)
+            if not zone:
+                continue
+            lines.append(f"── {zone['name'].upper()} ──")
+            lines.append(zone.get("subtitle", ""))
+            lines.append("")
+            for challenge in self.skill_pack.get_zone_challenges(zone_id):
+                lesson = challenge.get("lesson") or challenge.get("prompt", "")
+                if lesson.strip():
+                    lines.append(f"  [{challenge.get('title', challenge['id'])}]")
+                    for ln in lesson.strip().splitlines():
+                        lines.append(f"    {ln.strip()}")
+                    lines.append("")
+            lines.append("")
+
+        self._save_dir.mkdir(parents=True, exist_ok=True)
+        notes_path.write_text("\n".join(lines))
+        return str(notes_path)
+
     # ── Timer ─────────────────────────────────────────────────────────────────
 
     def start_challenge_timer(self):
@@ -290,4 +446,6 @@ class GameEngine:
             "zones_completed": len(self.completed_zones),
             "challenges_completed": self.total_challenges_completed(),
             "achievements_count": len(self.achievements),
+            "daily_streak": self.daily_streak,
+            "weak_zones": len(self.get_weak_zones()),
         }
