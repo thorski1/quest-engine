@@ -13,6 +13,22 @@ from .skill_pack import SkillPack
 
 SAVE_BASE = Path.home() / ".quest_engine"
 
+# Engine-level achievements available in every game
+BASE_ACHIEVEMENTS = {
+    "first_blood": ("First Steps", "Answered your very first challenge"),
+    "streak_3": ("On a Roll", "3 correct answers in a row"),
+    "streak_5": ("Hot Streak", "5 correct answers in a row"),
+    "streak_10": ("Unstoppable", "10 correct answers in a row"),
+    "speed_demon": ("Speed Demon", "Answered a challenge in under 5 seconds"),
+    "no_hints": ("Standing Alone", "Completed a zone without using any hints"),
+    "completionist": ("Completionist", "Completed every zone"),
+    "level_10": ("Veteran", "Reached level 10"),
+    "level_20": ("Expert", "Reached level 20"),
+    "level_30": ("Grandmaster", "Reached the highest level"),
+    "week_streak": ("Seven Days Strong", "Played for 7 consecutive days"),
+    "month_streak": ("Committed", "Played for 30 consecutive days"),
+}
+
 LEVEL_TITLES = {
     range(1, 6): "Apprentice",
     range(6, 11): "Journeyman",

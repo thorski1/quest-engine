@@ -409,7 +409,10 @@ def celebrate_level_up(level: int, title: str):
 
 
 def render_achievements_screen(engine):
-    achievements = engine.skill_pack.achievements
+    from .engine import BASE_ACHIEVEMENTS
+    # Merge base achievements with pack-specific ones (pack takes priority)
+    all_achievements = {**BASE_ACHIEVEMENTS, **engine.skill_pack.achievements}
+
     console.clear()
     console.print(
         Panel(
@@ -420,19 +423,26 @@ def render_achievements_screen(engine):
     )
     console.print()
 
+    unlocked_count = sum(1 for aid in all_achievements if aid in engine.achievements)
+
+    # Split into unlocked and locked sections
     table = Table(show_header=True, header_style="bold yellow", box=box.SIMPLE_HEAVY)
-    table.add_column("Status", width=4, justify="center")
+    table.add_column("", width=3, justify="center")
     table.add_column("Achievement", style="bold")
     table.add_column("Description", style="dim")
 
-    for ach_id, (name, desc) in achievements.items():
+    for ach_id, (name, desc) in all_achievements.items():
         if ach_id in engine.achievements:
             table.add_row("[yellow]★[/yellow]", f"[yellow]{name}[/yellow]", desc)
-        else:
-            table.add_row("[dim]☆[/dim]", f"[dim]{name}[/dim]", f"[dim]{desc}[/dim]")
+
+    if unlocked_count < len(all_achievements):
+        table.add_section()
+        for ach_id, (name, desc) in all_achievements.items():
+            if ach_id not in engine.achievements:
+                table.add_row("[dim]☆[/dim]", f"[dim]{name}[/dim]", f"[dim]{desc}[/dim]")
 
     console.print(table)
-    console.print(f"\n[dim]Unlocked: {len(engine.achievements)}/{len(achievements)}[/dim]")
+    console.print(f"\n[dim]Unlocked: {unlocked_count}/{len(all_achievements)}[/dim]")
     console.print()
     _press_enter()
 
