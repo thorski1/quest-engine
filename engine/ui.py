@@ -338,14 +338,31 @@ def render_zone_intro(intro_text: str, zone: dict, skill_pack=None):
     _press_enter()
 
 
-def render_zone_complete(completion_text: str, zone: dict, xp_earned: int):
+def render_zone_complete(completion_text: str, zone: dict, xp_earned: int, stars: int = 1):
     console.print()
     icon = zone.get("icon", "")
+    star_display = _zone_star_str(stars)
+    star_line = f"\n{star_display}  " if stars else ""
+
+    if stars == 3:
+        title_str = f"[bold green]{icon}  PERFECT ZONE!  ★★★[/bold green]"
+        border = "bold green"
+    elif stars == 2:
+        title_str = f"[bold green]{icon}  ZONE COMPLETE!  ★★[/bold green]"
+        border = "bold green"
+    else:
+        title_str = f"[bold green]{icon}  ZONE COMPLETE![/bold green]"
+        border = "green"
+
+    body = f"[italic]{completion_text}[/italic]\n\n[bold yellow]⬟  Zone XP Earned: +{xp_earned}[/bold yellow]{star_line}"
+    if stars < 3:
+        body += "\n[dim]Play again from Zone Select to improve your star rating.[/dim]"
+
     console.print(
         Panel(
-            f"[italic]{completion_text}[/italic]\n\n[bold yellow]⬟  Zone XP Earned: +{xp_earned}[/bold yellow]",
-            title=f"[bold green]{icon}  ZONE COMPLETE![/bold green]",
-            border_style="bold green",
+            body,
+            title=title_str,
+            border_style=border,
             box=box.DOUBLE,
             padding=(1, 4),
         )
@@ -690,8 +707,9 @@ def render_challenge_menu():
     console.print()
     console.print(
         "  [dim cyan][h][/dim cyan][dim] Hint [/dim][yellow](10 XP)[/yellow]"
-        "[dim]   [/dim][dim cyan][s][/dim cyan][dim] Skip"
-        "   [/dim][dim cyan][q][/dim cyan][dim] Menu[/dim]"
+        "  [dim cyan][l][/dim cyan][dim] Lesson"
+        "  [dim cyan][s][/dim cyan][dim] Skip"
+        "  [dim cyan][q][/dim cyan][dim] Menu[/dim]"
     )
     console.print()
 

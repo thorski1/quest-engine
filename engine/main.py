@@ -229,9 +229,18 @@ class GameSession:
             return
 
         completed_here = self.engine.challenges_completed_in_zone(zone_id)
-        if not completed_here:
+        already_done = zone_id in self.engine.completed_zones
+        if not completed_here and not already_done:
             intro_text = self.skill_pack.zone_intros.get(zone_id, "")
             render_zone_intro(intro_text, zone, self.skill_pack)
+        elif already_done and not completed_here:
+            # Replay mode — brief reminder
+            stars = self.engine.get_zone_stars(zone_id)
+            console.clear()
+            from .ui import _zone_star_str
+            console.print(f"\n[bold cyan]Replaying: {zone['name']}[/bold cyan]  {_zone_star_str(stars)}")
+            console.print(f"[dim]Answer every question correctly with no hints to earn ★★★[/dim]\n")
+            _press_enter()
 
         challenges = self.skill_pack.get_zone_challenges(zone_id)
         total = len(challenges)
@@ -261,14 +270,17 @@ class GameSession:
 
         completed = self.engine.challenges_completed_in_zone(zone_id)
         all_ids = {ch["id"] for ch in challenges}
-        if all_ids.issubset(completed) and zone_id not in self.engine.completed_zones:
+        just_completed = all_ids.issubset(completed) and zone_id not in self.engine.completed_zones
+
+        if just_completed:
             self.engine.mark_zone_complete(zone_id)
 
             if hints_used_this_zone == 0:
                 self.engine.unlock_achievement("no_hints")
 
+            stars = self.engine.get_zone_stars(zone_id)
             completion_text = self.skill_pack.zone_completions.get(zone_id, "Zone Complete!")
-            render_zone_complete(completion_text, zone, zone_xp_earned)
+            render_zone_complete(completion_text, zone, zone_xp_earned, stars=stars)
 
             self._show_new_achievements()
 
@@ -282,6 +294,18 @@ class GameSession:
                 console.print(f"\n[bold cyan]Proceeding to {next_zone['name']}...[/bold cyan]")
                 _press_enter()
                 self._play_zone(next_zone_id)
+
+        elif zone_id in self.engine.completed_zones:
+            # Already completed — offer replay for better score
+            stars = self.engine.get_zone_stars(zone_id)
+            if stars < 3:
+                console.print(f"\n[dim]Zone already complete. Replay to improve your star rating?[/dim]")
+                raw = console.input("[cyan]Replay for better score? (y/n): [/cyan]").strip().lower()
+                if raw in ("y", "yes"):
+                    # Reset zone scores but not completion, then replay
+                    self.engine.zone_scores.pop(zone_id, None)
+                    self.engine.save()
+                    self._play_zone(zone_id)
         else:
             remaining = all_ids - completed
             if remaining:
@@ -323,6 +347,9 @@ class GameSession:
                 else:
                     print_warning("Not enough XP for a hint!")
                 _press_enter()
+                continue
+            elif lower in ("l", "lesson"):
+                show_lesson = not show_lesson
                 continue
             elif lower in ("s", "skip"):
                 print_info("Challenge skipped. You can come back to it later.")
