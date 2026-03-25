@@ -27,6 +27,7 @@ BASE_ACHIEVEMENTS = {
     "level_30": ("Grandmaster", "Reached the highest level"),
     "week_streak": ("Seven Days Strong", "Played for 7 consecutive days"),
     "month_streak": ("Committed", "Played for 30 consecutive days"),
+    "daily_hero": ("Daily Hero", "Complete 7 consecutive daily challenges"),
 }
 
 LEVEL_TITLES = {
@@ -85,6 +86,15 @@ class GameEngine:
         # Daily streak: consecutive days played
         self.daily_streak: int = 0
         self.last_played_date: str = ""
+        # Daily challenge tracking
+        self.daily_challenge_completed: bool = False
+        self.daily_challenge_date: str = ""
+        self.daily_challenge_streak: int = 0
+        self.last_daily_challenge_date: str = ""
+        # Bookmarks: list of {"zone_id": str, "challenge_id": str}
+        self.bookmarks: list = []
+        # Difficulty mode: "normal" | "hard" | "easy"
+        self.difficulty_mode: str = "normal"
 
         # Session stats (reset each run, not persisted)
         self.session_start: float = time.time()
@@ -118,6 +128,12 @@ class GameEngine:
                 self.wrong_answer_journal = data.get("wrong_answer_journal", {})
                 self.daily_streak = data.get("daily_streak", 0)
                 self.last_played_date = data.get("last_played_date", "")
+                self.daily_challenge_completed = data.get("daily_challenge_completed", False)
+                self.daily_challenge_date = data.get("daily_challenge_date", "")
+                self.daily_challenge_streak = data.get("daily_challenge_streak", 0)
+                self.last_daily_challenge_date = data.get("last_daily_challenge_date", "")
+                self.bookmarks = data.get("bookmarks", [])
+                self.difficulty_mode = data.get("difficulty_mode", "normal")
                 self._prev_level = self.level
             except (json.JSONDecodeError, KeyError):
                 pass
@@ -138,6 +154,12 @@ class GameEngine:
             "wrong_answer_journal": self.wrong_answer_journal,
             "daily_streak": self.daily_streak,
             "last_played_date": self.last_played_date,
+            "daily_challenge_completed": self.daily_challenge_completed,
+            "daily_challenge_date": self.daily_challenge_date,
+            "daily_challenge_streak": self.daily_challenge_streak,
+            "last_daily_challenge_date": self.last_daily_challenge_date,
+            "bookmarks": self.bookmarks,
+            "difficulty_mode": self.difficulty_mode,
         }
         with open(self._save_file, "w") as f:
             json.dump(data, f, indent=2)
@@ -156,7 +178,9 @@ class GameEngine:
         self._prev_level = 1
         self.zone_scores = {}
         self.wrong_answer_journal = {}
-        # Preserve daily streak and last_played_date across resets
+        # Preserve daily streak, daily challenge streak and dates across resets
+        self.daily_challenge_completed = False
+        self.daily_challenge_date = ""
         self.session_xp = 0
         self.session_correct = 0
         self.session_wrong = 0
@@ -200,6 +224,10 @@ class GameEngine:
     def award_xp(self, base_xp: int) -> tuple:
         prev_level = self.level
         actual_xp = self.calculate_xp_gain(base_xp)
+        if self.difficulty_mode == "hard":
+            actual_xp = int(actual_xp * 1.5)
+        elif self.difficulty_mode == "easy":
+            actual_xp = int(actual_xp * 0.75)
         self.total_xp += actual_xp
         self.session_xp += actual_xp
         leveled_up = self.level > prev_level
@@ -364,6 +392,83 @@ class GameEngine:
             self.unlock_achievement("month_streak")
         self.save()
 
+    # ── Daily Challenge ───────────────────────────────────────────────────────
+
+    def get_daily_challenge(self, skill_pack=None) -> dict | None:
+        """Pick a deterministic challenge for today based on date + pack name hash."""
+        pack = skill_pack or self.skill_pack
+        today = str(datetime.date.today())
+        # Reset daily_challenge_completed if it's a new day
+        if self.daily_challenge_date != today:
+            self.daily_challenge_completed = False
+            self.daily_challenge_date = today
+            self.save()
+
+        # Collect all challenges across all zones
+        all_challenges = []
+        for zone_id in pack.zone_order:
+            zone = pack.get_zone(zone_id)
+            if not zone:
+                continue
+            for ch in pack.get_zone_challenges(zone_id):
+                ch_copy = dict(ch)
+                ch_copy["_zone"] = zone
+                all_challenges.append(ch_copy)
+
+        if not all_challenges:
+            return None
+
+        key = today + pack.id
+        idx = hash(key) % len(all_challenges)
+        return all_challenges[idx]
+
+    def complete_daily_challenge(self):
+        """Mark daily challenge done, award 2x XP (min 100), update streak."""
+        today = str(datetime.date.today())
+        self.daily_challenge_completed = True
+        self.daily_challenge_date = today
+        self._update_daily_challenge_streak()
+        if "daily_hero" not in self.achievements and self.daily_challenge_streak >= 7:
+            self.unlock_achievement("daily_hero")
+        self.save()
+
+    def _update_daily_challenge_streak(self):
+        today = str(datetime.date.today())
+        yesterday = str(datetime.date.today() - datetime.timedelta(days=1))
+        if self.last_daily_challenge_date == today:
+            return  # Already counted today
+        if self.last_daily_challenge_date == yesterday:
+            self.daily_challenge_streak += 1
+        else:
+            self.daily_challenge_streak = 1  # New streak or broken
+        self.last_daily_challenge_date = today
+        if self.daily_challenge_streak >= 7:
+            self.unlock_achievement("daily_hero")
+        self.save()
+
+    # ── Pack Completion ───────────────────────────────────────────────────────
+
+    def is_pack_complete(self, skill_pack=None) -> bool:
+        """Return True if all zones in zone_order are in completed_zones."""
+        pack = skill_pack or self.skill_pack
+        return all(z in self.completed_zones for z in pack.zone_order)
+
+    def get_completion_grade(self) -> str:
+        """Return S/A/B/C/D based on average zone stars across completed zones."""
+        completed = [z for z in self.skill_pack.zone_order if z in self.completed_zones]
+        if not completed:
+            return "D"
+        avg = sum(self.get_zone_stars(z) for z in completed) / len(completed)
+        if avg >= 3.0:
+            return "S"
+        if avg >= 2.5:
+            return "A"
+        if avg >= 2.0:
+            return "B"
+        if avg >= 1.5:
+            return "C"
+        return "D"
+
     # ── Session Stats ─────────────────────────────────────────────────────────
 
     def get_session_stats(self) -> dict:
@@ -435,7 +540,14 @@ class GameEngine:
     # ── Hints ─────────────────────────────────────────────────────────────────
 
     def pay_hint_cost(self) -> bool:
+        if self.difficulty_mode == "easy":
+            # Free hints in easy mode
+            self.hint_costs_paid += 1
+            self.save()
+            return True
         cost = 10
+        if self.difficulty_mode == "hard":
+            cost = int(cost * 1.5)
         if self.total_xp >= cost:
             self.deduct_xp(cost)
             self.hint_costs_paid += 1

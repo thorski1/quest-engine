@@ -48,6 +48,8 @@ from .ui import (
     print_warning,
     _press_enter,
     animate_zone_progress,
+    render_daily_challenge_banner,
+    render_completion_certificate,
 )
 
 
@@ -78,6 +80,8 @@ class GameSession:
                 self._review_weak_spots()
             elif choice == "7":
                 self._export_notes()
+            elif choice == "8":
+                self._daily_challenge()
             elif choice == "0":
                 self._quit()
                 break
@@ -176,6 +180,85 @@ class GameSession:
         else:
             console.print("[dim]No completed zones to export yet. Keep playing![/dim]")
         _press_enter()
+
+    # ── Daily Challenge ───────────────────────────────────────────────────────
+
+    def _daily_challenge(self):
+        """Fetch and run today's daily challenge."""
+        from rich import box as rbox
+        challenge = self.engine.get_daily_challenge(self.skill_pack)
+        if challenge is None:
+            console.clear()
+            render_banner(self.skill_pack)
+            console.print(Panel(
+                "[dim]No challenges available in this pack.[/dim]",
+                title="[bold yellow]★  DAILY CHALLENGE[/bold yellow]",
+                border_style="yellow",
+                padding=(1, 4),
+            ))
+            _press_enter()
+            return
+
+        if self.engine.daily_challenge_completed:
+            console.clear()
+            render_banner(self.skill_pack)
+            console.print(Panel(
+                "[bold green]You've already completed today's daily challenge![/bold green]\n\n"
+                "[dim]Come back tomorrow for a new one.[/dim]",
+                title="[bold yellow]★  DAILY CHALLENGE  ★[/bold yellow]",
+                border_style="yellow",
+                padding=(1, 4),
+            ))
+            _press_enter()
+            return
+
+        zone = challenge.get("_zone", {})
+        zone_name = zone.get("name", "Unknown Zone")
+        challenge_title = challenge.get("title", "Daily Challenge")
+        base_xp = challenge.get("xp", 50)
+        bonus_xp = max(100, base_xp * 2)
+
+        console.clear()
+        render_banner(self.skill_pack)
+        console.print(Panel(
+            f"[bold white]{challenge_title}[/bold white]\n"
+            f"[dim]Zone: {zone_name}[/dim]\n\n"
+            f"[yellow]Complete this challenge to earn [bold]+{bonus_xp} XP[/bold] (2× bonus)![/yellow]\n"
+            f"[dim]Daily challenge streak: {self.engine.daily_challenge_streak} day(s)[/dim]",
+            title="[bold yellow]★  TODAY'S DAILY CHALLENGE  ★[/bold yellow]",
+            border_style="bold yellow",
+            box=rbox.DOUBLE,
+            padding=(1, 4),
+        ))
+        console.print()
+        _press_enter()
+
+        # Run the challenge — use zone_id from zone dict or empty string fallback
+        zone_id = zone.get("id", "")
+        result = self._run_challenge_loop(zone, challenge, 1, 1, zone_id, 0)
+
+        if result is not None:
+            # Challenge was attempted and not quit — award bonus XP and mark done
+            _xp, _lvl, _hints = result
+            actual_bonus, leveled_up = self.engine.award_xp(bonus_xp)
+            self.engine.complete_daily_challenge()
+
+            console.print()
+            console.print(Panel(
+                f"[bold green]Daily Challenge Complete![/bold green]\n\n"
+                f"[bold yellow]+{actual_bonus} XP[/bold yellow] [dim](2× daily bonus)[/dim]\n"
+                f"[dim]Challenge streak: {self.engine.daily_challenge_streak} day(s)[/dim]",
+                title="[bold yellow]★  DAILY BONUS  ★[/bold yellow]",
+                border_style="bold yellow",
+                box=rbox.ROUNDED,
+                padding=(1, 4),
+            ))
+
+            if leveled_up:
+                celebrate_level_up(self.engine.level, self.engine.level_title)
+
+            self._show_new_achievements()
+            _press_enter()
 
     # ── New Game ──────────────────────────────────────────────────────────────
 
@@ -286,6 +369,10 @@ class GameSession:
             render_zone_complete(completion_text, zone, zone_xp_earned, stars=stars)
 
             self._show_new_achievements()
+
+            # Show completion certificate if the whole pack is now done
+            if self.engine.is_pack_complete(self.skill_pack):
+                render_completion_certificate(self.engine, self.skill_pack)
 
             current_idx = self.skill_pack.zone_order.index(zone_id)
             if current_idx < len(self.skill_pack.zone_order) - 1:

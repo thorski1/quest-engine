@@ -3,6 +3,7 @@ ui.py - Rich TUI components for Quest Engine
 Fully generic — all skill-specific text comes from engine.skill_pack.
 """
 
+import datetime
 import time
 from typing import Optional
 
@@ -549,9 +550,153 @@ def render_zone_select(engine, zones: list) -> Optional[str]:
         console.print("[red]Invalid choice. Please try again.[/red]")
 
 
+def render_daily_challenge_banner(engine, skill_pack=None):
+    """Show a highlighted banner for today's daily challenge if not yet done."""
+    pack = skill_pack or engine.skill_pack
+    challenge = engine.get_daily_challenge(pack)
+    if challenge is None:
+        return
+
+    zone = challenge.get("_zone", {})
+    zone_name = zone.get("name", "Unknown Zone")
+    challenge_title = challenge.get("title", "Daily Challenge")
+
+    # Countdown to midnight
+    now = datetime.datetime.now()
+    midnight = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time.min)
+    hours_left = int((midnight - now).total_seconds() // 3600)
+
+    streak_line = ""
+    if engine.daily_challenge_streak > 0:
+        streak_line = f"\n[dim yellow]Challenge streak: {engine.daily_challenge_streak} day(s)[/dim yellow]"
+
+    content = (
+        f"[bold white]{challenge_title}[/bold white]\n"
+        f"[dim]Zone: {zone_name}[/dim]\n"
+        f"[dim yellow]Resets in {hours_left}h  ·  2× XP Bonus[/dim yellow]"
+        f"{streak_line}"
+    )
+    console.print(
+        Panel(
+            content,
+            title="[bold yellow]★  TODAY'S DAILY CHALLENGE  ★[/bold yellow]",
+            border_style="bold yellow",
+            box=box.DOUBLE,
+            padding=(1, 4),
+        )
+    )
+    console.print()
+
+
+ASCII_GRADES = {
+    "S": [
+        " ███████╗",
+        " ██╔════╝",
+        " ███████╗",
+        " ╚════██║",
+        " ███████║",
+        " ╚══════╝",
+    ],
+    "A": [
+        "  █████╗ ",
+        " ██╔══██╗",
+        " ███████║",
+        " ██╔══██║",
+        " ██║  ██║",
+        " ╚═╝  ╚═╝",
+    ],
+    "B": [
+        " ██████╗ ",
+        " ██╔══██╗",
+        " ██████╔╝",
+        " ██╔══██╗",
+        " ██████╔╝",
+        " ╚═════╝ ",
+    ],
+    "C": [
+        "  ██████╗",
+        " ██╔════╝",
+        " ██║     ",
+        " ██║     ",
+        " ╚██████╗",
+        "  ╚═════╝",
+    ],
+    "D": [
+        " ██████╗ ",
+        " ██╔══██╗",
+        " ██║  ██║",
+        " ██║  ██║",
+        " ██████╔╝",
+        " ╚═════╝ ",
+    ],
+}
+
+GRADE_COLORS = {
+    "S": "bold yellow",
+    "A": "bold cyan",
+    "B": "bold green",
+    "C": "bold white",
+    "D": "bold red",
+}
+
+
+def render_completion_certificate(engine, skill_pack=None):
+    """Render a beautiful ASCII certificate for pack completion."""
+    pack = skill_pack or engine.skill_pack
+    grade = engine.get_completion_grade()
+    grade_lines = ASCII_GRADES.get(grade, ASCII_GRADES["D"])
+    grade_color = GRADE_COLORS.get(grade, "bold white")
+
+    today_str = datetime.date.today().isoformat()
+    ach_count = len(engine.achievements)
+    total_ach = len({**engine.skill_pack.achievements})
+
+    lines = []
+    lines.append("[bold yellow]══════════════════════════════════════════════[/bold yellow]")
+    lines.append("")
+    lines.append(f"[bold white]  This certifies that[/bold white]")
+    lines.append("")
+    lines.append(f"[bold cyan]    {engine.player_name}[/bold cyan]")
+    lines.append("")
+    lines.append(f"[white]  has completed[/white]")
+    lines.append("")
+    lines.append(f"[bold yellow]    {pack.title}[/bold yellow]")
+    lines.append("")
+    lines.append(f"[dim]  Completed: {today_str}[/dim]")
+    lines.append(f"[dim]  Total XP: {engine.total_xp:,}  ·  Level: {engine.level} {engine.level_title}[/dim]")
+    lines.append(f"[dim]  Achievements: {ach_count}/{total_ach}[/dim]")
+    lines.append("")
+    lines.append("[bold yellow]══════════════════════════════════════════════[/bold yellow]")
+    lines.append("")
+    lines.append(f"[bold]  GRADE[/bold]")
+    for gl in grade_lines:
+        lines.append(f"[{grade_color}]{gl}[/{grade_color}]")
+    lines.append("")
+    lines.append("[bold yellow]══════════════════════════════════════════════[/bold yellow]")
+    lines.append("")
+    lines.append(f"[italic cyan]  {pack.quit_message}[/italic cyan]")
+
+    console.print()
+    console.print(
+        Panel(
+            "\n".join(lines),
+            title="[bold yellow]🏆  CERTIFICATE OF COMPLETION  🏆[/bold yellow]",
+            border_style="bold yellow",
+            box=box.DOUBLE,
+            padding=(1, 4),
+        )
+    )
+    console.print()
+    _press_enter()
+
+
 def render_main_menu(engine) -> str:
     console.clear()
     render_banner(engine.skill_pack)
+
+    # Show daily challenge banner if not yet completed today
+    if not engine.daily_challenge_completed:
+        render_daily_challenge_banner(engine)
 
     stats = engine.get_stats_dict()
     if stats["challenges_completed"] > 0:
@@ -594,6 +739,9 @@ def render_main_menu(engine) -> str:
         options.append(("6", "Review Weak Spots", "Replay challenges you've struggled with"))
     if has_completed:
         options.append(("7", "Export Notes", "Save lessons to a text file"))
+    daily_label = "Daily Challenge" if not engine.daily_challenge_completed else "Daily Challenge ✓"
+    daily_desc = "Today's special challenge — 2× XP" if not engine.daily_challenge_completed else "Already completed today"
+    options.append(("8", daily_label, daily_desc))
     options.append(("0", "Quit", f"Exit {pack_title}"))
 
     table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
@@ -607,7 +755,7 @@ def render_main_menu(engine) -> str:
     console.print(Align.center(table))
     console.print()
 
-    valid = {"1", "2", "3", "4", "5", "6", "7", "0"}
+    valid = {"1", "2", "3", "4", "5", "6", "7", "8", "0"}
     while True:
         choice = console.input("[cyan]Your choice: [/cyan]").strip()
         if choice in valid:
