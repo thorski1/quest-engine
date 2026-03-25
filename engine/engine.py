@@ -195,6 +195,14 @@ class GameEngine:
 
     @property
     def level_title(self) -> str:
+        """Return pack-specific level title if defined, else generic title."""
+        custom = self.skill_pack.level_titles
+        if custom:
+            title = custom[0][1]  # default to first
+            for min_level, t in custom:
+                if self.level >= min_level:
+                    title = t
+            return title
         return get_level_title(self.level)
 
     @property

@@ -80,8 +80,9 @@ class ChallengeResult:
 
 
 class ChallengeRunner:
-    def __init__(self):
+    def __init__(self, kids_mode: bool = False):
         self._current_sandbox: Path | None = None
+        self.kids_mode = kids_mode
 
     # ── Sandbox Management ────────────────────────────────────────────────────
 
@@ -219,7 +220,7 @@ class ChallengeRunner:
         """
         user_clean = user_answer.strip().lower()
 
-        kids_mode = bool(challenge.get("options"))  # primer-style challenges have options
+        kids_mode = self.kids_mode or bool(challenge.get("options"))
 
         # ── Multiple-choice: answer letter + options list ──────────────────────
         answer = challenge.get("answer")

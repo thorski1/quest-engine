@@ -60,7 +60,7 @@ class GameSession:
         self.skill_pack = skill_pack
         runner_class = skill_pack.runner_class or ChallengeRunner
         self.engine = GameEngine(skill_pack)
-        self.runner = runner_class()
+        self.runner = runner_class(kids_mode=skill_pack.kids_mode)
 
     # ── Main Loop ─────────────────────────────────────────────────────────────
 

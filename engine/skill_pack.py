@@ -44,6 +44,16 @@ class SkillPack:
     # Default player name when player enters nothing at the name prompt
     default_player_name: str = "Ghost"
 
+    # Optional: pack-specific level titles mapped to level thresholds.
+    # Format: list of (min_level, title) tuples in ascending order.
+    # If None, falls back to the engine's default generic titles.
+    # Example (NEXUS): [(1,"Rookie"),(6,"Operative"),(11,"Shadow"),(16,"Ghost"),(21,"Phantom"),(26,"Specter")]
+    # Example (Primer): [(1,"Seedling"),(6,"Sprout"),(11,"Bloom"),(16,"Star"),(21,"Wonder"),(26,"Sage")]
+    level_titles: Optional[list] = None
+
+    # Optional: kids_mode — if True, challenge runner uses kid-friendly praise phrases
+    kids_mode: bool = False
+
     def get_zone(self, zone_id: str) -> dict:
         return self.zones.get(zone_id, {})
 
