@@ -425,6 +425,30 @@ def celebrate_level_up(level: int, title: str):
     console.print()
 
 
+def animate_zone_progress(engine, zone_id: str):
+    """Briefly animate the XP bar filling up — shown after zone completion."""
+    total_xp = engine.total_xp
+    xp_in_lvl = engine.xp_this_level
+    xp_needed = engine.xp_for_next_level
+    pct = min(xp_in_lvl / xp_needed, 1.0)
+    bar_width = 30
+
+    with Live(console=console, refresh_per_second=20) as live:
+        for step in range(11):
+            frac = step / 10
+            current_pct = pct * frac
+            filled = int(bar_width * current_pct)
+            bar = "[cyan]" + "█" * filled + "[/cyan][dim]" + "░" * (bar_width - filled) + "[/dim]"
+            live.update(
+                Align.center(Text.from_markup(
+                    f"  XP  {bar}  {int(current_pct * xp_needed)}/{xp_needed}  ",
+                    justify="center"
+                ))
+            )
+            time.sleep(0.04)
+    console.print()
+
+
 def render_achievements_screen(engine):
     from .engine import BASE_ACHIEVEMENTS
     # Merge base achievements with pack-specific ones (pack takes priority)

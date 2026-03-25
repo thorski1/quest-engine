@@ -47,6 +47,7 @@ from .ui import (
     print_info,
     print_warning,
     _press_enter,
+    animate_zone_progress,
 )
 
 
@@ -277,6 +278,8 @@ class GameSession:
 
             if hints_used_this_zone == 0:
                 self.engine.unlock_achievement("no_hints")
+
+            animate_zone_progress(self.engine, zone_id)
 
             stars = self.engine.get_zone_stars(zone_id)
             completion_text = self.skill_pack.zone_completions.get(zone_id, "Zone Complete!")
