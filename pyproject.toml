@@ -4,10 +4,34 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quest-engine"
-version = "0.1.0"
+version = "1.0.0"
+description = "A pluggable terminal RPG framework for building skill-based learning games."
+readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "thorski1" }]
+keywords = ["terminal", "game", "rpg", "learning", "education", "cli"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Role-Playing",
+    "Topic :: Education",
+    "Topic :: Terminals",
+]
 dependencies = ["rich>=13.0.0"]
 
+[project.urls]
+Homepage      = "https://github.com/thorski1/quest-engine"
+Repository    = "https://github.com/thorski1/quest-engine"
+"Bug Tracker" = "https://github.com/thorski1/quest-engine/issues"
+
 [tool.setuptools.packages.find]
-where = ["."]
+where   = ["."]
 include = ["engine*"]

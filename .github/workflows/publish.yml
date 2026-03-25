@@ -1,0 +1,38 @@
+name: Publish to PyPI
+
+# Triggers on version tags: git tag v1.0.0 && git push --tags
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    name: Build and publish
+    runs-on: ubuntu-latest
+
+    # Required for PyPI Trusted Publishing (no API token needed)
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # Uses OIDC trusted publishing — no PYPI_API_TOKEN secret needed.
+        # One-time setup on PyPI:
+        #   1. Go to pypi.org → your project → Settings → "Trusted Publishers"
+        #   2. Add publisher: GitHub, owner=thorski1, repo=quest-engine,
+        #      workflow=publish.yml, environment=(leave blank)
