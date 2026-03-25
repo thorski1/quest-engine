@@ -1,0 +1,6 @@
+title: Quest Engine
+description: A pluggable terminal RPG framework for building skill-based learning games
+url: https://thorski1.github.io/quest-engine
+theme: jekyll-theme-minimal
+plugins:
+  - jekyll-seo-tag
