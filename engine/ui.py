@@ -959,9 +959,123 @@ def render_challenge_menu():
         "  [dim cyan][s][/dim cyan][dim] Skip"
         "  [dim cyan][b][/dim cyan][dim] Bookmark"
         "  [dim cyan][d][/dim cyan][dim] Difficulty"
+        "  [dim cyan][?][/dim cyan][dim] Help"
         "  [dim cyan][q][/dim cyan][dim] Menu[/dim]"
     )
     console.print()
+
+
+def render_help_screen():
+    """Show a full keybinding + command reference."""
+    console.clear()
+    table = Table(
+        show_header=True,
+        header_style="bold cyan",
+        box=box.SIMPLE_HEAVY,
+        padding=(0, 2),
+    )
+    table.add_column("Key", style="bold cyan", width=10)
+    table.add_column("Action")
+    table.add_column("Notes", style="dim")
+
+    rows = [
+        # In-challenge controls
+        ("─── During a Challenge ───", "", ""),
+        ("[Enter]",  "Submit answer",       "Type your answer and press Enter"),
+        ("[h]",      "Get a hint",          "Costs 10 XP per hint"),
+        ("[l]",      "Toggle lesson",       "Shows/hides the lesson panel"),
+        ("[s]",      "Skip challenge",      "Counts as incorrect; come back later"),
+        ("[b]",      "Bookmark",            "Save challenge to review list"),
+        ("[d]",      "Difficulty",          "Switch Easy / Normal / Hard"),
+        ("[?]",      "This help screen",    ""),
+        ("[q]",      "Quit to menu",        "Progress auto-saves"),
+        # Main menu
+        ("─── Main Menu ───", "", ""),
+        ("[1]",  "New Game",          "Resets all progress"),
+        ("[2]",  "Continue",          "Resume current zone"),
+        ("[3]",  "Zone Select",       "Jump to any unlocked zone"),
+        ("[4]",  "Achievements",      "Hall of Fame"),
+        ("[5]",  "Stats",             "Detailed statistics"),
+        ("[6]",  "Review Weak Spots", "Replay struggles"),
+        ("[7]",  "Export Notes",      "Save lessons to file"),
+        ("[8]",  "Daily Challenge",   "2× XP bonus"),
+        ("[9]",  "Bookmarks",         "Your saved challenges"),
+        ("[d]",  "Difficulty",        "Change difficulty mode"),
+        ("[0]",  "Quit",              "Saves before exiting"),
+        # Difficulty
+        ("─── Difficulty Modes ───", "", ""),
+        ("Easy",   "0.75× XP",    "Hints are free"),
+        ("Normal", "1× XP",       "Standard experience"),
+        ("Hard",   "1.5× XP",     "Hints cost 1.5× more"),
+        # Stars
+        ("─── Zone Stars ───", "", ""),
+        ("★★★",  "Perfect",     "No wrong answers, no hints"),
+        ("★★☆",  "Good",        "Minor mistakes or hint used"),
+        ("★☆☆",  "Complete",    "Zone cleared"),
+    ]
+
+    for key, action, note in rows:
+        if key.startswith("───"):
+            table.add_section()
+            table.add_row(f"[dim]{key}[/dim]", "", "")
+        else:
+            table.add_row(key, action, note)
+
+    console.print(Panel(
+        table,
+        title="[bold cyan]QUEST ENGINE — HELP[/bold cyan]",
+        border_style="cyan",
+        padding=(1, 2),
+    ))
+    console.print()
+    _press_enter()
+
+
+def render_zone_preview(zone: dict, engine):
+    """Show a preview of zone contents before the player enters."""
+    challenges = zone.get("challenges", [])
+    if not challenges:
+        return
+
+    console.clear()
+    icon = zone.get("icon", "")
+    lines = []
+    lines.append(f"[bold cyan]{icon}  {zone['name']}[/bold cyan]")
+    if zone.get("subtitle"):
+        lines.append(f"[dim]{zone['subtitle']}[/dim]")
+    lines.append("")
+    lines.append(f"[dim]{len(challenges)} challenges await:[/dim]")
+    lines.append("")
+
+    for i, ch in enumerate(challenges):
+        is_boss = ch.get("is_boss", False)
+        title = ch.get("title", "?")
+        xp = ch.get("xp", 50)
+        if is_boss:
+            lines.append(f"  [bold red]{i+1}. ⚔ {title}[/bold red]  [yellow]+{xp} XP[/yellow]")
+        else:
+            diff = ch.get("difficulty", "easy")
+            diff_color = DIFFICULTY_COLORS.get(diff, "white")
+            lines.append(
+                f"  [dim]{i+1}.[/dim] [{diff_color}]{title}[/{diff_color}]  [dim]+{xp} XP[/dim]"
+            )
+
+    stars = engine.get_zone_stars(zone["id"])
+    if stars > 0:
+        lines.append("")
+        lines.append(f"[dim]Your best rating:[/dim]  {_zone_star_str(stars)}")
+        if stars < 3:
+            lines.append("[dim]Replay with no hints for ★★★[/dim]")
+
+    console.print(Panel(
+        "\n".join(lines),
+        title=f"[bold cyan]ZONE PREVIEW[/bold cyan]",
+        border_style="dim cyan",
+        box=box.SIMPLE,
+        padding=(1, 3),
+    ))
+    console.print()
+    _press_enter()
 
 
 def render_output(output: str):

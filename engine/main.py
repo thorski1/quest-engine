@@ -52,6 +52,8 @@ from .ui import (
     render_completion_certificate,
     render_bookmarks_screen,
     render_difficulty_select,
+    render_help_screen,
+    render_zone_preview,
 )
 
 
@@ -346,6 +348,10 @@ class GameSession:
         zone_id = render_zone_select(self.engine, all_zones)
         if zone_id is None:
             return
+        # Show a zone preview before committing
+        zone = self.skill_pack.get_zone(zone_id)
+        if zone:
+            render_zone_preview(zone, self.engine)
         self.engine.current_zone = zone_id
         self.engine.save()
         self._play_zone(zone_id)
@@ -505,6 +511,9 @@ class GameSession:
                 color = diff_colors.get(new_mode, "white")
                 console.print(f"\n[{color}]Difficulty set to {new_mode.title()}![/{color}]")
                 _press_enter()
+                continue
+            elif lower in ("?", "help"):
+                render_help_screen()
                 continue
             elif lower in ("s", "skip"):
                 print_info("Challenge skipped. You can come back to it later.")
