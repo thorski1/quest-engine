@@ -329,6 +329,38 @@ class ChallengeRunner:
         correct_display = " → ".join(str(i + 1) for i in correct_order)
         return ChallengeResult(False, f"Not quite. The correct order was: {correct_display}")
 
+    def run_arrange(self, challenge: dict, user_input: str) -> ChallengeResult:
+        """
+        Arrange challenge: player matches left items to right items using letters.
+
+        Challenge format:
+          "pairs": [{"left": str, "right": str}, ...]
+          "right_order": [int, ...]  — indices into pairs for shuffled right display
+          "answer": "A B C"         — correct letter sequence for each left item
+
+        Player types space-separated letters (e.g. "B A C") corresponding to the
+        right item (by display letter) for each left item in order.
+        """
+        pairs = challenge.get("pairs", [])
+        if not pairs:
+            return ChallengeResult(False, "Arrange challenge is misconfigured: no pairs.")
+
+        correct_answer = str(challenge.get("answer", "")).strip().upper()
+        user_clean = user_input.strip().upper()
+
+        # Normalize: collapse extra whitespace between letters
+        import re as _re
+        correct_normalized = " ".join(_re.split(r"[\s,]+", correct_answer))
+        user_normalized = " ".join(_re.split(r"[\s,]+", user_clean))
+
+        if user_normalized == correct_normalized:
+            return ChallengeResult(True, get_praise(kids_mode=self.kids_mode))
+
+        return ChallengeResult(
+            False,
+            f"Not quite. The correct matches were: {correct_normalized}",
+        )
+
     def run_challenge(self, challenge: dict, user_input: str) -> tuple[ChallengeResult, str]:
         """Dispatch to the correct runner based on challenge type."""
         ctype = challenge.get("type", "quiz")
@@ -342,6 +374,8 @@ class ChallengeRunner:
             result, output = self.run_live(challenge, user_input)
         elif ctype == "ordered":
             result = self.run_ordered(challenge, user_input)
+        elif ctype == "arrange":
+            result = self.run_arrange(challenge, user_input)
         else:
             result = ChallengeResult(False, f"Unknown challenge type: {ctype}")
 

@@ -162,6 +162,7 @@ def render_challenge_panel(challenge: dict, zone: dict, challenge_num: int, tota
         "fill_blank": "FILL IN THE BLANK",
         "live": "LIVE CHALLENGE",
         "ordered": "SEQUENCE CHALLENGE",
+        "arrange": "MATCHING CHALLENGE",
     }
     type_label = "⚔  BOSS CHALLENGE" if is_boss else type_labels.get(ctype, ctype.upper())
 
@@ -231,6 +232,26 @@ def render_challenge_panel(challenge: dict, zone: dict, challenge_num: int, tota
         content.append("")
         for j, item in enumerate(items):
             content.append(f"  [bold cyan]{j+1}.[/bold cyan]  {item}")
+
+    # Arrange challenge: display left items in order, right items with letters
+    pairs = challenge.get("pairs", [])
+    if pairs and ctype == "arrange":
+        content.append("")
+        content.append("[dim]Match each left item to the correct right item:[/dim]")
+        content.append("")
+        content.append(f"  [bold white]{'Left':<30}  Right[/bold white]")
+        content.append("")
+        # Show left items numbered 1..N
+        for j, pair in enumerate(pairs):
+            content.append(f"  [bold cyan]{j+1}.[/bold cyan]  {pair['left']}")
+        content.append("")
+        content.append("[dim]Right items (enter the letter for each left item in order):[/dim]")
+        content.append("")
+        # Derive shuffled right order from challenge metadata or use definition order
+        right_items = challenge.get("right_order", list(range(len(pairs))))
+        for j, idx in enumerate(right_items):
+            letter = chr(ord("A") + j)
+            content.append(f"  [bold yellow]{letter}.[/bold yellow]  {pairs[idx]['right']}")
 
     if is_boss:
         title = f"[bold red]💀 {challenge['title']}[/bold red]"
@@ -755,6 +776,7 @@ def render_main_menu(engine) -> str:
     bookmark_count = len(getattr(engine, "bookmarks", []))
     bm_desc = f"{bookmark_count} saved" if bookmark_count else "None saved yet"
     options.append(("9", "Bookmarks", bm_desc))
+    options.append(("p", "Personal Bests", "Your fastest solve times"))
     diff_mode = getattr(engine, "difficulty_mode", "normal")
     options.append(("d", "Difficulty", f"Current: {diff_mode.title()}"))
     options.append(("0", "Quit", f"Exit {pack_title}"))
@@ -770,7 +792,7 @@ def render_main_menu(engine) -> str:
     console.print(Align.center(table))
     console.print()
 
-    valid = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "d", "0"}
+    valid = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "p", "d", "0"}
     while True:
         choice = console.input("[cyan]Your choice: [/cyan]").strip().lower()
         if choice in valid:
@@ -885,6 +907,7 @@ def prompt_command(challenge_type: str = "live") -> str:
         "fill_blank": "[cyan]Fill in the blank: [/cyan]",
         "live": "[cyan]$ [/cyan]",
         "ordered": "[cyan]Enter the order (e.g. 2 4 1 3): [/cyan]",
+        "arrange": "[cyan]Enter matches (e.g. A B C): [/cyan]",
     }
     prompt = prompts.get(challenge_type, "[cyan]Your answer: [/cyan]")
     return console.input(prompt)
@@ -1088,6 +1111,56 @@ def render_output(output: str):
                 padding=(0, 1),
             )
         )
+
+
+def render_new_record_flash(elapsed_s: float):
+    """Brief flash panel shown when the player beats their personal record."""
+    console.print(
+        Panel(
+            f"[bold yellow]★ NEW RECORD! {elapsed_s:.1f}s[/bold yellow]",
+            border_style="bold yellow",
+            box=box.ROUNDED,
+            padding=(0, 2),
+        )
+    )
+
+
+def render_personal_bests(engine):
+    """Show top 10 personal best challenge solve times."""
+    console.clear()
+    console.print(
+        Panel(
+            "[bold white]Your fastest challenge solve times[/bold white]",
+            title="[bold yellow]★  PERSONAL BESTS[/bold yellow]",
+            border_style="yellow",
+        )
+    )
+    console.print()
+
+    bests = engine.get_personal_bests()
+    if not bests:
+        console.print("  [dim](No records yet — solve challenges to set your first record!)[/dim]")
+        console.print()
+        _press_enter()
+        return
+
+    table = Table(show_header=True, header_style="bold yellow", box=box.SIMPLE_HEAVY, padding=(0, 2))
+    table.add_column("#", width=4, justify="right", style="dim")
+    table.add_column("Challenge", style="bold white")
+    table.add_column("Zone", style="cyan")
+    table.add_column("Time", justify="right", style="bold yellow")
+
+    for i, pb in enumerate(bests, 1):
+        table.add_row(
+            str(i),
+            pb["title"],
+            pb["zone_name"],
+            f"{pb['time_s']:.1f}s",
+        )
+
+    console.print(table)
+    console.print()
+    _press_enter()
 
 
 def render_separator():

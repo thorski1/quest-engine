@@ -95,6 +95,8 @@ class GameEngine:
         self.bookmarks: list = []
         # Difficulty mode: "normal" | "hard" | "easy"
         self.difficulty_mode: str = "normal"
+        # Per-challenge speed records: {zone_id: {challenge_id: float}}
+        self.challenge_records: dict = {}
 
         # Session stats (reset each run, not persisted)
         self.session_start: float = time.time()
@@ -134,6 +136,7 @@ class GameEngine:
                 self.last_daily_challenge_date = data.get("last_daily_challenge_date", "")
                 self.bookmarks = data.get("bookmarks", [])
                 self.difficulty_mode = data.get("difficulty_mode", "normal")
+                self.challenge_records = data.get("challenge_records", {})
                 self._prev_level = self.level
             except (json.JSONDecodeError, KeyError):
                 pass
@@ -160,6 +163,7 @@ class GameEngine:
             "last_daily_challenge_date": self.last_daily_challenge_date,
             "bookmarks": self.bookmarks,
             "difficulty_mode": self.difficulty_mode,
+            "challenge_records": self.challenge_records,
         }
         with open(self._save_file, "w") as f:
             json.dump(data, f, indent=2)
@@ -178,6 +182,7 @@ class GameEngine:
         self._prev_level = 1
         self.zone_scores = {}
         self.wrong_answer_journal = {}
+        self.challenge_records = {}
         # Preserve daily streak, daily challenge streak and dates across resets
         self.daily_challenge_completed = False
         self.daily_challenge_date = ""
@@ -576,6 +581,48 @@ class GameEngine:
         elapsed = self.get_elapsed()
         if elapsed > 0 and elapsed < 5:
             self.unlock_achievement("speed_demon")
+
+    def record_challenge_time(self, zone_id: str, challenge_id: str, elapsed_s: float) -> bool:
+        """Store elapsed_s if it beats the current record. Returns True if new record."""
+        zone_records = self.challenge_records.setdefault(zone_id, {})
+        current = zone_records.get(challenge_id)
+        if current is None or elapsed_s < current:
+            zone_records[challenge_id] = elapsed_s
+            self.save()
+            return True
+        return False
+
+    def get_challenge_record(self, zone_id: str, challenge_id: str) -> float | None:
+        """Return fastest recorded time for this challenge, or None."""
+        return self.challenge_records.get(zone_id, {}).get(challenge_id)
+
+    def try_set_speed_record(self, zone_id: str, challenge_id: str, elapsed: float) -> bool:
+        """Set speed record if faster. Returns True if new record was set."""
+        return self.record_challenge_time(zone_id, challenge_id, elapsed)
+
+    def get_personal_bests(self) -> list:
+        """Return top 10 personal best challenge solve times, sorted fastest first."""
+        results = []
+        for zone_id, challenges in self.challenge_records.items():
+            zone = self.skill_pack.get_zone(zone_id)
+            zone_name = zone["name"] if zone else zone_id
+            for challenge_id, time_s in challenges.items():
+                # Find challenge title
+                title = challenge_id
+                zone_challenges = self.skill_pack.get_zone_challenges(zone_id)
+                for ch in zone_challenges:
+                    if ch["id"] == challenge_id:
+                        title = ch.get("title", challenge_id)
+                        break
+                results.append({
+                    "zone_id": zone_id,
+                    "challenge_id": challenge_id,
+                    "time_s": time_s,
+                    "title": title,
+                    "zone_name": zone_name,
+                })
+        results.sort(key=lambda x: x["time_s"])
+        return results[:10]
 
     # ── Hints ─────────────────────────────────────────────────────────────────
 

@@ -54,6 +54,8 @@ from .ui import (
     render_difficulty_select,
     render_help_screen,
     render_zone_preview,
+    render_new_record_flash,
+    render_personal_bests,
 )
 
 
@@ -88,6 +90,8 @@ class GameSession:
                 self._daily_challenge()
             elif choice == "9":
                 self._view_bookmarks()
+            elif choice == "p":
+                self._personal_bests()
             elif choice == "d":
                 self._set_difficulty()
             elif choice == "0":
@@ -228,6 +232,12 @@ class GameSession:
         color = diff_colors.get(new_mode, "white")
         console.print(f"\n[{color}]Difficulty set to {new_mode.title()}![/{color}]\n")
         _press_enter()
+
+    # ── Personal Bests ────────────────────────────────────────────────────────
+
+    def _personal_bests(self):
+        """Show the personal bests screen and return."""
+        render_personal_bests(self.engine)
 
     # ── Daily Challenge ───────────────────────────────────────────────────────
 
@@ -533,12 +543,17 @@ class GameSession:
                 self.engine.check_speed_achievement()
                 self.engine.record_zone_attempt(zone_id, challenge["id"], correct=True, used_hint=hints_used > 0)
 
+                is_new_record = self.engine.try_set_speed_record(zone_id, challenge["id"], elapsed)
+
                 base_xp = challenge.get("xp", 50)
                 actual_xp, did_level_up = self.engine.award_xp(base_xp)
                 xp_gained += actual_xp
                 leveled_up = leveled_up or did_level_up
 
                 self.engine.mark_challenge_complete(zone_id, challenge["id"])
+
+                if is_new_record:
+                    render_new_record_flash(elapsed)
 
                 render_result(
                     True,
