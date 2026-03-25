@@ -53,6 +53,8 @@ class Campaign:
     player_name_prompt: str = "What do they call you, Agent?"
     default_player_name: str = "Ghost"
     placement_questions: list = field(default_factory=list)  # assessment quiz at campaign start
+    entry_summary_prefix: str = "Previously..."  # heading for entry summaries
+    campaign_achievements: dict = field(default_factory=dict)  # campaign-wide achievements
 
 
 # ── Campaign Loader ───────────────────────────────────────────────────────────
@@ -111,9 +113,13 @@ class CampaignSave:
         self.current_chapter_index = 0
         self.completed_chapters: list = []
         self.started_at: Optional[str] = None
+        self.completed_at: Optional[str] = None
         self.placement_done: bool = False
         self.skipped_chapters: list = []
         self.starting_chapter_index: int = 0
+        self.chapter_stats: dict = {}   # pack_name -> {"stars": int, "xp": int}
+        self.total_xp: int = 0
+        self.unlocked_achievements: list = []
 
         self._load()
 
@@ -129,9 +135,13 @@ class CampaignSave:
             self.current_chapter_index = data.get("current_chapter_index", 0)
             self.completed_chapters = data.get("completed_chapters", [])
             self.started_at = data.get("started_at")
+            self.completed_at = data.get("completed_at")
             self.placement_done = data.get("placement_done", False)
             self.skipped_chapters = data.get("skipped_chapters", [])
             self.starting_chapter_index = data.get("starting_chapter_index", 0)
+            self.chapter_stats = data.get("chapter_stats", {})
+            self.total_xp = data.get("total_xp", 0)
+            self.unlocked_achievements = data.get("unlocked_achievements", [])
         except (json.JSONDecodeError, KeyError):
             pass
 
@@ -144,10 +154,60 @@ class CampaignSave:
                 "current_chapter_index": self.current_chapter_index,
                 "completed_chapters": self.completed_chapters,
                 "started_at": self.started_at,
+                "completed_at": self.completed_at,
                 "placement_done": self.placement_done,
                 "skipped_chapters": self.skipped_chapters,
                 "starting_chapter_index": self.starting_chapter_index,
+                "chapter_stats": self.chapter_stats,
+                "total_xp": self.total_xp,
+                "unlocked_achievements": self.unlocked_achievements,
             }, f, indent=2)
+
+    def record_chapter_stats(self, pack_name: str, stars: int, xp: int):
+        """Store per-chapter star rating and XP earned."""
+        prev = self.chapter_stats.get(pack_name, {})
+        # Keep best stars, accumulate XP only on first completion
+        best_stars = max(prev.get("stars", 0), stars)
+        self.chapter_stats[pack_name] = {"stars": best_stars, "xp": xp}
+        if pack_name not in self.completed_chapters:
+            self.total_xp += xp
+        self.save()
+
+    def get_overall_grade(self) -> str:
+        """Compute campaign grade from average chapter stars."""
+        if not self.chapter_stats:
+            return "—"
+        avg = sum(v.get("stars", 0) for v in self.chapter_stats.values()) / len(self.chapter_stats)
+        if avg >= 3.0:
+            return "S"
+        elif avg >= 2.5:
+            return "A"
+        elif avg >= 2.0:
+            return "B"
+        elif avg >= 1.5:
+            return "C"
+        return "D"
+
+    def check_campaign_achievements(self):
+        """Check and unlock any campaign-level achievements."""
+        achievements = self._campaign.campaign_achievements
+        if not achievements:
+            return []
+        new_unlocks = []
+        # "all_stars" — every completed chapter has 3 stars
+        if "all_stars" in achievements and "all_stars" not in self.unlocked_achievements:
+            if self.chapter_stats and all(
+                v.get("stars", 0) == 3 for v in self.chapter_stats.values()
+            ):
+                self.unlocked_achievements.append("all_stars")
+                new_unlocks.append("all_stars")
+        # "speedrunner" — completed campaign (any grade)
+        if "campaign_complete" in achievements and "campaign_complete" not in self.unlocked_achievements:
+            if self.is_campaign_complete():
+                self.unlocked_achievements.append("campaign_complete")
+                new_unlocks.append("campaign_complete")
+        self.save()
+        return new_unlocks
 
     def mark_chapter_complete(self, pack_name: str):
         if pack_name not in self.completed_chapters:
@@ -182,8 +242,18 @@ class CampaignSave:
         self.starting_chapter_index = starting_chapter_index
         self.completed_chapters = []
         self.skipped_chapters = []
+        self.chapter_stats = {}
+        self.total_xp = 0
+        self.unlocked_achievements = []
         self.started_at = str(datetime.date.today())
+        self.completed_at = None
         self.save()
+
+    def mark_campaign_completed(self):
+        import datetime
+        if not self.completed_at:
+            self.completed_at = str(datetime.date.today())
+            self.save()
 
 
 # ── Campaign Session ──────────────────────────────────────────────────────────
@@ -204,6 +274,8 @@ class CampaignSession:
                 self._continue_campaign()
             elif choice == "3":
                 self._show_chapter_map()
+            elif choice == "4" and self.csave.has_progress():
+                self._show_campaign_stats()
             elif choice == "j" and self.csave.has_progress():
                 self._jump_to_chapter()
             elif choice == "0":
@@ -220,29 +292,35 @@ class CampaignSession:
         total = len(self.campaign.chapters)
         current_idx = self.csave.current_chapter_index
 
-        # Chapter status list
+        # Chapter status list with stars
         table = Table.grid(padding=(0, 2))
+        table.add_column(width=3)
         table.add_column()
-        table.add_column()
+        table.add_column(width=8)
         for i, ch in enumerate(self.campaign.chapters):
+            ch_stats = self.csave.chapter_stats.get(ch.pack_name, {})
+            stars = ch_stats.get("stars", 0)
+            star_str = _star_str(stars) if ch.pack_name in completed else ""
+
             if ch.pack_name in completed:
                 status = "[bold green]✓[/bold green]"
-                label = f"[dim]Chapter {i + 1}: {ch.title}[/dim]"
-                if ch.recommended_age:
-                    label += f" [dim](ages {ch.recommended_age})[/dim]"
+                label = f"[dim]Ch {i + 1}: {ch.title}[/dim]"
             elif i == current_idx and self.csave.has_progress():
                 status = "[bold yellow]▶[/bold yellow]"
-                label = f"[bold]Chapter {i + 1}: {ch.title}[/bold] [dim](in progress)[/dim]"
+                label = f"[bold]Ch {i + 1}: {ch.title}[/bold] [dim](in progress)[/dim]"
             else:
                 status = "[dim]·[/dim]"
-                label = f"[dim]Chapter {i + 1}: {ch.title}[/dim]"
-                if ch.recommended_age:
-                    label += f" [dim](ages {ch.recommended_age})[/dim]"
-            table.add_row(status, label)
+                label = f"[dim]Ch {i + 1}: {ch.title}[/dim]"
+            table.add_row(status, label, star_str)
+
+        grade = self.csave.get_overall_grade() if self.csave.chapter_stats else ""
+        grade_str = f"  Grade: [bold yellow]{grade}[/bold yellow]" if grade and grade != "—" else ""
+        total_xp_str = f"  XP: [bold cyan]{self.csave.total_xp:,}[/bold cyan]" if self.csave.total_xp else ""
 
         console.print(Panel(
             table,
             title="[bold cyan]CHAPTERS[/bold cyan]",
+            subtitle=f"[dim]{grade_str}{total_xp_str}[/dim]" if grade_str or total_xp_str else "",
             border_style="dim cyan",
             box=rbox.SIMPLE,
             padding=(0, 2),
@@ -260,6 +338,7 @@ class CampaignSession:
             console.print("  [bold green][2][/bold green] Replay / Review")
         console.print("  [bold cyan][3][/bold cyan] Chapter Map")
         if self.csave.has_progress():
+            console.print("  [bold cyan][4][/bold cyan] Campaign Stats")
             console.print("  [bold cyan][j][/bold cyan] Jump to Chapter")
         console.print("  [bold cyan][0][/bold cyan] Exit\n")
 
@@ -425,27 +504,35 @@ class CampaignSession:
         table = Table(
             show_header=True,
             header_style="bold cyan",
-            box=rbox.SIMPLE,
+            box=rbox.SIMPLE_HEAVY,
             padding=(0, 2),
         )
         table.add_column("#", style="dim", width=4)
         table.add_column("Chapter")
-        if any(ch.recommended_age for ch in self.campaign.chapters):
-            table.add_column("Ages", style="dim")
+        show_ages = any(ch.recommended_age for ch in self.campaign.chapters)
+        if show_ages:
+            table.add_column("Ages", style="dim", width=8)
+        table.add_column("Stars", justify="center", width=8)
         table.add_column("Status", justify="center")
 
-        show_ages = any(ch.recommended_age for ch in self.campaign.chapters)
         for i, ch in enumerate(self.campaign.chapters):
+            stats = self.csave.chapter_stats.get(ch.pack_name, {})
+            stars = stats.get("stars", 0)
+
             if ch.pack_name in completed:
                 status = "[bold green]COMPLETE[/bold green]"
+                star_str = _star_str(stars)
             elif ch.pack_name in skipped:
                 status = "[bold yellow]SKIPPED[/bold yellow]"
+                star_str = "[dim]—[/dim]"
             else:
                 status = "[dim]pending[/dim]"
+                star_str = "[dim]—[/dim]"
+
             row = [str(i + 1), ch.title]
             if show_ages:
                 row.append(ch.recommended_age or "—")
-            row.append(status)
+            row.extend([star_str, status])
             table.add_row(*row)
 
         console.print(table)
@@ -508,9 +595,10 @@ class CampaignSession:
             if has_prior_skipped and ch.entry_summary and i > 0:
                 console.clear()
                 _render_campaign_banner(self.campaign)
+                prefix = self.campaign.entry_summary_prefix
                 console.print(Panel(
                     f"[italic]{ch.entry_summary}[/italic]",
-                    title="[bold dim]Previously in The Primer...[/bold dim]",
+                    title=f"[bold dim]{prefix}[/bold dim]",
                     border_style="dim yellow",
                     box=rbox.SIMPLE,
                     padding=(1, 4),
@@ -539,18 +627,30 @@ class CampaignSession:
             completed_ok = session.run_linear()
 
             if not completed_ok:
-                # Player quit mid-chapter
+                # Player quit mid-chapter — capture partial stats
                 self.csave.current_chapter_index = i
                 self.csave.save()
                 return
 
-            # Mark complete, show outro
-            self.csave.mark_chapter_complete(ch.pack_name)
+            # Capture chapter stars and XP before marking complete
+            chapter_xp = session.engine.total_xp
+            chapter_stars = 0
+            if pack.zone_order:
+                stars_list = [session.engine.get_zone_stars(zid) for zid in pack.zone_order]
+                if stars_list:
+                    chapter_stars = round(sum(stars_list) / len(stars_list))
 
+            # Mark complete and record stats
+            self.csave.mark_chapter_complete(ch.pack_name)
+            self.csave.record_chapter_stats(ch.pack_name, chapter_stars, chapter_xp)
+
+            # Show outro with star rating
+            stars_display = _star_str(chapter_stars)
             console.clear()
             _render_campaign_banner(self.campaign)
             console.print(Panel(
-                f"[italic]{ch.outro_bridge}[/italic]",
+                f"[italic]{ch.outro_bridge}[/italic]\n\n"
+                f"[bold yellow]{stars_display}[/bold yellow]  [dim]+{chapter_xp:,} XP[/dim]",
                 title=f"[bold green]Chapter {i + 1} Complete: {ch.title}[/bold green]",
                 border_style="bold green",
                 box=rbox.DOUBLE,
@@ -559,14 +659,124 @@ class CampaignSession:
             _press_enter()
 
         if self.csave.is_campaign_complete():
-            self._campaign_complete()
+            new_ach = self.csave.check_campaign_achievements()
+            self._campaign_complete(new_ach)
+
+    # ── Campaign Stats ─────────────────────────────────────────────────────────
+
+    def _show_campaign_stats(self):
+        console.clear()
+        _render_campaign_banner(self.campaign)
+
+        table = Table(
+            show_header=True,
+            header_style="bold cyan",
+            box=rbox.SIMPLE_HEAVY,
+        )
+        table.add_column("#", style="dim", width=4)
+        table.add_column("Chapter", style="bold")
+        table.add_column("Stars", justify="center", width=8)
+        table.add_column("XP", justify="right", width=10)
+        table.add_column("Status", justify="center")
+
+        total_stars = 0
+        for i, ch in enumerate(self.campaign.chapters):
+            stats = self.csave.chapter_stats.get(ch.pack_name, {})
+            stars = stats.get("stars", 0)
+            xp = stats.get("xp", 0)
+            total_stars += stars
+
+            if ch.pack_name in self.csave.completed_chapters:
+                status = "[bold green]Complete[/bold green]"
+                star_str = _star_str(stars)
+                xp_str = f"[cyan]{xp:,}[/cyan]"
+            elif ch.pack_name in self.csave.skipped_chapters:
+                status = "[yellow]Skipped[/yellow]"
+                star_str = "[dim]—[/dim]"
+                xp_str = "[dim]—[/dim]"
+            else:
+                status = "[dim]Pending[/dim]"
+                star_str = "[dim]—[/dim]"
+                xp_str = "[dim]—[/dim]"
+
+            table.add_row(str(i + 1), ch.title, star_str, xp_str, status)
+
+        grade = self.csave.get_overall_grade()
+        console.print(Panel(
+            table,
+            title="[bold cyan]CAMPAIGN STATS[/bold cyan]",
+            subtitle=f"[bold yellow]Total XP: {self.csave.total_xp:,}  |  Grade: {grade}[/bold yellow]",
+            border_style="cyan",
+            padding=(1, 2),
+        ))
+
+        # Show campaign achievements if any
+        ach = self.campaign.campaign_achievements
+        if ach:
+            console.print()
+            for ach_id, (name, desc) in ach.items():
+                if ach_id in self.csave.unlocked_achievements:
+                    console.print(f"  [bold yellow]★[/bold yellow]  [bold]{name}[/bold]  [dim]{desc}[/dim]")
+                else:
+                    console.print(f"  [dim]·  {name} — {desc}[/dim]")
+
+        console.print()
+        _press_enter()
 
     # ── Campaign Complete ─────────────────────────────────────────────────────
 
-    def _campaign_complete(self):
+    def _campaign_complete(self, new_achievements: list = None):
+        import datetime
+        self.csave.mark_campaign_completed()
         console.clear()
         _render_campaign_banner(self.campaign)
         print_narrative(self.campaign.final_story)
+        _press_enter()
+
+        # Show completion certificate
+        grade = self.csave.get_overall_grade()
+        completed_date = self.csave.completed_at or str(datetime.date.today())
+        n_chapters = len(self.campaign.chapters)
+        completed_count = len(self.csave.completed_chapters)
+
+        grade_art = {
+            "S": " ____  \n/ ___| \n\\___ \\ \n ___) |\n|____/ ",
+            "A": " ___  \n/ _ \\ \n| |_| |\n|  _  |\n|_| |_|",
+            "B": " ____  \n| __ ) \n|  _ \\ \n| |_) |\n|____/ ",
+            "C": "  ____ \n / ___|\n| |    \n| |___ \n \\____|",
+            "D": " ____  \n|  _ \\ \n| | | |\n| |_| |\n|____/ ",
+        }.get(grade, "")
+
+        cert_body = (
+            f"[bold yellow]{grade_art}[/bold yellow]\n\n"
+            f"[bold white]{self.csave.player_name}[/bold white]\n\n"
+            f"has completed\n\n"
+            f"[bold cyan]{self.campaign.title}[/bold cyan]\n\n"
+            f"[dim]{completed_count}/{n_chapters} chapters  ·  {self.csave.total_xp:,} XP  ·  {completed_date}[/dim]"
+        )
+
+        console.print(Panel(
+            Align.center(Text.from_markup(cert_body)),
+            title="[bold yellow]★  CERTIFICATE OF COMPLETION  ★[/bold yellow]",
+            border_style="bold yellow",
+            box=rbox.DOUBLE,
+            padding=(2, 6),
+        ))
+
+        # Show any new campaign achievements
+        if new_achievements:
+            ach_defs = self.campaign.campaign_achievements
+            console.print()
+            for ach_id in new_achievements:
+                if ach_id in ach_defs:
+                    name, desc = ach_defs[ach_id]
+                    console.print(Panel(
+                        f"[bold yellow]★  {name}[/bold yellow]\n[dim]{desc}[/dim]",
+                        border_style="yellow",
+                        padding=(0, 2),
+                    ))
+
+        console.print()
         _press_enter()
 
     # ── Quit ──────────────────────────────────────────────────────────────────
@@ -587,3 +797,10 @@ def _render_campaign_banner(campaign: Campaign):
         console.print(Align.center(Text(ascii_art, style="bold cyan")))
     console.print(Align.center(Text(campaign.subtitle, style="bold yellow")))
     console.print()
+
+
+def _star_str(stars: int) -> str:
+    """Return a coloured star string for 0–3 stars."""
+    filled = min(stars, 3)
+    empty = 3 - filled
+    return "[bold yellow]" + "★" * filled + "[/bold yellow][dim]" + "☆" * empty + "[/dim]"
