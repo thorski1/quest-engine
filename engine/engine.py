@@ -293,6 +293,38 @@ class GameEngine:
     def challenges_completed_in_zone(self, zone_id: str) -> set:
         return self.completed_challenges.get(zone_id, set())
 
+    # ── Bookmarks ─────────────────────────────────────────────────────────────
+
+    def toggle_bookmark(self, zone_id: str, challenge_id: str) -> bool:
+        """Add bookmark if not present, remove if present. Returns True if now bookmarked."""
+        entry = {"zone_id": zone_id, "challenge_id": challenge_id}
+        for i, b in enumerate(self.bookmarks):
+            if b["zone_id"] == zone_id and b["challenge_id"] == challenge_id:
+                self.bookmarks.pop(i)
+                self.save()
+                return False
+        self.bookmarks.append(entry)
+        self.save()
+        return True
+
+    def get_bookmarks(self, skill_pack) -> list:
+        """Return list of challenge dicts with _zone key attached."""
+        results = []
+        for bm in self.bookmarks:
+            zone_id = bm["zone_id"]
+            challenge_id = bm["challenge_id"]
+            zone = skill_pack.get_zone(zone_id)
+            if zone is None:
+                continue
+            challenges = skill_pack.get_zone_challenges(zone_id)
+            challenge = next((c for c in challenges if c["id"] == challenge_id), None)
+            if challenge is None:
+                continue
+            ch = dict(challenge)
+            ch["_zone"] = zone
+            results.append(ch)
+        return results
+
     # ── Achievements ─────────────────────────────────────────────────────────
 
     def unlock_achievement(self, achievement_id: str):

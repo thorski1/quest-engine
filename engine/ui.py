@@ -95,9 +95,19 @@ def render_stats_panel(engine) -> Panel:
         "XP:", f"{xp_bar} [dim]{stats['xp_this_level']}/{stats['xp_for_next_level']}[/dim]",
         "Challenges:", f"[white]{stats['challenges_completed']}[/white]",
     )
+    diff_icons = {"easy": "[E]", "normal": "[N]", "hard": "[H]"}
+    diff_colors = {"easy": "green", "normal": "white", "hard": "red"}
+    diff_mode = getattr(engine, "difficulty_mode", "normal")
+    diff_icon = diff_icons.get(diff_mode, "[N]")
+    diff_color = diff_colors.get(diff_mode, "white")
+
     table.add_row(
         "Streak:", f"[{streak_color}]{stats['streak']}x[/{streak_color}]{streak_flames} [dim](best: {stats['max_streak']})[/dim]",
         "Achievements:", f"[magenta]{stats['achievements_count']}[/magenta]",
+    )
+    table.add_row(
+        "Difficulty:", f"[{diff_color}]{diff_icon} {diff_mode.title()}[/{diff_color}]",
+        "Bookmarks:", f"[dim]{len(getattr(engine, 'bookmarks', []))}[/dim]",
     )
 
     return Panel(table, title="[bold cyan]⚔  PLAYER STATS[/bold cyan]", border_style="cyan", box=box.ROUNDED)
@@ -742,6 +752,11 @@ def render_main_menu(engine) -> str:
     daily_label = "Daily Challenge" if not engine.daily_challenge_completed else "Daily Challenge ✓"
     daily_desc = "Today's special challenge — 2× XP" if not engine.daily_challenge_completed else "Already completed today"
     options.append(("8", daily_label, daily_desc))
+    bookmark_count = len(getattr(engine, "bookmarks", []))
+    bm_desc = f"{bookmark_count} saved" if bookmark_count else "None saved yet"
+    options.append(("9", "Bookmarks", bm_desc))
+    diff_mode = getattr(engine, "difficulty_mode", "normal")
+    options.append(("d", "Difficulty", f"Current: {diff_mode.title()}"))
     options.append(("0", "Quit", f"Exit {pack_title}"))
 
     table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
@@ -755,9 +770,9 @@ def render_main_menu(engine) -> str:
     console.print(Align.center(table))
     console.print()
 
-    valid = {"1", "2", "3", "4", "5", "6", "7", "8", "0"}
+    valid = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "d", "0"}
     while True:
-        choice = console.input("[cyan]Your choice: [/cyan]").strip()
+        choice = console.input("[cyan]Your choice: [/cyan]").strip().lower()
         if choice in valid:
             return choice
         console.print("[red]Invalid choice.[/red]")
@@ -875,12 +890,75 @@ def prompt_command(challenge_type: str = "live") -> str:
     return console.input(prompt)
 
 
+def render_bookmarks_screen(engine):
+    """Show numbered list of bookmarked challenges."""
+    console.clear()
+    console.print(
+        Panel(
+            "[bold cyan]Challenges you've saved for later[/bold cyan]",
+            title="[bold cyan]★  BOOKMARKS[/bold cyan]",
+            border_style="cyan",
+        )
+    )
+    console.print()
+
+    bookmarks = engine.get_bookmarks(engine.skill_pack)
+    if not bookmarks:
+        console.print("  [dim](empty — bookmark a challenge mid-game with [b])[/dim]")
+        console.print()
+        _press_enter()
+        return []
+
+    for i, ch in enumerate(bookmarks, 1):
+        zone = ch.get("_zone", {})
+        zone_name = zone.get("name", ch.get("zone_id", "?")) if zone else "?"
+        title = ch.get("title", ch.get("id", "?"))
+        difficulty = ch.get("difficulty", "easy")
+        ctype = ch.get("type", "quiz")
+        diff_color = DIFFICULTY_COLORS.get(difficulty, "white")
+        console.print(
+            f"  [bold cyan][{i}][/bold cyan]  [white]{title}[/white]"
+            f"  [dim]({zone_name})[/dim]"
+            f"  [{diff_color}]{difficulty}[/{diff_color}]"
+            f"  [dim]{ctype}[/dim]"
+        )
+
+    console.print()
+    console.print("  [dim][0]  Back[/dim]")
+    console.print()
+    return bookmarks
+
+
+def render_difficulty_select() -> str:
+    """Show difficulty selection panel. Returns 'easy', 'normal', or 'hard'."""
+    console.print()
+    console.print(
+        Panel(
+            "[1] [green]Easy[/green]    [dim]0.75x XP, free hints[/dim]\n"
+            "[2] [white]Normal[/white]  [dim]1x XP[/dim]\n"
+            "[3] [red]Hard[/red]    [dim]1.5x XP, costly hints[/dim]",
+            title="[bold yellow]DIFFICULTY[/bold yellow]",
+            border_style="yellow",
+            box=box.ROUNDED,
+            padding=(1, 2),
+        )
+    )
+    mapping = {"1": "easy", "2": "normal", "3": "hard"}
+    while True:
+        choice = console.input("[cyan]Select difficulty (1/2/3): [/cyan]").strip()
+        if choice in mapping:
+            return mapping[choice]
+        console.print("[red]Invalid choice.[/red]")
+
+
 def render_challenge_menu():
     console.print()
     console.print(
         "  [dim cyan][h][/dim cyan][dim] Hint [/dim][yellow](10 XP)[/yellow]"
         "  [dim cyan][l][/dim cyan][dim] Lesson"
         "  [dim cyan][s][/dim cyan][dim] Skip"
+        "  [dim cyan][b][/dim cyan][dim] Bookmark"
+        "  [dim cyan][d][/dim cyan][dim] Difficulty"
         "  [dim cyan][q][/dim cyan][dim] Menu[/dim]"
     )
     console.print()

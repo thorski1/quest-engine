@@ -50,6 +50,8 @@ from .ui import (
     animate_zone_progress,
     render_daily_challenge_banner,
     render_completion_certificate,
+    render_bookmarks_screen,
+    render_difficulty_select,
 )
 
 
@@ -82,6 +84,10 @@ class GameSession:
                 self._export_notes()
             elif choice == "8":
                 self._daily_challenge()
+            elif choice == "9":
+                self._view_bookmarks()
+            elif choice == "d":
+                self._set_difficulty()
             elif choice == "0":
                 self._quit()
                 break
@@ -179,6 +185,46 @@ class GameSession:
             ))
         else:
             console.print("[dim]No completed zones to export yet. Keep playing![/dim]")
+        _press_enter()
+
+    # ── Bookmarks ─────────────────────────────────────────────────────────────
+
+    def _view_bookmarks(self):
+        """Show bookmarked challenges and allow the player to jump to one."""
+        bookmarks = render_bookmarks_screen(self.engine)
+        if not bookmarks:
+            return
+
+        raw = console.input("[cyan]Enter number to practice (0 to back): [/cyan]").strip()
+        if not raw.isdigit() or int(raw) == 0:
+            return
+        idx = int(raw) - 1
+        if not (0 <= idx < len(bookmarks)):
+            return
+
+        ch = bookmarks[idx]
+        zone = ch.get("_zone")
+        if zone is None:
+            return
+
+        zone_id = zone["id"]
+        total = len(self.skill_pack.get_zone_challenges(zone_id))
+        challenge_num = next(
+            (i + 1 for i, c in enumerate(self.skill_pack.get_zone_challenges(zone_id)) if c["id"] == ch["id"]),
+            1,
+        )
+        self._run_challenge_loop(zone, ch, challenge_num, total, zone_id, 0)
+
+    # ── Difficulty ────────────────────────────────────────────────────────────
+
+    def _set_difficulty(self):
+        """Let the player change difficulty mode from the main menu."""
+        new_mode = render_difficulty_select()
+        self.engine.difficulty_mode = new_mode
+        self.engine.save()
+        diff_colors = {"easy": "green", "normal": "white", "hard": "red"}
+        color = diff_colors.get(new_mode, "white")
+        console.print(f"\n[{color}]Difficulty set to {new_mode.title()}![/{color}]\n")
         _press_enter()
 
     # ── Daily Challenge ───────────────────────────────────────────────────────
@@ -428,9 +474,11 @@ class GameSession:
             if lower in ("q", "quit", "menu", ":q"):
                 return None
             elif lower in ("h", "hint"):
+                diff = getattr(self.engine, "difficulty_mode", "normal")
+                hint_display_cost = 0 if diff == "easy" else (15 if diff == "hard" else 10)
                 cost_ok = self.engine.pay_hint_cost()
                 hint_text = self.runner.get_hint(challenge, hint_index)
-                render_hint(hint_text, 10)
+                render_hint(hint_text, hint_display_cost)
                 if cost_ok:
                     hint_index += 1
                     hints_used += 1
@@ -440,6 +488,23 @@ class GameSession:
                 continue
             elif lower in ("l", "lesson"):
                 show_lesson = not show_lesson
+                continue
+            elif lower in ("b", "bookmark"):
+                is_bookmarked = self.engine.toggle_bookmark(zone_id, challenge["id"])
+                if is_bookmarked:
+                    console.print("\n[bold yellow]★ Bookmarked![/bold yellow]")
+                else:
+                    console.print("\n[dim yellow]★ Bookmark removed[/dim yellow]")
+                _press_enter()
+                continue
+            elif lower in ("d", "difficulty"):
+                new_mode = render_difficulty_select()
+                self.engine.difficulty_mode = new_mode
+                self.engine.save()
+                diff_colors = {"easy": "green", "normal": "white", "hard": "red"}
+                color = diff_colors.get(new_mode, "white")
+                console.print(f"\n[{color}]Difficulty set to {new_mode.title()}![/{color}]")
+                _press_enter()
                 continue
             elif lower in ("s", "skip"):
                 print_info("Challenge skipped. You can come back to it later.")
