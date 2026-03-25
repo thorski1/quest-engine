@@ -27,6 +27,9 @@ classifiers = [
 ]
 dependencies = ["rich>=13.0.0"]
 
+[project.optional-dependencies]
+analytics = ["posthog>=3.0.0"]
+
 [project.urls]
 Homepage      = "https://github.com/thorski1/quest-engine"
 Repository    = "https://github.com/thorski1/quest-engine"
