@@ -92,6 +92,8 @@ class GameSession:
                 self._view_bookmarks()
             elif choice == "p":
                 self._personal_bests()
+            elif choice == "t":
+                self._timed_drill()
             elif choice == "d":
                 self._set_difficulty()
             elif choice == "0":
@@ -238,6 +240,127 @@ class GameSession:
     def _personal_bests(self):
         """Show the personal bests screen and return."""
         render_personal_bests(self.engine)
+
+    # ── Timed Drill ───────────────────────────────────────────────────────────
+
+    def _timed_drill(self):
+        """Run a timed blitz of mixed challenges. Player chooses duration."""
+        import time as _time
+        from rich import box as rbox
+
+        # ── Duration picker ────────────────────────────────────────────────
+        console.clear()
+        render_banner(self.skill_pack)
+        console.print(Panel(
+            "[bold white]TIMED DRILL[/bold white]\n\n"
+            "Race the clock through a mixed set of challenges.\n"
+            "Wrong-answer challenges appear first, then completed zones,\n"
+            "then new material.\n\n"
+            "[bold yellow]Choose your duration:[/bold yellow]\n"
+            "  [bold cyan][1][/bold cyan]  5 minutes   — Quick warm-up\n"
+            "  [bold cyan][2][/bold cyan]  10 minutes  — Standard session\n"
+            "  [bold cyan][3][/bold cyan]  15 minutes  — Deep practice\n"
+            "  [bold cyan][0][/bold cyan]  Back",
+            title="[bold cyan]⏱  TIMED DRILL[/bold cyan]",
+            border_style="cyan",
+            padding=(1, 4),
+        ))
+        console.print()
+
+        duration_map = {"1": 5 * 60, "2": 10 * 60, "3": 15 * 60}
+        while True:
+            pick = console.input("[cyan]Duration: [/cyan]").strip()
+            if pick == "0":
+                return
+            if pick in duration_map:
+                drill_seconds = duration_map[pick]
+                break
+            console.print("[red]Choose 1, 2, 3, or 0.[/red]")
+
+        # ── Load challenges ────────────────────────────────────────────────
+        # Load more than we need; we'll cycle through them
+        challenges = self.engine.get_drill_challenges(count=50)
+        if not challenges:
+            console.print(Panel(
+                "[dim]No challenges available yet. Complete at least one zone first![/dim]",
+                border_style="yellow",
+            ))
+            _press_enter()
+            return
+
+        # ── Run drill ─────────────────────────────────────────────────────
+        drill_start = _time.time()
+        drill_correct = 0
+        drill_wrong = 0
+        drill_xp = 0
+        idx = 0
+        total_available = len(challenges)
+
+        while True:
+            elapsed = _time.time() - drill_start
+            remaining = drill_seconds - elapsed
+            if remaining <= 0:
+                break
+
+            challenge = challenges[idx % total_available]
+            idx += 1
+
+            zone = challenge.get("_zone", {})
+            zone_id = zone.get("id", "")
+            num = idx
+            mins_left = int(remaining // 60)
+            secs_left = int(remaining % 60)
+
+            # Show time remaining above challenge
+            console.print(
+                f"\n[dim]  ⏱  {mins_left}:{secs_left:02d} remaining  |  "
+                f"✓ {drill_correct}  ✗ {drill_wrong}[/dim]"
+            )
+
+            result = self._run_challenge_loop(zone, challenge, num, total_available, zone_id, 0)
+
+            if result is None:
+                # Player quit the drill early
+                break
+
+            _xp, _lvl, hints_used = result
+            drill_xp += _xp
+            # Determine correct/wrong by XP: if XP > 0 and hints were 0, correct
+            if _xp > 0:
+                drill_correct += 1
+            else:
+                drill_wrong += 1
+
+            # Re-check time after each challenge
+            if _time.time() - drill_start >= drill_seconds:
+                break
+
+        # ── Drill summary ──────────────────────────────────────────────────
+        total_answered = drill_correct + drill_wrong
+        accuracy = int(drill_correct / total_answered * 100) if total_answered > 0 else 0
+        elapsed_total = _time.time() - drill_start
+        mins = int(elapsed_total // 60)
+        secs = int(elapsed_total % 60)
+
+        acc_color = "green" if accuracy >= 80 else "yellow" if accuracy >= 50 else "red"
+
+        console.clear()
+        render_banner(self.skill_pack)
+        console.print(Panel(
+            f"[bold white]Drill Complete![/bold white]\n\n"
+            f"[dim]Time:[/dim]       [white]{mins}:{secs:02d}[/white]\n"
+            f"[dim]Answered:[/dim]   [white]{total_answered}[/white] challenges\n"
+            f"[dim]Correct:[/dim]    [bold green]{drill_correct}[/bold green]  "
+            f"[dim]Wrong:[/dim] [bold red]{drill_wrong}[/bold red]\n"
+            f"[dim]Accuracy:[/dim]   [{acc_color}]{accuracy}%[/{acc_color}]\n"
+            f"[dim]XP earned:[/dim]  [bold yellow]+{drill_xp} XP[/bold yellow]",
+            title="[bold cyan]⏱  DRILL RESULTS[/bold cyan]",
+            border_style="cyan",
+            box=rbox.ROUNDED,
+            padding=(1, 4),
+        ))
+        self._show_new_achievements()
+        _press_enter()
 
     # ── Daily Challenge ───────────────────────────────────────────────────────
 

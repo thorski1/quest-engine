@@ -411,6 +411,82 @@ class GameEngine:
             if entries
         ]
 
+    def get_drill_challenges(self, count: int = 10) -> list:
+        """
+        Return up to `count` challenge dicts for the timed drill mode.
+
+        Priority order:
+        1. Wrong-answer journal entries (most important to fix)
+        2. Completed challenges from completed zones (spaced repetition)
+        3. Available uncompleted challenges (progress)
+
+        Each item includes a '_zone' key with the zone dict.
+        """
+        import random
+
+        candidates = []
+
+        # 1. Wrong-answer challenges — highest priority
+        for zone_id, bad_ids in self.wrong_answer_journal.items():
+            zone = self.skill_pack.get_zone(zone_id)
+            if not zone:
+                continue
+            for ch in self.skill_pack.get_zone_challenges(zone_id):
+                if ch["id"] in bad_ids:
+                    entry = dict(ch)
+                    entry["_zone"] = zone
+                    entry["_drill_priority"] = 0
+                    candidates.append(entry)
+
+        # 2. Completed challenges in completed zones
+        for zone_id in self.completed_zones:
+            zone = self.skill_pack.get_zone(zone_id)
+            if not zone:
+                continue
+            done_ids = self.completed_challenges.get(zone_id, set())
+            for ch in self.skill_pack.get_zone_challenges(zone_id):
+                if ch["id"] in done_ids:
+                    entry = dict(ch)
+                    entry["_zone"] = zone
+                    entry["_drill_priority"] = 1
+                    candidates.append(entry)
+
+        # 3. Unlocked but not yet completed
+        for zone_id in self.get_unlocked_zones():
+            if zone_id in self.completed_zones:
+                continue
+            zone = self.skill_pack.get_zone(zone_id)
+            if not zone:
+                continue
+            done_ids = self.completed_challenges.get(zone_id, set())
+            for ch in self.skill_pack.get_zone_challenges(zone_id):
+                if ch["id"] not in done_ids and not ch.get("is_boss"):
+                    entry = dict(ch)
+                    entry["_zone"] = zone
+                    entry["_drill_priority"] = 2
+                    candidates.append(entry)
+
+        if not candidates:
+            return []
+
+        # Deduplicate by challenge id
+        seen = set()
+        unique = []
+        for c in candidates:
+            if c["id"] not in seen:
+                seen.add(c["id"])
+                unique.append(c)
+
+        # Sort: priority 0 first, then shuffle within each priority group
+        priority_0 = [c for c in unique if c["_drill_priority"] == 0]
+        priority_1 = [c for c in unique if c["_drill_priority"] == 1]
+        priority_2 = [c for c in unique if c["_drill_priority"] == 2]
+        random.shuffle(priority_1)
+        random.shuffle(priority_2)
+
+        ordered = priority_0 + priority_1 + priority_2
+        return ordered[:count]
+
     def get_review_challenges(self, zone_id: str) -> list:
         """Return challenge dicts for all wrong-answer journal entries in a zone."""
         challenge_ids = self.wrong_answer_journal.get(zone_id, [])

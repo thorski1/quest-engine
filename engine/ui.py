@@ -777,6 +777,8 @@ def render_main_menu(engine) -> str:
     bm_desc = f"{bookmark_count} saved" if bookmark_count else "None saved yet"
     options.append(("9", "Bookmarks", bm_desc))
     options.append(("p", "Personal Bests", "Your fastest solve times"))
+    if has_progress:
+        options.append(("t", "Timed Drill", "Race the clock — mixed challenge blitz"))
     diff_mode = getattr(engine, "difficulty_mode", "normal")
     options.append(("d", "Difficulty", f"Current: {diff_mode.title()}"))
     options.append(("0", "Quit", f"Exit {pack_title}"))
@@ -792,7 +794,7 @@ def render_main_menu(engine) -> str:
     console.print(Align.center(table))
     console.print()
 
-    valid = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "p", "d", "0"}
+    valid = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "p", "t", "d", "0"}
     while True:
         choice = console.input("[cyan]Your choice: [/cyan]").strip().lower()
         if choice in valid:
