@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quest Engine — A Pluggable Terminal RPG Framework</title>
+  <meta name="description" content="A Python framework for building terminal RPG learning games. XP, levels, achievements, campaigns, daily challenges, and more. Powers NEXUS Quest and The Young Lady's Illustrated Primer.">
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --bg2: #141414;
+      --bg3: #1a1a1a;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --green: #22c55e;
+      --blue: #60a5fa;
+      --orange: #fb923c;
+      --yellow: #fbbf24;
+      --text: #f1f5f9;
+      --text-dim: #64748b;
+      --border: #262626;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', 'Consolas', monospace;
+      line-height: 1.6;
+    }
+    a { color: var(--accent-light); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV */
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .nav-logo {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: white;
+    }
+    .nav-name { font-weight: bold; font-size: 0.95rem; color: var(--text); }
+    .nav-version { font-size: 0.65rem; color: var(--text-dim); margin-left: 0.5rem; }
+    .nav-links { display: flex; gap: 1.75rem; font-size: 0.82rem; }
+    .nav-links a { color: var(--text-dim); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-cta {
+      background: var(--accent);
+      color: white !important;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+    .nav-cta:hover { opacity: 0.85; text-decoration: none !important; }
+
+    /* HERO */
+    .hero {
+      padding: 5rem 2rem 4rem;
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 20px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.72rem;
+      color: var(--accent-light);
+      margin-bottom: 2rem;
+      letter-spacing: 1px;
+    }
+    .hero-title {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      color: var(--text);
+      margin-bottom: 1.25rem;
+      line-height: 1.2;
+    }
+    .hero-title span { color: var(--accent-light); }
+    .hero-description {
+      font-size: clamp(0.9rem, 2vw, 1.05rem);
+      color: var(--text-dim);
+      max-width: 600px;
+      margin: 0 auto 3rem;
+      line-height: 1.8;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      padding: 0.75rem 1.75rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+    .btn-primary:hover { opacity: 0.85; text-decoration: none; }
+    .btn-secondary {
+      background: var(--bg3);
+      color: var(--text);
+      padding: 0.75rem 1.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+    .btn-secondary:hover { border-color: var(--accent-light); text-decoration: none; }
+
+    /* GAMES BUILT ON IT */
+    .games-strip {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+    }
+    .games-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 1.5rem;
+    }
+    .games-row {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+    .game-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      transition: color 0.15s;
+    }
+    .game-link:hover { color: var(--text); text-decoration: none; }
+    .game-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .game-dot-nexus { background: #00e5ff; }
+    .game-dot-primer { background: #ffd700; }
+
+    /* SECTION */
+    section {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+    .section-label {
+      font-size: 0.65rem;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 0.5rem;
+    }
+    .section-title {
+      font-size: clamp(1.2rem, 3vw, 1.7rem);
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .section-desc {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      margin-bottom: 2.5rem;
+      max-width: 600px;
+    }
+    hr { border: none; border-top: 1px solid var(--border); max-width: 960px; margin: 0 auto; }
+
+    /* CODE BLOCK */
+    .code-block {
+      background: #0a0a0a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .code-header {
+      background: var(--bg3);
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .code-filename { font-size: 0.72rem; color: var(--text-dim); }
+    .code-lang {
+      font-size: 0.65rem;
+      background: rgba(124,58,237,0.2);
+      color: var(--accent-light);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+    }
+    .code-body {
+      padding: 1.25rem 1.5rem;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+    .c-comment { color: #4a5568; }
+    .c-keyword { color: var(--accent-light); }
+    .c-string { color: var(--green); }
+    .c-fn { color: var(--blue); }
+    .c-var { color: var(--orange); }
+    .c-num { color: var(--yellow); }
+    .c-type { color: #f472b6; }
+
+    /* FEATURES */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .feature-item {
+      background: var(--bg2);
+      padding: 1.5rem;
+    }
+    .fi-label {
+      font-size: 0.7rem;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.4rem;
+    }
+    .fi-title { font-size: 0.95rem; color: var(--text); margin-bottom: 0.4rem; }
+    .fi-desc { font-size: 0.78rem; color: var(--text-dim); line-height: 1.6; }
+
+    /* CHALLENGE TYPES */
+    .types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .type-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .type-name {
+      font-size: 0.75rem;
+      color: var(--accent-light);
+      background: rgba(124,58,237,0.1);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 4px;
+      padding: 0.15rem 0.5rem;
+      display: inline-block;
+      margin-bottom: 0.6rem;
+      letter-spacing: 1px;
+    }
+    .type-title { font-size: 0.95rem; color: var(--text); margin-bottom: 0.4rem; }
+    .type-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.6; }
+
+    /* ARCH DIAGRAM */
+    .arch-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      font-size: 0.82rem;
+    }
+    .arch-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: stretch;
+    }
+    .arch-row:last-child { margin-bottom: 0; }
+    .arch-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      writing-mode: vertical-lr;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      min-width: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .arch-cards {
+      display: flex;
+      gap: 0.75rem;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+    .arch-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.6rem 1rem;
+      font-size: 0.78rem;
+    }
+    .arch-card-engine {
+      border-color: rgba(124,58,237,0.4);
+      background: rgba(124,58,237,0.08);
+      color: var(--accent-light);
+    }
+    .arch-card-nexus {
+      border-color: rgba(0,229,255,0.3);
+      background: rgba(0,229,255,0.06);
+      color: #7de8ff;
+    }
+    .arch-card-primer {
+      border-color: rgba(255,215,0,0.3);
+      background: rgba(255,215,0,0.06);
+      color: #ffe77a;
+    }
+    .arch-arrow {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 1.2rem;
+      line-height: 2;
+    }
+
+    /* QUICKSTART STEPS */
+    .steps {
+      counter-reset: steps;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .step {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      counter-increment: steps;
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(124,58,237,0.3);
+      color: var(--accent-light);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-top: 0.25rem;
+    }
+    .step-content { flex: 1; }
+    .step-title { font-size: 0.95rem; color: var(--text); margin-bottom: 0.5rem; }
+    .step-desc { font-size: 0.82rem; color: var(--text-dim); margin-bottom: 0.75rem; line-height: 1.7; }
+    .inline-code {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+      color: var(--green);
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    footer a { color: var(--text-dim); }
+    footer a:hover { color: var(--text); text-decoration: none; }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hero-actions { flex-direction: column; align-items: center; }
+      .arch-label { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">QE</div>
+    <span class="nav-name">Quest Engine</span>
+    <span class="nav-version">v1.0</span>
+  </div>
+  <div class="nav-links">
+    <a href="#architecture">Architecture</a>
+    <a href="#quickstart">Quickstart</a>
+    <a href="#challenge-types">Challenge Types</a>
+    <a href="#features">Features</a>
+    <a href="https://github.com/thorski1/quest-engine">GitHub</a>
+    <a href="https://pypi.org/project/quest-engine/" class="nav-cta">PyPI</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">Open Source &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; Python 3.10+</div>
+  <h1 class="hero-title">A pluggable terminal RPG<br>framework for <span>learning games</span></h1>
+  <p class="hero-description">
+    Quest Engine handles everything except the content — XP, levels, saves, daily challenges,
+    achievements, star ratings, campaigns, and difficulty modes.
+    You bring the zones and challenges. The engine handles the rest.
+  </p>
+  <div class="hero-actions">
+    <a href="#quickstart" class="btn-primary">Get Started</a>
+    <a href="https://github.com/thorski1/quest-engine" class="btn-secondary">View on GitHub</a>
+  </div>
+</div>
+
+<div class="games-strip">
+  <div class="games-label">Powers these games</div>
+  <div class="games-row">
+    <a href="https://thorski1.github.io/nexus-quest/" class="game-link">
+      <div class="game-dot game-dot-nexus"></div>
+      NEXUS Quest — cyberpunk DevOps RPG &nbsp;·&nbsp; 11 chapters &nbsp;·&nbsp; 600+ challenges
+    </a>
+    <a href="https://thorski1.github.io/primer/" class="game-link">
+      <div class="game-dot game-dot-primer"></div>
+      The Young Lady's Illustrated Primer — children's adventure &nbsp;·&nbsp; 9 chapters &nbsp;·&nbsp; 500+ challenges
+    </a>
+  </div>
+</div>
+
+<section id="architecture">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-title">Clean separation of engine and content</h2>
+  <p class="section-desc">The engine has zero game content. Content lives in your game repo. You can build multiple games on the same engine.</p>
+
+  <div class="arch-box">
+    <div class="arch-row">
+      <div class="arch-label">Your Game</div>
+      <div class="arch-cards">
+        <div class="arch-card arch-card-nexus">nexus-quest / skill-packs / bash /</div>
+        <div class="arch-card arch-card-nexus">nexus-quest / skill-packs / docker /</div>
+        <div class="arch-card arch-card-primer">primer / skill-packs / letters /</div>
+        <div class="arch-card arch-card-primer">primer / skill-packs / numbers /</div>
+        <div class="arch-card arch-card-nexus">nexus-quest / campaigns / nexus /</div>
+        <div class="arch-card arch-card-primer">primer / campaigns / young_ladys_primer /</div>
+      </div>
+    </div>
+    <div class="arch-arrow">↓ depends on ↓</div>
+    <div class="arch-row">
+      <div class="arch-label">Engine</div>
+      <div class="arch-cards">
+        <div class="arch-card arch-card-engine">engine.py — XP, levels, saves</div>
+        <div class="arch-card arch-card-engine">main.py — run() / run_campaign()</div>
+        <div class="arch-card arch-card-engine">campaign.py — CampaignSession</div>
+        <div class="arch-card arch-card-engine">challenges.py — quiz/fill/live runner</div>
+        <div class="arch-card arch-card-engine">ui.py — Rich TUI components</div>
+        <div class="arch-card arch-card-engine">skill_pack.py — SkillPack dataclass</div>
+        <div class="arch-card arch-card-engine">updater.py — auto-update</div>
+        <div class="arch-card arch-card-engine">analytics.py — PostHog (optional)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="quickstart">
+  <div class="section-label">Quickstart</div>
+  <h2 class="section-title">Build your first pack in 5 minutes</h2>
+  <p class="section-desc">Three files. One command. A fully functional terminal learning game.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Install the engine</div>
+        <div class="code-block">
+          <div class="code-body"><span class="c-comment"># From PyPI</span>
+<span class="c-fn">pip</span> install quest-engine
+
+<span class="c-comment"># Or from source</span>
+<span class="c-fn">pip</span> install -e ./quest-engine</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Write your zones and challenges</div>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-filename">skill-packs/my_pack/zones.py</span>
+            <span class="code-lang">python</span>
+          </div>
+          <div class="code-body"><span class="c-keyword">from</span> engine.zone <span class="c-keyword">import</span> <span class="c-type">Zone</span>
+<span class="c-keyword">from</span> engine.challenge <span class="c-keyword">import</span> <span class="c-type">Challenge</span>
+
+<span class="c-var">ZONE_ORDER</span> = [<span class="c-string">"intro"</span>, <span class="c-string">"advanced"</span>]
+
+<span class="c-var">ZONES</span> = {
+    <span class="c-string">"intro"</span>: <span class="c-type">Zone</span>(
+        id=<span class="c-string">"intro"</span>,
+        title=<span class="c-string">"Getting Started"</span>,
+        description=<span class="c-string">"The basics of our topic."</span>,
+        challenges=[
+            <span class="c-type">Challenge</span>(
+                id=<span class="c-string">"q1"</span>,
+                type=<span class="c-string">"quiz"</span>,
+                prompt=<span class="c-string">"Which command lists directory contents?"</span>,
+                options=[<span class="c-string">"ls"</span>, <span class="c-string">"cd"</span>, <span class="c-string">"pwd"</span>, <span class="c-string">"cat"</span>],
+                answer=<span class="c-string">"a"</span>,
+                explanation=<span class="c-string">"`ls` lists files in the current directory."</span>,
+                hints=[<span class="c-string">"Think 'list'."</span>, <span class="c-string">"Two letters."</span>],
+                xp=<span class="c-num">10</span>,
+            ),
+            <span class="c-type">Challenge</span>(
+                id=<span class="c-string">"q2"</span>,
+                type=<span class="c-string">"fill_blank"</span>,
+                prompt=<span class="c-string">"The command ___ prints the working directory."</span>,
+                answer=<span class="c-string">"pwd"</span>,
+                explanation=<span class="c-string">"`pwd` = Print Working Directory."</span>,
+                xp=<span class="c-num">10</span>,
+            ),
+        ],
+    ),
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Define your SkillPack</div>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-filename">skill-packs/my_pack/__init__.py</span>
+            <span class="code-lang">python</span>
+          </div>
+          <div class="code-body"><span class="c-keyword">from</span> engine.skill_pack <span class="c-keyword">import</span> <span class="c-type">SkillPack</span>
+<span class="c-keyword">from</span> .story <span class="c-keyword">import</span> <span class="c-var">INTRO_STORY</span>, <span class="c-var">ZONE_INTROS</span>, <span class="c-var">ZONE_COMPLETIONS</span>, <span class="c-var">BOSS_INTROS</span>
+<span class="c-keyword">from</span> .zones <span class="c-keyword">import</span> <span class="c-var">ZONES</span>, <span class="c-var">ZONE_ORDER</span>
+
+<span class="c-var">SKILL_PACK</span> = <span class="c-type">SkillPack</span>(
+    id=<span class="c-string">"my_pack"</span>,
+    title=<span class="c-string">"My Learning Pack"</span>,
+    subtitle=<span class="c-string">"◈  A subtitle  ◈"</span>,
+    save_file_name=<span class="c-string">"my_pack"</span>,
+    intro_story=<span class="c-var">INTRO_STORY</span>,
+    quit_message=<span class="c-string">"Progress saved. See you soon!"</span>,
+    zone_order=<span class="c-var">ZONE_ORDER</span>,
+    zones=<span class="c-var">ZONES</span>,
+    zone_intros=<span class="c-var">ZONE_INTROS</span>,
+    zone_completions=<span class="c-var">ZONE_COMPLETIONS</span>,
+    boss_intros=<span class="c-var">BOSS_INTROS</span>,
+    zone_achievement_map={<span class="c-string">"intro"</span>: <span class="c-string">"first_steps"</span>},
+    achievements={<span class="c-string">"first_steps"</span>: (<span class="c-string">"First Steps"</span>, <span class="c-string">"Completed the intro!"</span>)},
+    level_titles=[(<span class="c-num">1</span>, <span class="c-string">"Novice"</span>), (<span class="c-num">5</span>, <span class="c-string">"Learner"</span>), (<span class="c-num">10</span>, <span class="c-string">"Expert"</span>)],
+    kids_mode=<span class="c-keyword">False</span>,
+)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Wire up your entry point</div>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-filename">your_game/main.py</span>
+            <span class="code-lang">python</span>
+          </div>
+          <div class="code-body"><span class="c-keyword">import</span> os
+<span class="c-keyword">from</span> pathlib <span class="c-keyword">import</span> <span class="c-type">Path</span>
+<span class="c-keyword">from</span> engine.main <span class="c-keyword">import</span> <span class="c-fn">run</span>
+
+<span class="c-var">_HERE</span> = <span class="c-type">Path</span>(__file__).parent.parent
+os.environ.setdefault(<span class="c-string">"QUEST_SKILL_PACKS_DIR"</span>, str(<span class="c-var">_HERE</span> / <span class="c-string">"skill-packs"</span>))
+
+<span class="c-keyword">def</span> <span class="c-fn">main</span>():
+    <span class="c-fn">run</span>(<span class="c-string">"my_pack"</span>)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Run it</div>
+        <div class="code-block">
+          <div class="code-body"><span class="c-fn">pip</span> install -e .
+<span class="c-fn">my-game</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="challenge-types">
+  <div class="section-label">Challenge Types</div>
+  <h2 class="section-title">Six ways to test knowledge</h2>
+  <p class="section-desc">Mix challenge types within a zone to keep players engaged.</p>
+
+  <div class="types-grid">
+    <div class="type-card">
+      <div class="type-name">quiz</div>
+      <div class="type-title">Multiple Choice</div>
+      <div class="type-desc">Player types A / B / C / D. The most common type — fast to answer, easy to write.</div>
+    </div>
+    <div class="type-card">
+      <div class="type-name">fill_blank</div>
+      <div class="type-title">Fill in the Blank</div>
+      <div class="type-desc">Player types the exact answer. Case-insensitive. Good for commands, terms, and numbers.</div>
+    </div>
+    <div class="type-card">
+      <div class="type-name">flag_quiz</div>
+      <div class="type-title">Multiple Valid Answers</div>
+      <div class="type-desc">Like fill_blank but accepts any answer from an <span class="inline-code">answers</span> list. Perfect for CLI flags where <span class="inline-code">-a</span> and <span class="inline-code">--all</span> are both right.</div>
+    </div>
+    <div class="type-card">
+      <div class="type-name">live</div>
+      <div class="type-title">Real Shell Command</div>
+      <div class="type-desc">Player runs an actual command in a sandboxed temp directory. The engine validates the result: file created, output contains, permissions set, etc.</div>
+    </div>
+    <div class="type-card">
+      <div class="type-name">ordered</div>
+      <div class="type-title">Sequence Ordering</div>
+      <div class="type-desc">Player types the correct order of steps (e.g. "3 1 0 2"). Great for workflows like git add → commit → push.</div>
+    </div>
+    <div class="type-card">
+      <div class="type-name">arrange</div>
+      <div class="type-title">Matching Pairs</div>
+      <div class="type-desc">Player matches left items to right items. Good for pairing commands to descriptions or terms to definitions.</div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="features">
+  <div class="section-label">Built-In Features</div>
+  <h2 class="section-title">Everything the game loop needs</h2>
+  <p class="section-desc">Zero configuration. Everything is included and works out of the box.</p>
+
+  <div class="features-grid">
+    <div class="feature-item">
+      <div class="fi-label">Progression</div>
+      <div class="fi-title">XP &amp; Levels</div>
+      <div class="fi-desc">Configurable level titles per pack. 300 XP per level. Difficulty multipliers: Easy 0.75×, Normal 1×, Hard 1.5×.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Habit</div>
+      <div class="fi-title">Daily Challenge + Streaks</div>
+      <div class="fi-desc">Deterministic daily pick per pack. 2× XP bonus. Streak tracking with max streak. Persists across sessions.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Quality</div>
+      <div class="fi-title">Zone Star Ratings</div>
+      <div class="fi-desc">1–3 stars per zone based on hints used and challenges skipped. Players can replay to earn perfect scores.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Mastery</div>
+      <div class="fi-title">Weak Spot Review</div>
+      <div class="fi-desc">Tracks every wrong answer. Review mode drills the player on their personal weak spots.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Competition</div>
+      <div class="fi-title">Speed Records</div>
+      <div class="fi-desc">Personal best time tracked per challenge. New records flash on screen with a bonus XP indicator.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Retention</div>
+      <div class="fi-title">Bookmarks</div>
+      <div class="fi-desc">Players toggle [b] on any challenge. A review menu replays all bookmarked challenges.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Narrative</div>
+      <div class="fi-title">Campaigns</div>
+      <div class="fi-desc">Chain multiple packs into a story with chapter intros, outros, and an optional placement quiz to pick starting chapter.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Completion</div>
+      <div class="fi-title">Grade Certificate</div>
+      <div class="fi-desc">ASCII certificate with S/A/B/C/D grade on pack or campaign completion, based on accuracy and star performance.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Distribution</div>
+      <div class="fi-title">Auto-Updates</div>
+      <div class="fi-desc">Checks PyPI at launch with a 24-hour cache. One keypress installs and restarts with the new version.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Audience</div>
+      <div class="fi-title">Kids Mode</div>
+      <div class="fi-desc">Set <span class="inline-code">kids_mode=True</span> on any pack for warm, encouraging praise phrases instead of the default responses.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Analytics</div>
+      <div class="fi-title">PostHog Integration</div>
+      <div class="fi-desc">Optional PostHog event tracking. Anonymous player IDs. Disable with <span class="inline-code">QUEST_NO_ANALYTICS=1</span>.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Save System</div>
+      <div class="fi-title">JSON Persistence</div>
+      <div class="fi-desc">All progress saved to <span class="inline-code">~/.quest_engine/&lt;pack_id&gt;/</span>. Resume any session exactly where you left off.</div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section>
+  <div class="section-label">In-Game Controls</div>
+  <h2 class="section-title">Standard keybindings</h2>
+  <p class="section-desc">Every pack gets these controls automatically — no configuration needed.</p>
+  <div class="code-block">
+    <div class="code-body"><span class="c-comment"># During a challenge:</span>
+[<span class="c-var">h</span>] Hint          Show next hint (costs a star on Hard mode)
+[<span class="c-var">b</span>] Bookmark      Toggle bookmark on current challenge
+[<span class="c-var">d</span>] Difficulty    Switch Easy / Normal / Hard
+[<span class="c-var">?</span>] Help          Show full control reference
+[<span class="c-var">s</span>] Skip          Skip challenge (counts against star rating)
+[<span class="c-var">q</span>] Menu          Return to main menu
+
+<span class="c-comment"># Main menu options:</span>
+New Game · Continue · Zone Select · Achievements · Stats
+Review Weak Spots · Export Notes · Daily Challenge
+View Bookmarks · Personal Bests · Set Difficulty · Quit</div>
+  </div>
+</section>
+
+<footer>
+  <p>
+    <a href="https://github.com/thorski1/quest-engine">GitHub</a> &nbsp;·&nbsp;
+    <a href="https://pypi.org/project/quest-engine/">PyPI</a> &nbsp;·&nbsp;
+    <a href="https://thorski1.github.io/nexus-quest/">NEXUS Quest</a> &nbsp;·&nbsp;
+    <a href="https://thorski1.github.io/primer/">The Primer</a>
+  </p>
+  <p style="margin-top:0.5rem;">MIT License &nbsp;·&nbsp; Python 3.10+</p>
+</footer>
+
+</body>
+</html>
