@@ -999,8 +999,9 @@ def render_difficulty_select() -> str:
         console.print("[red]Invalid choice.[/red]")
 
 
-def render_challenge_menu():
+def render_challenge_menu(has_url: bool = False):
     console.print()
+    url_part = "  [dim cyan][v][/dim cyan][dim] View[/dim]" if has_url else ""
     console.print(
         "  [dim cyan][h][/dim cyan][dim] Hint [/dim][yellow](10 XP)[/yellow]"
         "  [dim cyan][l][/dim cyan][dim] Lesson"
@@ -1009,6 +1010,7 @@ def render_challenge_menu():
         "  [dim cyan][d][/dim cyan][dim] Difficulty"
         "  [dim cyan][?][/dim cyan][dim] Help"
         "  [dim cyan][q][/dim cyan][dim] Menu[/dim]"
+        + url_part
     )
     console.print()
 
@@ -1034,6 +1036,7 @@ def render_help_screen():
         ("[l]",      "Toggle lesson",       "Shows/hides the lesson panel"),
         ("[s]",      "Skip challenge",      "Counts as incorrect; come back later"),
         ("[b]",      "Bookmark",            "Save challenge to review list"),
+        ("[v]",      "View resource",       "Open linked URL in browser (when available)"),
         ("[d]",      "Difficulty",          "Switch Easy / Normal / Hard"),
         ("[?]",      "This help screen",    ""),
         ("[q]",      "Quit to menu",        "Progress auto-saves"),

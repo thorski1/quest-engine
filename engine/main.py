@@ -601,7 +601,7 @@ class GameSession:
             console.print(stats_panel)
             render_separator()
             console.print(render_challenge_panel(challenge, zone, num, total, show_lesson=show_lesson))
-            render_challenge_menu()
+            render_challenge_menu(has_url=bool(challenge.get("url")))
 
             ctype = challenge.get("type", "quiz")
             user_input = prompt_command(ctype).strip()
@@ -647,6 +647,17 @@ class GameSession:
                 continue
             elif lower in ("?", "help"):
                 render_help_screen()
+                continue
+            elif lower in ("v", "view"):
+                url = challenge.get("url")
+                if url:
+                    import webbrowser
+                    webbrowser.open(url)
+                    console.print(f"\n[bold cyan]Opening in browser...[/bold cyan]")
+                    console.print(f"[dim]{url}[/dim]")
+                else:
+                    console.print("\n[dim]No resource linked for this challenge.[/dim]")
+                _press_enter()
                 continue
             elif lower in ("s", "skip"):
                 print_info("Challenge skipped. You can come back to it later.")
