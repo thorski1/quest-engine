@@ -408,7 +408,7 @@
   <div class="nav-brand">
     <div class="nav-logo">QE</div>
     <span class="nav-name">Quest Engine</span>
-    <span class="nav-version">v1.0</span>
+    <span class="nav-version">v1.2</span>
   </div>
   <div class="nav-links">
     <a href="#architecture">Architecture</a>
@@ -439,11 +439,11 @@
   <div class="games-row">
     <a href="https://thorski1.github.io/nexus-quest/" class="game-link">
       <div class="game-dot game-dot-nexus"></div>
-      NEXUS Quest — cyberpunk DevOps RPG &nbsp;·&nbsp; 11 chapters &nbsp;·&nbsp; 600+ challenges
+      NEXUS Quest — cyberpunk DevOps RPG &nbsp;·&nbsp; 11 chapters &nbsp;·&nbsp; 700+ challenges
     </a>
     <a href="https://thorski1.github.io/primer/" class="game-link">
       <div class="game-dot game-dot-primer"></div>
-      The Young Lady's Illustrated Primer — children's adventure &nbsp;·&nbsp; 9 chapters &nbsp;·&nbsp; 500+ challenges
+      The Young Lady's Illustrated Primer — children's adventure &nbsp;·&nbsp; 9 chapters &nbsp;·&nbsp; 600+ challenges
     </a>
   </div>
 </div>
@@ -718,6 +718,16 @@ os.environ.setdefault(<span class="c-string">"QUEST_SKILL_PACKS_DIR"</span>, str
       <div class="fi-desc">Set <span class="inline-code">kids_mode=True</span> on any pack for warm, encouraging praise phrases instead of the default responses.</div>
     </div>
     <div class="feature-item">
+      <div class="fi-label">Drill</div>
+      <div class="fi-title">Timed Drill Mode</div>
+      <div class="fi-desc">5/10/15-minute blitz. Spaced repetition priority: wrong answers first, then completed zones, then new material. XP awarded per challenge.</div>
+    </div>
+    <div class="feature-item">
+      <div class="fi-label">Visibility</div>
+      <div class="fi-title">Zone Progress Map</div>
+      <div class="fi-desc">Stats screen shows all zones as fill bars. Completed (green), in-progress (yellow %), unlocked (empty), locked — full picture at a glance.</div>
+    </div>
+    <div class="feature-item">
       <div class="fi-label">Analytics</div>
       <div class="fi-title">PostHog Integration</div>
       <div class="fi-desc">Optional PostHog event tracking. Anonymous player IDs. Disable with <span class="inline-code">QUEST_NO_ANALYTICS=1</span>.</div>
@@ -748,7 +758,7 @@ os.environ.setdefault(<span class="c-string">"QUEST_SKILL_PACKS_DIR"</span>, str
 <span class="c-comment"># Main menu options:</span>
 New Game · Continue · Zone Select · Achievements · Stats
 Review Weak Spots · Export Notes · Daily Challenge
-View Bookmarks · Personal Bests · Set Difficulty · Quit</div>
+View Bookmarks · Personal Bests · Timed Drill · Set Difficulty · Quit</div>
   </div>
 </section>
 
