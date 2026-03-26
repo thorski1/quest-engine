@@ -858,21 +858,44 @@ def render_stats_screen(engine):
     console.print(Align.center(table))
     console.print()
 
-    # Zone mastery table
-    if stats["zones_completed"] > 0:
-        console.print("[bold cyan]  Zone Mastery[/bold cyan]")
-        console.print()
-        mast_table = Table(show_header=True, header_style="dim", box=box.SIMPLE, padding=(0, 2))
-        mast_table.add_column("Zone", style="white")
-        mast_table.add_column("Stars", justify="center")
-        for zone_id in engine.skill_pack.zone_order:
-            if not engine.is_zone_complete(zone_id):
-                continue
-            zone = engine.skill_pack.get_zone(zone_id)
+    # Full zone progress map — all zones, not just completed
+    console.print("[bold cyan]  Zone Progress[/bold cyan]")
+    console.print()
+    prog_table = Table(show_header=True, header_style="dim", box=box.SIMPLE, padding=(0, 2))
+    prog_table.add_column("Zone", style="white", min_width=24)
+    prog_table.add_column("Progress", justify="left", min_width=20)
+    prog_table.add_column("Status", justify="center")
+
+    for zone_id in engine.skill_pack.zone_order:
+        zone = engine.skill_pack.get_zone(zone_id)
+        zone_name = zone["name"] if zone else zone_id
+        total_challenges = len(engine.skill_pack.get_zone_challenges(zone_id))
+        done_count = len(engine.completed_challenges.get(zone_id, set()))
+
+        if engine.is_zone_complete(zone_id):
             stars = engine.get_zone_stars(zone_id)
-            mast_table.add_row(zone["name"] if zone else zone_id, _zone_star_str(stars))
-        console.print(Align.center(mast_table))
-        console.print()
+            bar = "[bold green]" + "█" * 10 + "[/bold green]"
+            pct = "100%"
+            status = _zone_star_str(stars)
+        elif done_count > 0:
+            pct_val = int(done_count / total_challenges * 100) if total_challenges else 0
+            filled = int(done_count / total_challenges * 10) if total_challenges else 0
+            bar = "[yellow]" + "█" * filled + "░" * (10 - filled) + "[/yellow]"
+            pct = f"{pct_val}%"
+            status = "[yellow]In Progress[/yellow]"
+        elif engine.is_zone_unlocked(zone_id):
+            bar = "[dim]" + "░" * 10 + "[/dim]"
+            pct = "0%"
+            status = "[dim]Unlocked[/dim]"
+        else:
+            bar = "[dim]" + "·" * 10 + "[/dim]"
+            pct = "—"
+            status = "[dim]Locked[/dim]"
+
+        prog_table.add_row(zone_name, f"{bar} [dim]{pct}[/dim]", status)
+
+    console.print(Align.center(prog_table))
+    console.print()
 
     _press_enter()
 
