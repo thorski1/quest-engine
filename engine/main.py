@@ -610,9 +610,12 @@ class GameSession:
                 continue
 
             lower = user_input.lower()
+            # Quiz option letters (a/b/c/d) must never be intercepted by shortcuts
+            is_quiz_answer = ctype == "quiz" and lower in ("a", "b", "c", "d")
+
             if lower in ("q", "quit", "menu", ":q"):
                 return None
-            elif lower in ("h", "hint"):
+            elif not is_quiz_answer and lower in ("h", "hint"):
                 diff = getattr(self.engine, "difficulty_mode", "normal")
                 hint_display_cost = 0 if diff == "easy" else (15 if diff == "hard" else 10)
                 cost_ok = self.engine.pay_hint_cost()
@@ -625,10 +628,10 @@ class GameSession:
                     print_warning("Not enough XP for a hint!")
                 _press_enter()
                 continue
-            elif lower in ("l", "lesson"):
+            elif not is_quiz_answer and lower in ("l", "lesson"):
                 show_lesson = not show_lesson
                 continue
-            elif lower in ("b", "bookmark"):
+            elif not is_quiz_answer and lower in ("b", "bookmark"):
                 is_bookmarked = self.engine.toggle_bookmark(zone_id, challenge["id"])
                 if is_bookmarked:
                     console.print("\n[bold yellow]★ Bookmarked![/bold yellow]")
@@ -636,7 +639,7 @@ class GameSession:
                     console.print("\n[dim yellow]★ Bookmark removed[/dim yellow]")
                 _press_enter()
                 continue
-            elif lower in ("d", "difficulty"):
+            elif not is_quiz_answer and lower in ("d", "difficulty"):
                 new_mode = render_difficulty_select()
                 self.engine.difficulty_mode = new_mode
                 self.engine.save()

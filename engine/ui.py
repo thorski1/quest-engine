@@ -1001,15 +1001,15 @@ def render_difficulty_select() -> str:
 
 def render_challenge_menu(has_url: bool = False):
     console.print()
-    url_part = "  [dim cyan][v][/dim cyan][dim] View[/dim]" if has_url else ""
+    url_part = "  [dim cyan][[v]][/dim cyan][dim] View[/dim]" if has_url else ""
     console.print(
-        "  [dim cyan][h][/dim cyan][dim] Hint [/dim][yellow](10 XP)[/yellow]"
-        "  [dim cyan][l][/dim cyan][dim] Lesson"
-        "  [dim cyan][s][/dim cyan][dim] Skip"
-        "  [dim cyan][b][/dim cyan][dim] Bookmark"
-        "  [dim cyan][d][/dim cyan][dim] Difficulty"
-        "  [dim cyan][?][/dim cyan][dim] Help"
-        "  [dim cyan][q][/dim cyan][dim] Menu[/dim]"
+        "  [dim cyan][[h]][/dim cyan][dim] Hint [/dim][yellow](10 XP)[/yellow]"
+        "  [dim cyan][[l]][/dim cyan][dim] Lesson"
+        "  [dim cyan][[s]][/dim cyan][dim] Skip"
+        "  [dim cyan][[b]][/dim cyan][dim] Bookmark"
+        "  [dim cyan][[d]][/dim cyan][dim] Difficulty"
+        "  [dim cyan][[?]][/dim cyan][dim] Help"
+        "  [dim cyan][[q]][/dim cyan][dim] Menu[/dim]"
         + url_part
     )
     console.print()
