@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="intro-page">
+
+  <div class="intro-card">
+
+    <div class="intro-breadcrumb">
+      <a href="/" class="breadcrumb-link">{{ pack.title }}</a>
+      <span class="breadcrumb-sep">›</span>
+      <span>{{ zone.name }}</span>
+    </div>
+
+    <h1 class="intro-zone-name">{{ zone.name }}</h1>
+
+    {% if intro_html %}
+    <div class="intro-narrative narrative-text">
+      {{ intro_html | safe }}
+    </div>
+    {% endif %}
+
+    <div class="intro-actions">
+      <a href="/challenge" class="btn btn-primary btn-lg">
+        {% if theme == "playful" %}
+          Let's Go! →
+        {% else %}
+          Enter Zone →
+        {% endif %}
+      </a>
+      <a href="/" class="btn btn-ghost">Back to Menu</a>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

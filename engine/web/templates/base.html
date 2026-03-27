@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ pack.title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/themes.css">
+  <script src="https://unpkg.com/htmx.org@2.0.2" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<header class="site-header">
+  <a href="/" class="site-logo">{{ pack.title }}</a>
+
+  <nav class="header-nav">
+    <a href="/" class="nav-link">Zones</a>
+    <a href="/achievements" class="nav-link">Achievements</a>
+  </nav>
+
+  <div class="header-stats">
+    <span class="stat-streak" title="Correct streak">
+      {% if streak > 0 %}🔥 {{ streak }}{% endif %}
+    </span>
+    <div class="stat-xp-block">
+      <span class="stat-label">LVL {{ level }}</span>
+      <div class="xp-bar-wrap">
+        <div class="xp-bar-fill" style="width: {{ level_progress_pct }}%"></div>
+      </div>
+      <span class="stat-label">{{ total_xp }} XP</span>
+    </div>
+    <span class="stat-name">{{ player_name }}</span>
+  </div>
+</header>
+
+<!-- ── Main content ─────────────────────────────────────────────────────── -->
+<main class="site-main">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── Footer ──────────────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <span>{{ pack.title }} · <a href="/" class="footer-link">Menu</a></span>
+  <span class="difficulty-badge difficulty-{{ difficulty }}">{{ difficulty }}</span>
+</footer>
+
+</body>
+</html>

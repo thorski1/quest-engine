@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quest-engine"
-version = "1.4.0"
-description = "A pluggable terminal RPG framework for building skill-based learning games."
+version = "1.5.0"
+description = "A pluggable terminal RPG framework for building skill-based learning games — TUI and web modes."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -29,6 +29,12 @@ dependencies = ["rich>=13.0.0"]
 
 [project.optional-dependencies]
 analytics = ["posthog>=3.0.0"]
+web = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0",
+    "jinja2>=3.0.0",
+    "python-multipart>=0.0.6",
+]
 
 [project.urls]
 Homepage      = "https://github.com/thorski1/quest-engine"

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="challenge-page">
+
+  <!-- ── Breadcrumb ──────────────────────────────────────────────────── -->
+  <div class="challenge-breadcrumb">
+    <a href="/" class="breadcrumb-link">{{ pack.title }}</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>{{ zone.name if zone else "" }}</span>
+    <span class="breadcrumb-sep">›</span>
+    <span>{{ challenge_num }}/{{ challenge_total }}</span>
+    {% if is_boss %}
+      <span class="boss-badge">⚡ Boss</span>
+    {% endif %}
+  </div>
+
+  <!-- ── Progress bar ────────────────────────────────────────────────── -->
+  <div class="zone-progress-bar">
+    <div class="zone-progress-fill" style="width: {{ (challenge_num - 1) / challenge_total * 100 if challenge_total else 0 }}%"></div>
+  </div>
+
+  <!-- ── Boss intro ──────────────────────────────────────────────────── -->
+  {% if is_boss and boss_intro %}
+  <div class="boss-intro narrative-text">
+    {{ boss_intro | safe }}
+  </div>
+  {% endif %}
+
+  <!-- ── Challenge card ──────────────────────────────────────────────── -->
+  <div class="challenge-card {% if is_boss %}challenge-boss{% endif %} {% if result %}{% if result.correct %}challenge-correct{% else %}challenge-wrong{% endif %}{% endif %}">
+
+    <!-- Question -->
+    <div class="challenge-prompt">
+      {{ prompt_html | safe }}
+    </div>
+
+    <!-- ── Result feedback (shown after submission) ─────────────────── -->
+    {% if result %}
+    <div class="result-banner {% if result.correct %}result-correct{% else %}result-wrong{% endif %}">
+      {% if result.correct %}
+        <span class="result-icon">✓</span>
+        <div class="result-body">
+          <strong>{{ result.message }}</strong>
+          <span class="xp-gained">+{{ result.actual_xp }} XP</span>
+          {% if result.level_up %}
+            <span class="level-up-badge">🎉 Level Up! {{ result.level }} — {{ result.level_title }}</span>
+          {% endif %}
+          {% for ach_id in result.new_achievements %}
+            <span class="achievement-badge">🏆 Achievement Unlocked!</span>
+          {% endfor %}
+        </div>
+      {% else %}
+        <span class="result-icon">✗</span>
+        <div class="result-body">
+          <strong>{{ result.message }}</strong>
+          <span class="result-hint-nudge">Study the lesson below and try again.</span>
+        </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── Hint banner ──────────────────────────────────────────────── -->
+    {% if hint_text %}
+    <div class="hint-banner">
+      <span class="hint-icon">💡</span>
+      <span class="hint-text">{{ hint_text }}</span>
+    </div>
+    {% endif %}
+
+    <!-- ── Answer area ──────────────────────────────────────────────── -->
+    {% if result and result.correct %}
+
+      <!-- After correct answer: show next-challenge action -->
+      {% if result.zone_complete %}
+        <div class="zone-complete-banner">
+          {% if result.pack_complete %}
+            <p class="zone-complete-text">🎉 Pack Complete! You finished everything!</p>
+            <a href="/complete" class="btn btn-primary btn-lg">See Results</a>
+          {% else %}
+            <p class="zone-complete-text">✨ Zone Complete!</p>
+            <a href="/zone/{{ result.next_zone_id }}/intro" class="btn btn-primary btn-lg">Next Zone →</a>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="next-challenge-action">
+          <a href="/challenge" class="btn btn-primary btn-lg">
+            {% if theme == "playful" %}Next Question →{% else %}Next Challenge →{% endif %}
+          </a>
+        </div>
+      {% endif %}
+
+    {% elif ctype == "quiz" %}
+
+      <!-- Multiple choice buttons -->
+      <div class="options-grid">
+        {% for option in options %}
+          {% set letter = ["a","b","c","d"][loop.index0] %}
+          <form method="POST" action="/answer" class="option-form">
+            <input type="hidden" name="answer" value="{{ letter }}">
+            <button
+              type="submit"
+              class="option-btn
+                {% if result and submitted_answer == letter %}
+                  {% if not result.correct %}option-selected-wrong{% endif %}
+                {% endif %}"
+            >
+              <span class="option-letter">{{ letter.upper() }}</span>
+              <span class="option-text">{{ option | replace("A) ", "") | replace("B) ", "") | replace("C) ", "") | replace("D) ", "") }}</span>
+            </button>
+          </form>
+        {% endfor %}
+      </div>
+
+    {% else %}
+
+      <!-- Free-text answer -->
+      <form method="POST" action="/answer" class="text-answer-form" id="answer-form">
+        <div class="text-input-row">
+          <input
+            type="text"
+            name="answer"
+            class="text-answer-input"
+            placeholder="Type your answer..."
+            autocomplete="off"
+            autofocus
+            {% if result and not result.correct %}value="{{ submitted_answer }}"{% endif %}
+          >
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+
+    {% endif %}
+
+    <!-- ── Lesson panel ─────────────────────────────────────────────── -->
+    {% if lesson_html %}
+    <details class="lesson-panel" {% if show_lesson %}open{% endif %}>
+      <summary class="lesson-summary">
+        <span class="lesson-toggle-icon">📖</span> Lesson
+      </summary>
+      <div class="lesson-content narrative-text">
+        {{ lesson_html | safe }}
+      </div>
+    </details>
+    {% endif %}
+
+  </div>
+
+  <!-- ── Action bar ──────────────────────────────────────────────────── -->
+  {% if not (result and result.correct) %}
+  <div class="action-bar">
+    <form method="POST" action="/hint">
+      <button type="submit" class="action-btn" title="Get a hint (-10 XP)">
+        💡 <span class="action-label">Hint</span>
+      </button>
+    </form>
+
+    {% if url %}
+    <a href="{{ url }}" target="_blank" rel="noopener" class="action-btn" title="Open reference resource">
+      🔗 <span class="action-label">Reference</span>
+    </a>
+    {% endif %}
+
+    <form method="POST" action="/bookmark">
+      <button type="submit" class="action-btn" title="Bookmark this challenge">
+        🔖 <span class="action-label">Bookmark</span>
+      </button>
+    </form>
+
+    <form method="POST" action="/skip">
+      <button type="submit" class="action-btn action-btn-warn" title="Skip this challenge">
+        ⏭ <span class="action-label">Skip</span>
+      </button>
+    </form>
+
+    <a href="/" class="action-btn action-btn-ghost" title="Return to menu">
+      ☰ <span class="action-label">Menu</span>
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="menu-page">
+
+  <!-- ── Hero ──────────────────────────────────────────────────────────── -->
+  <section class="menu-hero">
+    <h1 class="menu-title">{{ pack.title }}</h1>
+    <p class="menu-subtitle">{{ pack.subtitle | replace("◈", "◈") }}</p>
+
+    <div class="menu-actions">
+      {% if has_progress %}
+        <form method="POST" action="/continue">
+          <button type="submit" class="btn btn-primary btn-lg">Continue Quest</button>
+        </form>
+        <form method="POST" action="/new-game" id="new-game-form" style="display:none">
+          <input type="hidden" name="player_name" id="ng-name-input" value="">
+          <button type="submit">go</button>
+        </form>
+        <button class="btn btn-ghost" onclick="showNewGameDialog()">New Game</button>
+      {% else %}
+        <div class="new-game-inline">
+          <form method="POST" action="/new-game" class="name-form">
+            <label class="name-label">
+              {{ pack.name_prompt | replace("[bold cyan]", "") | replace("[/bold cyan]", "") }}
+            </label>
+            <div class="name-row">
+              <input
+                type="text"
+                name="player_name"
+                placeholder="{{ pack.default_player_name }}"
+                class="name-input"
+                maxlength="24"
+                autofocus
+              >
+              <button type="submit" class="btn btn-primary">Begin</button>
+            </div>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ── Zones ─────────────────────────────────────────────────────────── -->
+  <section class="zone-grid-section">
+    <h2 class="section-title">Zones</h2>
+    <div class="zone-grid">
+      {% for zone in zones %}
+      <a
+        href="/zone/{{ zone.id }}/intro"
+        class="zone-card
+          {% if zone.completed %} zone-done{% endif %}
+          {% if zone.is_current and not zone.completed %} zone-active{% endif %}
+          {% if zone.in_progress and not zone.completed %} zone-progress{% endif %}"
+      >
+        <div class="zone-card-inner">
+          <span class="zone-status-icon">
+            {% if zone.completed %}
+              {% if zone.stars == 3 %}★★★{% elif zone.stars == 2 %}★★☆{% else %}★☆☆{% endif %}
+            {% elif zone.in_progress %}◐{% else %}○{% endif %}
+          </span>
+          <span class="zone-name">{{ zone.name }}</span>
+          {% if zone.in_progress and not zone.completed %}
+            <span class="zone-progress-pill">{{ zone.done }}/{{ zone.total }}</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+
+<!-- New game dialog (only shown when continuing) -->
+<dialog id="new-game-dialog" class="modal">
+  <div class="modal-box">
+    <h3 class="modal-title">Start a New Game?</h3>
+    <p class="modal-body">This will reset all your progress. Your name:</p>
+    <input type="text" id="dialog-name" class="name-input" placeholder="{{ pack.default_player_name }}" maxlength="24">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('new-game-dialog').close()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmNewGame()">Reset & Start</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+function showNewGameDialog() {
+  document.getElementById('new-game-dialog').showModal();
+  document.getElementById('dialog-name').focus();
+}
+function confirmNewGame() {
+  const name = document.getElementById('dialog-name').value.trim();
+  document.getElementById('ng-name-input').value = name;
+  document.getElementById('new-game-form').submit();
+}
+</script>
+
+{% endblock %}

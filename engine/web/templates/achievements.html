@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="achievements-page">
+
+  <div class="page-header">
+    <h1 class="page-title">Achievements</h1>
+    <a href="/" class="btn btn-ghost">← Back</a>
+  </div>
+
+  <div class="achievements-grid">
+    {% for ach in achievements %}
+    <div class="achievement-card {% if ach.unlocked %}ach-unlocked{% else %}ach-locked{% endif %}">
+      <span class="ach-icon">{% if ach.unlocked %}🏆{% else %}🔒{% endif %}</span>
+      <div class="ach-text">
+        <strong class="ach-name">{{ ach.name }}</strong>
+        <span class="ach-desc">{{ ach.description }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+{% endblock %}

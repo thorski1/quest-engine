@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="complete-page">
+  <div class="complete-card">
+    <div class="complete-icon">🎉</div>
+    <h1 class="complete-title">{{ pack.title }} Complete!</h1>
+    <p class="complete-subtitle">{{ pack.subtitle }}</p>
+
+    <div class="complete-stats">
+      <div class="complete-stat">
+        <span class="cstat-value">{{ total_xp }}</span>
+        <span class="cstat-label">Total XP</span>
+      </div>
+      <div class="complete-stat">
+        <span class="cstat-value">{{ level }}</span>
+        <span class="cstat-label">Level</span>
+      </div>
+      <div class="complete-stat">
+        <span class="cstat-value">{{ completed_zones }}/{{ total_zones }}</span>
+        <span class="cstat-label">Zones</span>
+      </div>
+    </div>
+
+    <div class="complete-actions">
+      <a href="/achievements" class="btn btn-primary">View Achievements</a>
+      <a href="/" class="btn btn-ghost">Play Again</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
