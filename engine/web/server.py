@@ -86,7 +86,7 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
         zones = session.all_zones_context()
-        return templates.TemplateResponse("menu.html", _ctx(
+        return templates.TemplateResponse(request, "menu.html", _ctx(
             request,
             zones=zones,
             has_progress=session.has_progress(),
@@ -116,7 +116,7 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
             return RedirectResponse("/", status_code=303)
         session.start_zone(zone_id)
         intro_text = skill_pack.zone_intros.get(zone_id, "")
-        return templates.TemplateResponse("zone_intro.html", _ctx(
+        return templates.TemplateResponse(request, "zone_intro.html", _ctx(
             request,
             zone=zone,
             zone_id=zone_id,
@@ -149,7 +149,7 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
         if ctype == "live":
             ctype = "text"
 
-        return templates.TemplateResponse("challenge.html", _ctx(
+        return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge,
             challenge_num=num,
@@ -191,7 +191,7 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
         next_challenge = session.get_current_challenge() if result.correct else challenge
         next_num, _ = session.challenge_position()
 
-        return templates.TemplateResponse("challenge.html", _ctx(
+        return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge,
             challenge_num=num if not result.correct else next_num,
@@ -221,7 +221,7 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
         if ctype == "live":
             ctype = "text"
 
-        return templates.TemplateResponse("challenge.html", _ctx(
+        return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge,
             challenge_num=num,
@@ -259,7 +259,7 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
     @app.get("/achievements", response_class=HTMLResponse)
     async def achievements_page(request: Request):
         achievements = session.achievements_context()
-        return templates.TemplateResponse("achievements.html", _ctx(
+        return templates.TemplateResponse(request, "achievements.html", _ctx(
             request,
             achievements=achievements,
         ))
@@ -267,7 +267,7 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
     @app.get("/zones", response_class=HTMLResponse)
     async def zones_page(request: Request):
         zones = session.all_zones_context()
-        return templates.TemplateResponse("menu.html", _ctx(
+        return templates.TemplateResponse(request, "menu.html", _ctx(
             request,
             zones=zones,
             has_progress=session.has_progress(),
@@ -276,7 +276,7 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
 
     @app.get("/complete", response_class=HTMLResponse)
     async def pack_complete(request: Request):
-        return templates.TemplateResponse("complete.html", _ctx(
+        return templates.TemplateResponse(request, "complete.html", _ctx(
             request,
             completed_zones=len(session.engine.completed_zones),
             total_zones=len(skill_pack.zone_order),

@@ -23,6 +23,10 @@ Quest Engine is the pure game loop — XP, levels, saves, difficulty, daily chal
 
 You bring the content (zones and challenges). The engine handles everything else.
 
+**Two play modes, zero config:**
+- **Terminal (TUI)** — Rich-powered full-color terminal interface
+- **Web** — FastAPI + HTMX browser interface with dual theming (cyberpunk / playful)
+
 ---
 
 ## Install
@@ -32,7 +36,61 @@ git clone https://github.com/thorski1/quest-engine
 pip install -e ./quest-engine
 ```
 
+For web mode:
+
+```bash
+pip install -e './quest-engine[web]'
+```
+
 **Requirements:** Python 3.10+, `rich >= 13.0.0`
+
+---
+
+## Web Mode
+
+Quest Engine includes a built-in web interface. Any game built on it gets a browser UI for free by passing `--web` to its entry point:
+
+```bash
+nexus-quest --web      # opens http://localhost:8080
+primer --web
+```
+
+The web server is a FastAPI app (`engine/web/server.py`) serving Jinja2 templates with HTMX for partial page updates — no JS build step, no webpack, no Node.
+
+### Theming
+
+The interface auto-selects a theme based on `SkillPack.kids_mode`:
+
+| Theme | `kids_mode` | Colors | Font |
+|-------|-------------|--------|------|
+| `cyberpunk` | `False` | Dark navy · Neon green · Cyan | JetBrains Mono |
+| `playful` | `True` | Warm cream · Purple · Rounded | Nunito |
+
+### Adding Web Mode to Your Game
+
+Add `--web` handling to your entry point:
+
+```python
+# your_game/main.py
+import sys
+from pathlib import Path
+
+_HERE = Path(__file__).parent
+_PACKS_DIR = str(_HERE / "skill-packs")
+_WEB = "--web" in sys.argv
+
+def main():
+    if _WEB:
+        from engine.web.server import serve
+        serve("my_pack", port=8080, packs_dir=_PACKS_DIR)
+        return
+    from engine.main import run
+    run("my_pack")
+```
+
+### Vercel Deployment
+
+Games can be deployed as serverless web apps on Vercel. See the `api/index.py` pattern in [nexus-quest](https://github.com/thorski1/nexus-quest) or [primer](https://github.com/thorski1/primer) for a reference implementation.
 
 ---
 

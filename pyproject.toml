@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quest-engine"
-version = "1.5.0"
+version = "1.5.1"
 description = "A pluggable terminal RPG framework for building skill-based learning games — TUI and web modes."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -44,3 +44,10 @@ Repository    = "https://github.com/thorski1/quest-engine"
 [tool.setuptools.packages.find]
 where   = ["."]
 include = ["engine*"]
+
+[tool.setuptools.package-data]
+engine = [
+    "web/templates/*.html",
+    "web/static/*.css",
+    "web/static/*.js",
+]
