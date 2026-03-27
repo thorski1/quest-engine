@@ -6,7 +6,7 @@
 
   <!-- ── Breadcrumb ──────────────────────────────────────────────────── -->
   <div class="challenge-breadcrumb">
-    <a href="/" class="breadcrumb-link">{{ pack.title }}</a>
+    <a href="{{ pack_url_prefix }}/" class="breadcrumb-link">{{ pack.title }}</a>
     <span class="breadcrumb-sep">›</span>
     <span>{{ zone.name if zone else "" }}</span>
     <span class="breadcrumb-sep">›</span>
@@ -77,15 +77,15 @@
         <div class="zone-complete-banner">
           {% if result.pack_complete %}
             <p class="zone-complete-text">🎉 Pack Complete! You finished everything!</p>
-            <a href="/complete" class="btn btn-primary btn-lg">See Results</a>
+            <a href="{{ pack_url_prefix }}/complete" class="btn btn-primary btn-lg">See Results</a>
           {% else %}
             <p class="zone-complete-text">✨ Zone Complete!</p>
-            <a href="/zone/{{ result.next_zone_id }}/intro" class="btn btn-primary btn-lg">Next Zone →</a>
+            <a href="{{ pack_url_prefix }}/zone/{{ result.next_zone_id }}/intro" class="btn btn-primary btn-lg">Next Zone →</a>
           {% endif %}
         </div>
       {% else %}
         <div class="next-challenge-action">
-          <a href="/challenge" class="btn btn-primary btn-lg">
+          <a href="{{ pack_url_prefix }}/challenge" class="btn btn-primary btn-lg">
             {% if theme == "playful" %}Next Question →{% else %}Next Challenge →{% endif %}
           </a>
         </div>
@@ -97,7 +97,7 @@
       <div class="options-grid">
         {% for option in options %}
           {% set letter = ["a","b","c","d"][loop.index0] %}
-          <form method="POST" action="/answer" class="option-form">
+          <form method="POST" action="{{ pack_url_prefix }}/answer" class="option-form">
             <input type="hidden" name="answer" value="{{ letter }}">
             <button
               type="submit"
@@ -116,7 +116,7 @@
     {% else %}
 
       <!-- Free-text answer -->
-      <form method="POST" action="/answer" class="text-answer-form" id="answer-form">
+      <form method="POST" action="{{ pack_url_prefix }}/answer" class="text-answer-form" id="answer-form">
         <div class="text-input-row">
           <input
             type="text"
@@ -150,7 +150,7 @@
   <!-- ── Action bar ──────────────────────────────────────────────────── -->
   {% if not (result and result.correct) %}
   <div class="action-bar">
-    <form method="POST" action="/hint">
+    <form method="POST" action="{{ pack_url_prefix }}/hint">
       <button type="submit" class="action-btn" title="Get a hint (-10 XP)">
         💡 <span class="action-label">Hint</span>
       </button>
@@ -162,19 +162,19 @@
     </a>
     {% endif %}
 
-    <form method="POST" action="/bookmark">
+    <form method="POST" action="{{ pack_url_prefix }}/bookmark">
       <button type="submit" class="action-btn" title="Bookmark this challenge">
         🔖 <span class="action-label">Bookmark</span>
       </button>
     </form>
 
-    <form method="POST" action="/skip">
+    <form method="POST" action="{{ pack_url_prefix }}/skip">
       <button type="submit" class="action-btn action-btn-warn" title="Skip this challenge">
         ⏭ <span class="action-label">Skip</span>
       </button>
     </form>
 
-    <a href="/" class="action-btn action-btn-ghost" title="Return to menu">
+    <a href="{{ pack_url_prefix }}/" class="action-btn action-btn-ghost" title="Return to menu">
       ☰ <span class="action-label">Menu</span>
     </a>
   </div>

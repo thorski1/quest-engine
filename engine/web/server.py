@@ -46,8 +46,13 @@ def _session(pack_id: str) -> WebGameSession:
 
 # ── App factory ───────────────────────────────────────────────────────────────
 
-def create_app(skill_pack: SkillPack) -> FastAPI:
-    """Build and return a FastAPI app wired to *skill_pack*."""
+def create_app(skill_pack: SkillPack, url_prefix: str = "") -> FastAPI:
+    """Build and return a FastAPI app wired to *skill_pack*.
+
+    *url_prefix* is an optional path prefix (e.g. ``"/bash"``) used when this
+    app is mounted inside a hub.  All redirects and template URLs use it so
+    that standalone mode (``url_prefix=""``) is unchanged.
+    """
 
     pack_id = skill_pack.id
 
@@ -76,6 +81,7 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
             "request": request,
             "theme": theme,
             "pack": skill_pack,
+            "pack_url_prefix": url_prefix,
             **session.stats_context(),
             **extra,
         }
@@ -101,19 +107,19 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
         name = player_name.strip() or skill_pack.default_player_name
         session.new_game(name)
         first_zone = skill_pack.zone_order[0]
-        return RedirectResponse(f"/zone/{first_zone}/intro", status_code=303)
+        return RedirectResponse(f"{url_prefix}/zone/{first_zone}/intro", status_code=303)
 
     @app.post("/continue", response_class=HTMLResponse)
     async def continue_game(request: Request):
         if not session.has_progress():
-            return RedirectResponse("/", status_code=303)
-        return RedirectResponse("/challenge", status_code=303)
+            return RedirectResponse(f"{url_prefix}/", status_code=303)
+        return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
 
     @app.get("/zone/{zone_id}/intro", response_class=HTMLResponse)
     async def zone_intro(request: Request, zone_id: str):
         zone = skill_pack.get_zone(zone_id)
         if not zone:
-            return RedirectResponse("/", status_code=303)
+            return RedirectResponse(f"{url_prefix}/", status_code=303)
         session.start_zone(zone_id)
         intro_text = skill_pack.zone_intros.get(zone_id, "")
         return templates.TemplateResponse(request, "zone_intro.html", _ctx(
@@ -131,8 +137,8 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
             zone_id = session.engine.current_zone
             next_id = session._next_zone_id(zone_id)
             if next_id:
-                return RedirectResponse(f"/zone/{next_id}/intro", status_code=303)
-            return RedirectResponse("/complete", status_code=303)
+                return RedirectResponse(f"{url_prefix}/zone/{next_id}/intro", status_code=303)
+            return RedirectResponse(f"{url_prefix}/complete", status_code=303)
 
         zone = session.get_current_zone()
         num, total = session.challenge_position()
@@ -174,11 +180,11 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
         answer: str = Form(default=""),
     ):
         if not answer.strip():
-            return RedirectResponse("/challenge", status_code=303)
+            return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
 
         challenge = session.get_current_challenge()
         if not challenge:
-            return RedirectResponse("/challenge", status_code=303)
+            return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
 
         result = session.submit_answer(answer.strip())
         zone = session.get_current_zone()
@@ -243,18 +249,18 @@ def create_app(skill_pack: SkillPack) -> FastAPI:
     @app.post("/skip", response_class=HTMLResponse)
     async def skip_challenge(request: Request):
         session.skip_challenge()
-        return RedirectResponse("/challenge", status_code=303)
+        return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
 
     @app.post("/bookmark", response_class=HTMLResponse)
     async def toggle_bookmark(request: Request):
         bookmarked = session.toggle_bookmark()
         # Return to challenge page
-        return RedirectResponse("/challenge", status_code=303)
+        return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
 
     @app.post("/difficulty", response_class=HTMLResponse)
     async def set_difficulty(request: Request, mode: str = Form(default="normal")):
         session.set_difficulty(mode)
-        return RedirectResponse("/challenge", status_code=303)
+        return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
 
     @app.get("/achievements", response_class=HTMLResponse)
     async def achievements_page(request: Request):

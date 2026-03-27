@@ -15,11 +15,11 @@
 
 <!-- ── Header ──────────────────────────────────────────────────────────── -->
 <header class="site-header">
-  <a href="/" class="site-logo">{{ pack.title }}</a>
+  <a href="{{ pack_url_prefix }}/" class="site-logo">{{ pack.title }}</a>
 
   <nav class="header-nav">
-    <a href="/" class="nav-link">Zones</a>
-    <a href="/achievements" class="nav-link">Achievements</a>
+    <a href="{{ pack_url_prefix }}/" class="nav-link">Zones</a>
+    <a href="{{ pack_url_prefix }}/achievements" class="nav-link">Achievements</a>
   </nav>
 
   <div class="header-stats">
@@ -44,7 +44,7 @@
 
 <!-- ── Footer ──────────────────────────────────────────────────────────── -->
 <footer class="site-footer">
-  <span>{{ pack.title }} · <a href="/" class="footer-link">Menu</a></span>
+  <span>{{ pack.title }} · <a href="{{ pack_url_prefix }}/" class="footer-link">Menu</a></span>
   <span class="difficulty-badge difficulty-{{ difficulty }}">{{ difficulty }}</span>
 </footer>
 

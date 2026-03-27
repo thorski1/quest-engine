@@ -7,7 +7,7 @@
   <div class="intro-card">
 
     <div class="intro-breadcrumb">
-      <a href="/" class="breadcrumb-link">{{ pack.title }}</a>
+      <a href="{{ pack_url_prefix }}/" class="breadcrumb-link">{{ pack.title }}</a>
       <span class="breadcrumb-sep">›</span>
       <span>{{ zone.name }}</span>
     </div>
@@ -21,14 +21,14 @@
     {% endif %}
 
     <div class="intro-actions">
-      <a href="/challenge" class="btn btn-primary btn-lg">
+      <a href="{{ pack_url_prefix }}/challenge" class="btn btn-primary btn-lg">
         {% if theme == "playful" %}
           Let's Go! →
         {% else %}
           Enter Zone →
         {% endif %}
       </a>
-      <a href="/" class="btn btn-ghost">Back to Menu</a>
+      <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Back to Menu</a>
     </div>
 
   </div>

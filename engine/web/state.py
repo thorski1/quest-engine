@@ -60,6 +60,9 @@ class WebGameSession:
         # Track message to show after zone completion
         self._pending_zone_complete: Optional[str] = None
 
+        # Challenges skipped this zone (temporarily bypassed, revisited at end)
+        self._skipped_ids: set[str] = set()
+
     # ── Navigation ────────────────────────────────────────────────────────────
 
     def start_zone(self, zone_id: str):
@@ -67,6 +70,7 @@ class WebGameSession:
         self.engine.current_zone = zone_id
         self.hints_used_this_zone = 0
         self._hint_index = 0
+        self._skipped_ids.clear()
         self.engine.save()
 
     def get_current_zone(self) -> Optional[dict]:
@@ -76,15 +80,30 @@ class WebGameSession:
         return self.skill_pack.get_zone(zone_id)
 
     def get_current_challenge(self) -> Optional[dict]:
-        """Return the first incomplete challenge in the current zone, or None."""
+        """Return the next unanswered challenge in the current zone, or None.
+
+        Skipped challenges are bypassed on the first pass; once all non-skipped
+        challenges are answered the skipped ones are re-queued.
+        """
         zone_id = self.engine.current_zone
         if not zone_id:
             return None
         challenges = self.skill_pack.get_zone_challenges(zone_id)
         completed = self.engine.challenges_completed_in_zone(zone_id)
+
+        # First pass: find an incomplete, non-skipped challenge
         for ch in challenges:
-            if ch["id"] not in completed:
+            if ch["id"] not in completed and ch["id"] not in self._skipped_ids:
                 return ch
+
+        # All non-skipped done — clear skip set and retry skipped ones
+        if self._skipped_ids:
+            self._skipped_ids.clear()
+            self._hint_index = 0
+            for ch in challenges:
+                if ch["id"] not in completed:
+                    return ch
+
         return None
 
     def challenge_position(self) -> tuple[int, int]:
@@ -197,11 +216,11 @@ class WebGameSession:
         challenge = self.get_current_challenge()
         if not challenge:
             return
-        zone_id = self.engine.current_zone
-        self.engine.record_incorrect()
-        # Don't mark complete — it'll stay in the queue until answered correctly.
-        # Just move to next by advancing _hint_index to fresh state.
+        # Add to the skip set so get_current_challenge() bypasses it this pass.
+        # The challenge stays incomplete and will be re-queued after the rest.
+        self._skipped_ids.add(challenge["id"])
         self._hint_index = 0
+        self.engine.record_incorrect()
         self.engine.save()
 
     def toggle_bookmark(self) -> bool:

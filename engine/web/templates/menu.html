@@ -11,17 +11,17 @@
 
     <div class="menu-actions">
       {% if has_progress %}
-        <form method="POST" action="/continue">
+        <form method="POST" action="{{ pack_url_prefix }}/continue">
           <button type="submit" class="btn btn-primary btn-lg">Continue Quest</button>
         </form>
-        <form method="POST" action="/new-game" id="new-game-form" style="display:none">
+        <form method="POST" action="{{ pack_url_prefix }}/new-game" id="new-game-form" style="display:none">
           <input type="hidden" name="player_name" id="ng-name-input" value="">
           <button type="submit">go</button>
         </form>
         <button class="btn btn-ghost" onclick="showNewGameDialog()">New Game</button>
       {% else %}
         <div class="new-game-inline">
-          <form method="POST" action="/new-game" class="name-form">
+          <form method="POST" action="{{ pack_url_prefix }}/new-game" class="name-form">
             <label class="name-label">
               {{ pack.name_prompt | replace("[bold cyan]", "") | replace("[/bold cyan]", "") }}
             </label>
@@ -48,7 +48,7 @@
     <div class="zone-grid">
       {% for zone in zones %}
       <a
-        href="/zone/{{ zone.id }}/intro"
+        href="{{ pack_url_prefix }}/zone/{{ zone.id }}/intro"
         class="zone-card
           {% if zone.completed %} zone-done{% endif %}
           {% if zone.is_current and not zone.completed %} zone-active{% endif %}
