@@ -198,7 +198,7 @@ def get_store() -> BaseStore:
     # Check env override
     backend = os.environ.get("QUEST_STORAGE", "").lower()
     save_dir = os.environ.get("QUEST_SAVE_DIR", "")
-    database_url = os.environ.get("QUEST_DATABASE_URL", "") or os.environ.get("DATABASE_URL", "")
+    database_url = (os.environ.get("QUEST_DATABASE_URL", "") or os.environ.get("DATABASE_URL", "")).strip()
 
     if backend == "postgres" or (not backend and database_url):
         from .storage_postgres import PostgresStore
