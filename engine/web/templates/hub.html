@@ -16,7 +16,7 @@
 </head>
 <body>
 <header class="site-header">
-  <span class="site-logo">{% if theme == "playful" %}✨ The Primer{% else %}Quest Engine{% endif %}</span>
+  <span class="site-logo">{% if theme == "playful" %}✨ The Primer{% elif theme == "neural" %}🧠 AI Academy{% else %}Quest Engine{% endif %}</span>
   <nav class="header-nav"></nav>
   <div class="header-stats">
     <span class="hub-total-stats">{{ packs | length }} chapters · {{ total_challenges }} challenges</span>
@@ -25,8 +25,8 @@
 <main class="site-main">
   <div class="hub-page">
     <div class="hub-hero">
-      <h1 class="hub-title">{% if theme == "playful" %}Choose Your Adventure{% else %}Choose Your Chapter{% endif %}</h1>
-      <p class="hub-subtitle">{% if theme == "playful" %}Pick a chapter and Puck will guide you!{% else %}Select a skill domain to begin your training{% endif %}</p>
+      <h1 class="hub-title">{% if theme == "playful" %}Choose Your Adventure{% elif theme == "neural" %}Choose Your Path{% else %}Choose Your Chapter{% endif %}</h1>
+      <p class="hub-subtitle">{% if theme == "playful" %}Pick a chapter and Puck will guide you!{% elif theme == "neural" %}ARIA will guide you from AI basics to the frontier{% else %}Select a skill domain to begin your training{% endif %}</p>
     </div>
     <div class="hub-grid">
       {% for pack in packs %}

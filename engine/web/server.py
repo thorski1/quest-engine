@@ -61,7 +61,7 @@ def create_app(skill_pack: SkillPack, url_prefix: str = "") -> FastAPI:
         _sessions[pack_id] = WebGameSession(skill_pack)
     session = _sessions[pack_id]
 
-    theme = "playful" if skill_pack.kids_mode else "cyberpunk"
+    theme = skill_pack.theme or ("playful" if skill_pack.kids_mode else "cyberpunk")
 
     app = FastAPI(title=skill_pack.title, docs_url=None, redoc_url=None)
 

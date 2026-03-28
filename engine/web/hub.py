@@ -60,14 +60,15 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
                 "id": pack.id,
                 "title": pack.title,
                 "subtitle": pack.subtitle,
-                "theme": "playful" if pack.kids_mode else "cyberpunk",
+                "theme": pack.theme or ("playful" if pack.kids_mode else "cyberpunk"),
                 "has_progress": session.has_progress(),
                 "completed_zones": len(session.engine.completed_zones),
                 "total_zones": len(pack.zone_order),
                 "total_xp": session.engine.total_xp,
             })
-        # Use playful theme if all packs are kids_mode; cyberpunk otherwise
-        hub_theme = "playful" if all(p.kids_mode for p in skill_packs) else "cyberpunk"
+        # Hub theme: use the most common theme among packs
+        themes = [p.theme or ("playful" if p.kids_mode else "cyberpunk") for p in skill_packs]
+        hub_theme = max(set(themes), key=themes.count)
         total_challenges = sum(
             sum(len(z.get("challenges", [])) for z in p.zones.values())
             for p in skill_packs
@@ -93,7 +94,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     """Register all routes for one pack under /{pack_id}/."""
     pack_id = skill_pack.id
     prefix = f"/{pack_id}"
-    theme = "playful" if skill_pack.kids_mode else "cyberpunk"
+    theme = skill_pack.theme or ("playful" if skill_pack.kids_mode else "cyberpunk")
 
     def _session() -> WebGameSession:
         return _sessions[pack_id]

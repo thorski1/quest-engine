@@ -54,6 +54,10 @@ class SkillPack:
     # Optional: kids_mode — if True, challenge runner uses kid-friendly praise phrases
     kids_mode: bool = False
 
+    # Optional: explicit theme override ("cyberpunk", "playful", "neural").
+    # If None, auto-detected: kids_mode=True → "playful", else "cyberpunk".
+    theme: Optional[str] = None
+
     def get_zone(self, zone_id: str) -> dict:
         return self.zones.get(zone_id, {})
 

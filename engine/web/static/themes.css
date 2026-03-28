@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Quest Engine Web — Theme System
-   Two themes: cyberpunk (nexus-quest) + playful (primer)
-   Both defined via CSS custom properties on [data-theme].
+   Three themes: cyberpunk (nexus-quest) + playful (primer) + neural (ai-academy)
+   All defined via CSS custom properties on [data-theme].
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Accessibility ─────────────────────────────────────────────────────── */
@@ -181,6 +181,99 @@ details > summary::-webkit-details-marker { display: none; }
   --zone-done-border:  #66bb6a;
   --zone-active-border: var(--primary);
   --zone-progress-border: var(--warn);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   NEURAL THEME — ai-academy, clean modern AI aesthetic
+   ══════════════════════════════════════════════════════════════════════════ */
+[data-theme="neural"] {
+  --bg:            #0c0c1e;
+  --bg-surface:    #141430;
+  --bg-raised:     #1a1a40;
+  --border:        #2a2a5a;
+  --border-bright: #3a3a7a;
+
+  --primary:       #7c6cf0;     /* electric purple */
+  --primary-dim:   #5a4cc8;
+  --secondary:     #22d3ee;     /* bright cyan */
+  --accent:        #f472b6;     /* pink */
+  --warn:          #fbbf24;
+
+  --text:          #c4c4e0;
+  --text-bright:   #ededff;
+  --text-dim:      rgba(196, 196, 224, 0.45);
+
+  --font: 'JetBrains Mono', 'Fira Code', system-ui, monospace;
+  --font-size: 14px;
+  --radius: 8px;
+  --radius-lg: 12px;
+
+  --header-bg:     #0a0a1a;
+  --header-border: #1e1e44;
+
+  --xp-bar-bg:     #1a1a40;
+  --xp-bar-fill:   linear-gradient(90deg, var(--primary), var(--secondary));
+
+  --btn-primary-bg:    var(--primary);
+  --btn-primary-text:  #fff;
+  --btn-ghost-border:  var(--border-bright);
+  --btn-ghost-text:    var(--secondary);
+  --btn-danger-bg:     var(--accent);
+  --btn-danger-text:   #fff;
+
+  --card-bg:       var(--bg-surface);
+  --card-border:   var(--border);
+  --card-shadow:   0 0 24px rgba(124, 108, 240, 0.08);
+  --card-boss-border: var(--accent);
+  --card-boss-glow: 0 0 30px rgba(244, 114, 182, 0.15);
+
+  --option-bg:         var(--bg-raised);
+  --option-border:     var(--border);
+  --option-hover-bg:   #222250;
+  --option-hover-border: var(--secondary);
+  --option-hover-text: var(--secondary);
+
+  --correct-bg:    rgba(124, 108, 240, 0.08);
+  --correct-border: var(--primary);
+  --wrong-bg:      rgba(244, 114, 182, 0.08);
+  --wrong-border:  var(--accent);
+
+  --lesson-bg:     rgba(34, 211, 238, 0.05);
+  --lesson-border: var(--border);
+
+  --hint-bg:       rgba(251, 191, 36, 0.08);
+  --hint-border:   var(--warn);
+
+  --zone-done-bg:      rgba(124, 108, 240, 0.06);
+  --zone-done-border:  var(--primary);
+  --zone-active-border: var(--secondary);
+  --zone-progress-border: var(--warn);
+}
+
+/* Neural theme: subtle gradient mesh background */
+[data-theme="neural"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(124, 108, 240, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(34, 211, 238, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+[data-theme="neural"] .site-logo { color: var(--primary); }
+[data-theme="neural"] .hub-card:hover .hub-card-title {
+  text-shadow: 0 0 12px rgba(124, 108, 240, 0.4);
+}
+[data-theme="neural"] .hub-card:hover {
+  box-shadow: 0 0 24px rgba(124, 108, 240, 0.12), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+[data-theme="neural"] .hub-card::before {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+}
+[data-theme="neural"] .xp-bar-fill {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
