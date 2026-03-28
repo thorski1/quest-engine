@@ -1,5 +1,30 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<style>
+  .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; overflow: hidden; }
+  .confetti-piece {
+    position: absolute;
+    width: 10px; height: 10px;
+    top: -20px;
+    animation: confetti-fall 2.5s ease-out forwards;
+    border-radius: 2px;
+  }
+  @keyframes confetti-fall {
+    0%   { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.3); }
+  }
+  .share-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.45rem 0.85rem; border-radius: var(--radius);
+    background: #1da1f2; color: #fff; font-size: 0.8rem; font-weight: 600;
+    transition: opacity 0.15s;
+  }
+  .share-btn:hover { opacity: 0.85; color: #fff; }
+  [data-theme="playful"] .share-btn { border-radius: 100px; }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div class="challenge-page">
@@ -77,10 +102,16 @@
         <div class="zone-complete-banner">
           {% if result.pack_complete %}
             <p class="zone-complete-text">🎉 Pack Complete! You finished everything!</p>
-            <a href="{{ pack_url_prefix }}/complete" class="btn btn-primary btn-lg">See Results</a>
+            <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+              <a href="{{ pack_url_prefix }}/complete" class="btn btn-primary btn-lg">See Results</a>
+              <a href="https://x.com/intent/tweet?text=I%20just%20completed%20{{ pack.title | urlencode }}%20%E2%9C%A8%20{{ total_xp }}%20XP%20earned!%20%23QuestEngine" target="_blank" rel="noopener" class="share-btn">𝕏 Share</a>
+            </div>
           {% else %}
             <p class="zone-complete-text">✨ Zone Complete!</p>
-            <a href="{{ pack_url_prefix }}/zone/{{ result.next_zone_id }}/intro" class="btn btn-primary btn-lg">Next Zone →</a>
+            <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+              <a href="{{ pack_url_prefix }}/zone/{{ result.next_zone_id }}/intro" class="btn btn-primary btn-lg">Next Zone →</a>
+              <a href="https://x.com/intent/tweet?text=I%20just%20completed%20{{ zone.name | urlencode }}%20in%20{{ pack.title | urlencode }}!%20%E2%9C%A8%20%23QuestEngine" target="_blank" rel="noopener" class="share-btn">𝕏 Share</a>
+            </div>
           {% endif %}
         </div>
       {% else %}
@@ -181,5 +212,29 @@
   {% endif %}
 
 </div>
+
+{% if result and result.correct %}
+<script>
+(function() {
+  var colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6eb4','#a855f7','#00e5a0'];
+  var container = document.createElement('div');
+  container.className = 'confetti-container';
+  document.body.appendChild(container);
+  for (var i = 0; i < {% if result.zone_complete %}60{% else %}25{% endif %}; i++) {
+    var piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.8 + 's';
+    piece.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+    piece.style.width = (6 + Math.random() * 8) + 'px';
+    piece.style.height = (6 + Math.random() * 8) + 'px';
+    piece.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
+    container.appendChild(piece);
+  }
+  setTimeout(function(){ container.remove(); }, 4000);
+})();
+</script>
+{% endif %}
 
 {% endblock %}
