@@ -50,4 +50,6 @@ engine = [
     "web/templates/*.html",
     "web/static/*.css",
     "web/static/*.js",
+    "web/static/*.json",
+    "web/static/*.png",
 ]

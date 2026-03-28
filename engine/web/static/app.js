@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollToResult();
   initTypewriter();
   initConfetti();
+  initSoundTriggers();
   focusAnswerInput();
 });
 
@@ -178,6 +179,39 @@ function initConfetti() {
     `;
     document.head.appendChild(style);
   }
+}
+
+// ── Sound effect triggers ───────────────────────────────────────────────────
+
+function initSoundTriggers() {
+  if (!window.QuestSounds) return;
+
+  // Correct answer sound
+  const correctBanner = document.querySelector('.result-correct');
+  if (correctBanner) {
+    // Check for zone/pack complete
+    const zoneComplete = document.querySelector('.zone-complete-banner');
+    if (zoneComplete) {
+      QuestSounds.zoneComplete();
+    } else {
+      QuestSounds.correct();
+    }
+    // Check for level up
+    const levelUp = document.querySelector('.level-up-badge');
+    if (levelUp) setTimeout(() => QuestSounds.levelUp(), 400);
+    // Check for achievement
+    const achievement = document.querySelector('.achievement-badge');
+    if (achievement) setTimeout(() => QuestSounds.achievement(), 600);
+  }
+
+  // Wrong answer sound
+  const wrongBanner = document.querySelector('.result-wrong');
+  if (wrongBanner) QuestSounds.wrong();
+
+  // Option click sounds
+  document.querySelectorAll('.option-btn').forEach(btn => {
+    btn.addEventListener('mousedown', () => QuestSounds.click());
+  });
 }
 
 // ── Utility ─────────────────────────────────────────────────────────────────

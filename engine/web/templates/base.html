@@ -4,50 +4,81 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ pack.title }}</title>
+  <meta name="theme-color" content="{% if theme == 'playful' %}#6c5ce7{% else %}#00e5a0{% endif %}">
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/themes.css">
-  <script src="https://unpkg.com/htmx.org@2.0.2" defer></script>
+  <script src="/static/sounds.js" defer></script>
   <script src="/static/app.js" defer></script>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
 
-<!-- ── Header ──────────────────────────────────────────────────────────── -->
-<header class="site-header">
-  <a href="{{ pack_url_prefix }}/" class="site-logo">{{ pack.title }}</a>
+<!-- Skip to content (accessibility) -->
+<a href="#main-content" class="skip-link">Skip to content</a>
 
-  <nav class="header-nav">
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<header class="site-header" role="banner">
+  <a href="{{ pack_url_prefix }}/" class="site-logo" aria-label="Back to menu">{{ pack.title }}</a>
+
+  <nav class="header-nav" role="navigation" aria-label="Main navigation">
     <a href="{{ pack_url_prefix }}/" class="nav-link">Zones</a>
     <a href="{{ pack_url_prefix }}/achievements" class="nav-link">Achievements</a>
   </nav>
 
-  <div class="header-stats">
-    <span class="stat-streak" title="Correct streak">
+  <div class="header-stats" aria-label="Player stats">
+    <span class="stat-streak" title="Correct streak" aria-label="Streak: {{ streak }}">
       {% if streak > 0 %}🔥 {{ streak }}{% endif %}
     </span>
     <div class="stat-xp-block">
       <span class="stat-label">LVL {{ level }}</span>
-      <div class="xp-bar-wrap">
+      <div class="xp-bar-wrap" role="progressbar" aria-valuenow="{{ level_progress_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Level progress">
         <div class="xp-bar-fill" style="width: {{ level_progress_pct }}%"></div>
       </div>
       <span class="stat-label">{{ total_xp }} XP</span>
     </div>
-    <span class="stat-name">{{ player_name }}</span>
+    <span class="stat-name" aria-label="Player name">{{ player_name }}</span>
   </div>
 </header>
 
 <!-- ── Main content ─────────────────────────────────────────────────────── -->
-<main class="site-main">
+<main class="site-main" id="main-content" role="main">
   {% block content %}{% endblock %}
 </main>
 
 <!-- ── Footer ──────────────────────────────────────────────────────────── -->
-<footer class="site-footer">
+<footer class="site-footer" role="contentinfo">
   <span>{{ pack.title }} · <a href="{{ pack_url_prefix }}/" class="footer-link">Menu</a></span>
-  <span class="difficulty-badge difficulty-{{ difficulty }}">{{ difficulty }}</span>
+  <div style="display:flex;align-items:center;gap:0.75rem;">
+    <button class="sound-toggle" onclick="toggleSound(this)" aria-label="Toggle sound effects" title="Toggle sound">
+      <span class="sound-icon">🔊</span>
+    </button>
+    <span class="difficulty-badge difficulty-{{ difficulty }}">{{ difficulty }}</span>
+  </div>
 </footer>
+
+<script>
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js').catch(function(){});
+  }
+  // Sound toggle
+  function toggleSound(btn) {
+    var on = window.QuestSounds && window.QuestSounds.toggle();
+    btn.querySelector('.sound-icon').textContent = on ? '🔊' : '🔇';
+  }
+  // Set initial sound icon state
+  document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.querySelector('.sound-toggle');
+    if (btn && window.QuestSounds) {
+      btn.querySelector('.sound-icon').textContent = QuestSounds.isEnabled() ? '🔊' : '🔇';
+    }
+  });
+</script>
 
 </body>
 </html>
