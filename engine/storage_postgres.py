@@ -157,37 +157,46 @@ class PostgresStore(BaseStore):
         try:
             conn = self._get_conn()
             with conn.cursor() as cur:
-                # Split on semicolons and execute each statement
+                # Execute entire schema as one block — CREATE IF NOT EXISTS is idempotent
+                cur.execute(SCHEMA_SQL)
+            conn.commit()
+        except Exception as e:
+            if self._conn and not self._conn.closed:
+                self._conn.rollback()
+            # Try statement by statement as fallback
+            try:
+                conn = self._get_conn()
                 for stmt in SCHEMA_SQL.split(";"):
                     stmt = stmt.strip()
                     if stmt and not stmt.startswith("--"):
                         try:
-                            cur.execute(stmt)
-                        except psycopg2.errors.DuplicateTable:
+                            with conn.cursor() as cur:
+                                cur.execute(stmt)
+                            conn.commit()
+                        except Exception:
                             conn.rollback()
-                            continue
-                        except psycopg2.errors.DuplicateObject:
-                            conn.rollback()
-                            continue
-            conn.commit()
-        except Exception as e:
-            print(f"[quest-engine] PostgreSQL schema init warning: {e}")
-            if self._conn and not self._conn.closed:
-                self._conn.rollback()
+            except Exception as e2:
+                print(f"[quest-engine] PostgreSQL schema warning: {e2}")
 
     # ── BaseStore interface ──────────────────────────────────────────────────
 
     def load(self, pack_name: str, player_id: str = "default") -> dict | None:
         try:
             conn = self._get_conn()
+            user_id = self._resolve_user_id(player_id)
             with conn.cursor() as cur:
                 cur.execute(
                     "SELECT data FROM player_progress WHERE pack_name = %s AND user_id = %s",
-                    (pack_name, self._resolve_user_id(player_id)),
+                    (pack_name, user_id),
                 )
                 row = cur.fetchone()
-                return json.loads(row[0]) if row else None
-        except Exception:
+                conn.commit()  # close transaction
+                if row:
+                    return json.loads(row[0]) if isinstance(row[0], str) else row[0]
+                return None
+        except Exception as e:
+            if self._conn and not self._conn.closed:
+                self._conn.rollback()
             return None
 
     def save(self, pack_name: str, player_id: str, data: dict) -> None:
