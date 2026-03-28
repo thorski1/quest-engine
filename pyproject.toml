@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quest-engine"
-version = "1.5.2"
-description = "A pluggable terminal RPG framework for building skill-based learning games — TUI and web modes."
+version = "2.0.0"
+description = "The gold standard educational game engine — terminal + web RPG framework with 3 themes, 12+ page types, PWA, sounds, adaptive difficulty, and pluggable storage."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
