@@ -544,6 +544,19 @@ html, body {
 .daily-banner:hover .daily-banner-arrow { opacity: 1; }
 [data-theme="playful"] .daily-banner { border-radius: 20px; font-size: 1rem; }
 
+/* Quick stats bar on menu */
+.menu-quick-stats {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.5rem; flex-wrap: wrap;
+  padding: 0.6rem 1rem; margin-bottom: 1rem;
+  font-size: 0.82rem; color: var(--text-dim);
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.mqs-item { white-space: nowrap; }
+.mqs-sep { opacity: 0.3; }
+[data-theme="playful"] .menu-quick-stats { border-radius: 16px; font-size: 0.9rem; }
+
 .zone-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

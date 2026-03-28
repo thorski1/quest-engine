@@ -1,5 +1,63 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<style>
+  .intro-page { max-width: 680px; margin: 0 auto; }
+
+  .intro-card {
+    position: relative;
+    overflow: hidden;
+    animation: fade-in-up 0.5s ease both;
+  }
+  .intro-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .intro-zone-name {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-bright);
+    margin-bottom: 0.25rem;
+    animation: fade-in-up 0.5s ease 0.1s both;
+  }
+  [data-theme="playful"] .intro-zone-name { font-size: 2.2rem; }
+
+  .intro-zone-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    animation: fade-in-up 0.4s ease 0.15s both;
+  }
+  .intro-meta-item { display: flex; align-items: center; gap: 0.3rem; }
+
+  .intro-narrative {
+    animation: fade-in-up 0.5s ease 0.2s both;
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .intro-actions {
+    display: flex;
+    gap: 0.75rem;
+    animation: fade-in-up 0.4s ease 0.35s both;
+  }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div class="intro-page">
@@ -14,8 +72,16 @@
 
     <h1 class="intro-zone-name">{{ zone.name }}</h1>
 
+    <div class="intro-zone-meta">
+      <span class="intro-meta-item">📝 {{ challenge_count }} challenges</span>
+      <span class="intro-meta-item">⭐ {{ zone_xp }} XP available</span>
+      {% if zone_status == "in_progress" %}
+      <span class="intro-meta-item">📊 {{ zone_progress }}/{{ challenge_count }} done</span>
+      {% endif %}
+    </div>
+
     {% if intro_html %}
-    <div class="intro-narrative narrative-text">
+    <div class="intro-narrative narrative-text typewriter-target">
       {{ intro_html | safe }}
     </div>
     {% endif %}
@@ -23,9 +89,11 @@
     <div class="intro-actions">
       <a href="{{ pack_url_prefix }}/challenge" class="btn btn-primary btn-lg">
         {% if theme == "playful" %}
-          Let's Go! →
+          {% if zone_status == "in_progress" %}Keep Going! →{% else %}Let's Go! →{% endif %}
+        {% elif theme == "neural" %}
+          {% if zone_status == "in_progress" %}Resume →{% else %}Begin Training →{% endif %}
         {% else %}
-          Enter Zone →
+          {% if zone_status == "in_progress" %}Resume Mission →{% else %}Enter Zone →{% endif %}
         {% endif %}
       </a>
       <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Back to Menu</a>

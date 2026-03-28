@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% if theme == "playful" %}The Primer — Choose Your Chapter{% else %}Quest Engine — Choose Your Chapter{% endif %}</title>
-  <meta name="description" content="{% if theme == 'playful' %}An interactive educational adventure for young learners. Choose a chapter and begin!{% else %}A terminal RPG for learning DevOps. Choose a chapter and sharpen your skills.{% endif %}">
+  <meta name="description" content="{% if theme == 'playful' %}An interactive educational adventure for young learners. Choose a chapter and begin!{% elif theme == 'neural' %}Learn AI from zero to mastery. 8 chapters covering fundamentals, prompting, tools, ethics, and agents.{% else %}A terminal RPG for learning DevOps. Choose a chapter and sharpen your skills.{% endif %}">
+  <meta property="og:title" content="{% if theme == 'playful' %}The Primer — Choose Your Adventure{% elif theme == 'neural' %}AI Academy — Learn AI by Playing{% else %}Quest Engine — Choose Your Chapter{% endif %}">
+  <meta property="og:description" content="{{ packs | length }} chapters · {{ total_challenges }} challenges · Free, open-source educational RPG">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{% if theme == 'playful' %}The Primer{% elif theme == 'neural' %}AI Academy{% else %}Quest Engine{% endif %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">

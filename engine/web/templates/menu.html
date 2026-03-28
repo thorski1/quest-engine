@@ -42,6 +42,18 @@
     </div>
   </section>
 
+  <!-- ── Quick Stats Bar ────────────────────────────────────────────────── -->
+  {% if has_progress %}
+  <div class="menu-quick-stats">
+    <span class="mqs-item">⭐ {{ total_xp }} XP</span>
+    <span class="mqs-sep">·</span>
+    <span class="mqs-item">📊 Level {{ level }}</span>
+    <span class="mqs-sep">·</span>
+    <span class="mqs-item">🗺️ {{ completed_zones }}/{{ total_zones }} zones</span>
+    {% if streak > 0 %}<span class="mqs-sep">·</span><span class="mqs-item">🔥 {{ streak }} streak</span>{% endif %}
+  </div>
+  {% endif %}
+
   <!-- ── Daily Challenge Banner ────────────────────────────────────────── -->
   {% if has_progress %}
   <a href="{{ pack_url_prefix }}/daily" class="daily-banner">

@@ -142,11 +142,23 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         zone = skill_pack.get_zone(zone_id)
         if not zone:
             return RedirectResponse(f"{prefix}/", status_code=303)
-        _session().start_zone(zone_id)
+        s = _session()
+        s.start_zone(zone_id)
         intro_text = skill_pack.zone_intros.get(zone_id, "")
+        challenges = zone.get("challenges", [])
+        completed = s.engine.completed_challenges.get(zone_id, set())
+        zone_xp = sum(c.get("xp", 25) for c in challenges)
+        zone_progress = len(completed) if isinstance(completed, set) else len(set(completed))
+        zone_status = "complete" if zone_id in s.engine.completed_zones else (
+            "in_progress" if zone_progress > 0 else "not_started"
+        )
         return templates.TemplateResponse(request, "zone_intro.html", _ctx(
             request, zone=zone, zone_id=zone_id,
             intro_html=rich_to_html(intro_text) if intro_text else "",
+            challenge_count=len(challenges),
+            zone_xp=zone_xp,
+            zone_progress=zone_progress,
+            zone_status=zone_status,
         ))
 
     @hub.get(f"{prefix}/challenge", response_class=HTMLResponse)
