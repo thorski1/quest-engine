@@ -362,6 +362,9 @@ class GameEngine:
     def challenges_completed_in_zone(self, zone_id: str) -> set:
         return self.completed_challenges.get(zone_id, set())
 
+    def is_challenge_complete(self, zone_id: str, challenge_id: str) -> bool:
+        return challenge_id in self.completed_challenges.get(zone_id, set())
+
     # ── Bookmarks ─────────────────────────────────────────────────────────────
 
     def toggle_bookmark(self, zone_id: str, challenge_id: str) -> bool:

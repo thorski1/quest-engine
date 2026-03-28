@@ -106,6 +106,14 @@ class WebGameSession:
 
         return None
 
+    def _find_challenge_by_id(self, challenge_id: str) -> Optional[dict]:
+        """Find a challenge by ID across all zones in this pack."""
+        for zone in self.skill_pack.zones.values():
+            for ch in zone.get("challenges", []):
+                if ch.get("id") == challenge_id:
+                    return ch
+        return None
+
     def challenge_position(self) -> tuple[int, int]:
         """Return (current_number, total) for the active challenge."""
         zone_id = self.engine.current_zone
@@ -132,8 +140,9 @@ class WebGameSession:
 
     # ── Challenge interaction ─────────────────────────────────────────────────
 
-    def submit_answer(self, user_input: str) -> AnswerResult:
-        challenge = self.get_current_challenge()
+    def submit_answer(self, user_input: str, challenge: dict | None = None) -> AnswerResult:
+        if challenge is None:
+            challenge = self.get_current_challenge()
         if not challenge:
             return AnswerResult(False, "No active challenge.")
 
@@ -150,6 +159,7 @@ class WebGameSession:
             actual_xp, did_level_up = self.engine.award_xp(base_xp)
             self.engine.mark_challenge_complete(zone_id, challenge["id"])
             self.engine.record_zone_attempt(zone_id, challenge["id"], correct=True, used_hint=self._hint_index > 0)
+            self._hint_index = 0  # reset hint for next challenge
 
             new_achievements = self.engine.pop_new_achievements()
 

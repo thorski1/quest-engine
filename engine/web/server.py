@@ -178,24 +178,29 @@ def create_app(skill_pack: SkillPack, url_prefix: str = "") -> FastAPI:
     async def submit_answer(
         request: Request,
         answer: str = Form(default=""),
+        challenge_id: str = Form(default=""),
     ):
         if not answer.strip():
             return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
 
+        # Get the specific challenge that was displayed
         challenge = session.get_current_challenge()
+        if challenge_id and challenge and challenge.get("id") != challenge_id:
+            challenge = session._find_challenge_by_id(challenge_id)
         if not challenge:
             return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
 
-        result = session.submit_answer(answer.strip())
+        # Double-submit protection
+        zone_id = session.engine.current_zone
+        if session.engine.is_challenge_complete(zone_id, challenge.get("id", "")):
+            return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
+
+        result = session.submit_answer(answer.strip(), challenge=challenge)
         zone = session.get_current_zone()
         num, total = session.challenge_position()
         ctype = challenge.get("type", "quiz")
         if ctype == "live":
             ctype = "text"
-
-        # Determine next action context
-        next_challenge = session.get_current_challenge() if result.correct else challenge
-        next_num, _ = session.challenge_position()
 
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,

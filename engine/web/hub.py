@@ -198,24 +198,34 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         ))
 
     @hub.post(f"{prefix}/answer", response_class=HTMLResponse)
-    async def submit_answer(request: Request, answer: str = Form(default=""), _pid: str = pack_id):
+    async def submit_answer(request: Request, answer: str = Form(default=""), challenge_id: str = Form(default=""), _pid: str = pack_id):
         if not answer.strip():
             return RedirectResponse(f"{prefix}/challenge", status_code=303)
         s = _session()
+
+        # Get the specific challenge that was displayed, not the "current" one
         challenge = s.get_current_challenge()
+        if challenge_id and challenge and challenge.get("id") != challenge_id:
+            # The displayed challenge doesn't match current — find the right one
+            challenge = s._find_challenge_by_id(challenge_id)
         if not challenge:
             return RedirectResponse(f"{prefix}/challenge", status_code=303)
-        result = s.submit_answer(answer.strip())
+
+        # Check if already completed (double-submit protection)
+        zone_id = s.engine.current_zone
+        if s.engine.is_challenge_complete(zone_id, challenge.get("id", "")):
+            return RedirectResponse(f"{prefix}/challenge", status_code=303)
+
+        result = s.submit_answer(answer.strip(), challenge=challenge)
         zone = s.get_current_zone()
         num, total = s.challenge_position()
         ctype = challenge.get("type", "quiz")
         if ctype == "live":
             ctype = "text"
-        next_num, _ = s.challenge_position()
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge,
-            challenge_num=num if not result.correct else next_num,
+            challenge_num=num,
             challenge_total=total,
             zone=zone, zone_id=s.engine.current_zone,
             ctype=ctype, options=challenge.get("options", []),

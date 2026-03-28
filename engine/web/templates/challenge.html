@@ -144,6 +144,7 @@
           {% set letter = ["a","b","c","d"][loop.index0] %}
           <form method="POST" action="{{ pack_url_prefix }}/answer" class="option-form">
             <input type="hidden" name="answer" value="{{ letter }}">
+            <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
             <button
               type="submit"
               class="option-btn
@@ -162,6 +163,7 @@
 
       <!-- Free-text answer -->
       <form method="POST" action="{{ pack_url_prefix }}/answer" class="text-answer-form" id="answer-form">
+        <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
         <div class="text-input-row">
           <input
             type="text"
