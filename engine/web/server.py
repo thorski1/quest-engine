@@ -262,6 +262,14 @@ def create_app(skill_pack: SkillPack, url_prefix: str = "") -> FastAPI:
         session.set_difficulty(mode)
         return RedirectResponse(f"{url_prefix}/challenge", status_code=303)
 
+    @app.get("/stats", response_class=HTMLResponse)
+    async def stats_page(request: Request):
+        return templates.TemplateResponse(request, "stats.html", _ctx(
+            request,
+            zones=session.all_zones_context(),
+            **session.detailed_stats_context(),
+        ))
+
     @app.get("/achievements", response_class=HTMLResponse)
     async def achievements_page(request: Request):
         achievements = session.achievements_context()

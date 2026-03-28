@@ -248,6 +248,15 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         _session().set_difficulty(mode)
         return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
+    @hub.get(f"{prefix}/stats", response_class=HTMLResponse)
+    async def stats_page(request: Request, _pid: str = pack_id):
+        s = _session()
+        return templates.TemplateResponse(request, "stats.html", _ctx(
+            request,
+            zones=s.all_zones_context(),
+            **s.detailed_stats_context(),
+        ))
+
     @hub.get(f"{prefix}/achievements", response_class=HTMLResponse)
     async def achievements_page(request: Request, _pid: str = pack_id):
         return templates.TemplateResponse(request, "achievements.html", _ctx(

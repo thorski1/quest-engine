@@ -309,6 +309,49 @@ class WebGameSession:
             })
         return zones
 
+    def detailed_stats_context(self) -> dict:
+        """Return rich stats context for the stats page."""
+        engine = self.engine
+        from ..engine import BASE_ACHIEVEMENTS
+
+        # Count total correct across all zones
+        total_correct = sum(
+            len(completed) for completed in engine.completed_challenges.values()
+        )
+        # Count total wrong from zone_scores
+        total_wrong = sum(
+            zs.get("wrong", 0) for zs in engine.zone_scores.values()
+        )
+        total_attempts = total_correct + total_wrong
+        accuracy = int((total_correct / total_attempts * 100) if total_attempts > 0 else 0)
+
+        # Achievements count
+        all_ach = {**BASE_ACHIEVEMENTS, **self.skill_pack.achievements}
+        ach_unlocked = len([a for a in all_ach if a in engine.achievements])
+
+        # Wrong-answer zones (for "areas to improve")
+        wrong_zones = []
+        for zone_id, journal in engine.wrong_answer_journal.items():
+            if journal:
+                zone = self.skill_pack.get_zone(zone_id)
+                if zone:
+                    wrong_zones.append({
+                        "id": zone_id,
+                        "name": zone.get("name", zone_id),
+                        "wrong_count": len(journal),
+                    })
+        wrong_zones.sort(key=lambda x: x["wrong_count"], reverse=True)
+
+        return {
+            "total_correct": total_correct,
+            "total_wrong": total_wrong,
+            "accuracy_pct": accuracy,
+            "max_streak": engine.max_streak,
+            "achievements_unlocked": ach_unlocked,
+            "achievements_total": len(all_ach),
+            "wrong_zones": wrong_zones[:5],  # top 5
+        }
+
     def achievements_context(self) -> list[dict]:
         """Return achievement list with unlock status."""
         all_ach = {**self.engine.skill_pack.achievements}

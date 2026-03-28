@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .stats-page { max-width: 760px; margin: 0 auto; }
+  .stats-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+  .stats-title { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); }
+  .stats-player { color: var(--primary); font-weight: 700; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem;
+    text-align: center;
+    animation: fade-in-up 0.4s ease both;
+  }
+  .stat-card:nth-child(1) { animation-delay: 0.05s; }
+  .stat-card:nth-child(2) { animation-delay: 0.1s; }
+  .stat-card:nth-child(3) { animation-delay: 0.15s; }
+  .stat-card:nth-child(4) { animation-delay: 0.2s; }
+  .stat-card:nth-child(5) { animation-delay: 0.25s; }
+  .stat-card:nth-child(6) { animation-delay: 0.3s; }
+  .stat-card:nth-child(7) { animation-delay: 0.35s; }
+  .stat-card:nth-child(8) { animation-delay: 0.4s; }
+  .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text-bright); line-height: 1.2; }
+  .stat-label { font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.3rem; }
+
+  .stat-accent { border-color: var(--primary); }
+  .stat-accent .stat-value { color: var(--primary); }
+  .stat-warn .stat-value { color: var(--warn); }
+  .stat-secondary .stat-value { color: var(--secondary); }
+
+  .section-label {
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.75rem; margin-top: 1.5rem;
+  }
+
+  .zone-stats-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem; }
+  .zone-stat-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.88rem;
+    animation: fade-in-up 0.3s ease both;
+  }
+  .zone-stat-row:nth-child(odd) { animation-delay: 0.05s; }
+  .zone-stat-row:nth-child(even) { animation-delay: 0.1s; }
+  .zone-stat-name { flex: 1; font-weight: 600; color: var(--text-bright); }
+  .zone-stat-badge {
+    font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 100px; font-weight: 700;
+  }
+  .zone-stat-done { background: rgba(76,175,80,0.15); color: #66bb6a; }
+  .zone-stat-progress { background: rgba(255,165,0,0.15); color: var(--warn); }
+  .zone-stat-locked { background: rgba(200,216,232,0.08); color: var(--text-dim); }
+  .zone-stat-detail { font-size: 0.75rem; color: var(--text-dim); white-space: nowrap; }
+  .zone-stars { color: var(--warn); font-size: 0.85rem; }
+
+  .accuracy-bar-wrap {
+    width: 60px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+  }
+  .accuracy-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .accuracy-high { background: var(--primary); }
+  .accuracy-mid { background: var(--warn); }
+  .accuracy-low { background: var(--accent); }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stats-page">
+
+  <div class="stats-header">
+    <h1 class="stats-title">Player Stats</h1>
+    <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Back to Menu</a>
+  </div>
+
+  <!-- ── Overview cards ────────────────────────────────────────────────── -->
+  <div class="stats-grid">
+    <div class="stat-card stat-accent">
+      <div class="stat-value">{{ total_xp }}</div>
+      <div class="stat-label">Total XP</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ level }}</div>
+      <div class="stat-label">Level</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ level_title }}</div>
+      <div class="stat-label">Rank</div>
+    </div>
+    <div class="stat-card stat-warn">
+      <div class="stat-value">{{ max_streak }}</div>
+      <div class="stat-label">Best Streak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ total_correct }}</div>
+      <div class="stat-label">Correct</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ accuracy_pct }}%</div>
+      <div class="stat-label">Accuracy</div>
+    </div>
+    <div class="stat-card stat-secondary">
+      <div class="stat-value">{{ completed_zones }}/{{ total_zones }}</div>
+      <div class="stat-label">Zones Done</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ achievements_unlocked }}/{{ achievements_total }}</div>
+      <div class="stat-label">Achievements</div>
+    </div>
+  </div>
+
+  <!-- ── Zone breakdown ────────────────────────────────────────────────── -->
+  <div class="section-label">Zone Breakdown</div>
+  <div class="zone-stats-list">
+    {% for zone in zones %}
+    <div class="zone-stat-row">
+      <span class="zone-stat-name">{{ zone.name }}</span>
+      {% if zone.completed %}
+        <span class="zone-stars">{% for _ in range(zone.stars) %}★{% endfor %}{% for _ in range(3 - zone.stars) %}☆{% endfor %}</span>
+        <span class="zone-stat-badge zone-stat-done">Done</span>
+      {% elif zone.in_progress %}
+        <span class="zone-stat-detail">{{ zone.done }}/{{ zone.total }}</span>
+        <div class="accuracy-bar-wrap">
+          <div class="accuracy-bar-fill accuracy-mid" style="width: {{ (zone.done / zone.total * 100) | int if zone.total else 0 }}%"></div>
+        </div>
+        <span class="zone-stat-badge zone-stat-progress">In Progress</span>
+      {% else %}
+        <span class="zone-stat-badge zone-stat-locked">Not Started</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if wrong_zones %}
+  <!-- ── Areas to improve ──────────────────────────────────────────────── -->
+  <div class="section-label">Areas to Improve</div>
+  <div class="zone-stats-list">
+    {% for wz in wrong_zones %}
+    <div class="zone-stat-row">
+      <span class="zone-stat-name">{{ wz.name }}</span>
+      <span class="zone-stat-detail">{{ wz.wrong_count }} wrong answers</span>
+      <a href="{{ pack_url_prefix }}/zone/{{ wz.id }}/intro" class="btn btn-ghost" style="padding:0.3rem 0.6rem;font-size:0.75rem;">Review</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
