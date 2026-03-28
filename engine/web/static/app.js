@@ -27,22 +27,24 @@ function initKeyboardShortcuts() {
 
     const key = e.key.toLowerCase();
 
-    // Quiz option keys: a, b, c, d → click corresponding option button
-    if (['a', 'b', 'c', 'd'].includes(key)) {
-      const letters = ['a', 'b', 'c', 'd'];
-      const idx = letters.indexOf(key);
+    // Quiz option keys: a/b/c/d or 1/2/3/4 → click corresponding option button
+    const letterMap = { a: 0, b: 1, c: 2, d: 3 };
+    const numMap = { '1': 0, '2': 1, '3': 2, '4': 3 };
+    let idx = letterMap[key] ?? numMap[key] ?? -1;
+    if (idx >= 0) {
       const optionForms = document.querySelectorAll('.option-form');
       if (optionForms[idx]) {
         const btn = optionForms[idx].querySelector('.option-btn');
-        if (btn) {
-          btn.click();
-          e.preventDefault();
-        }
+        if (btn) { btn.click(); e.preventDefault(); }
       }
     }
 
-    // Enter → focus text input or submit
-    if (e.key === 'Enter') {
+    // Enter / Space → click "Next" button or focus text input
+    if (e.key === 'Enter' || e.key === ' ') {
+      // If there's a next-challenge link visible, click it
+      const nextBtn = document.querySelector('.next-challenge-action .btn, .zone-complete-banner .btn-primary');
+      if (nextBtn) { nextBtn.click(); e.preventDefault(); return; }
+      // Otherwise focus text input
       const textInput = document.querySelector('.text-answer-input');
       if (textInput && document.activeElement !== textInput) {
         textInput.focus();
@@ -50,10 +52,16 @@ function initKeyboardShortcuts() {
       }
     }
 
-    // H → hint button
+    // H → hint button (works with any action path)
     if (key === 'h' && !e.shiftKey) {
-      const hintBtn = document.querySelector('form[action="/hint"] button');
+      const hintBtn = document.querySelector('form[action$="/hint"] button');
       if (hintBtn) { hintBtn.click(); e.preventDefault(); }
+    }
+
+    // S → skip button
+    if (key === 's' && !e.shiftKey) {
+      const skipBtn = document.querySelector('form[action$="/skip"] button');
+      if (skipBtn) { skipBtn.click(); e.preventDefault(); }
     }
   });
 }
