@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .onboard-page { max-width: 600px; margin: 0 auto; text-align: center; }
+
+  .onboard-steps { position: relative; min-height: 400px; }
+  .onboard-step {
+    display: none; flex-direction: column; align-items: center; gap: 1.25rem;
+    animation: fade-in-up 0.4s ease both;
+  }
+  .onboard-step.active { display: flex; }
+
+  .onboard-icon { font-size: 4rem; margin-top: 2rem; }
+  .onboard-heading { font-size: 1.5rem; font-weight: 800; color: var(--text-bright); }
+  [data-theme="playful"] .onboard-heading { font-size: 1.8rem; }
+  .onboard-text { color: var(--text); font-size: 0.95rem; line-height: 1.7; max-width: 440px; }
+
+  .onboard-features {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+    text-align: left; width: 100%; max-width: 420px;
+  }
+  .onboard-feature {
+    display: flex; align-items: flex-start; gap: 0.5rem;
+    padding: 0.6rem 0.75rem; background: var(--bg-surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 0.82rem; color: var(--text);
+  }
+  .onboard-feature-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+  .onboard-nav { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+
+  .onboard-dots { display: flex; gap: 0.4rem; justify-content: center; margin-top: 1rem; }
+  .onboard-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); transition: background 0.2s;
+  }
+  .onboard-dot.active { background: var(--primary); }
+
+  .onboard-name-form { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; max-width: 300px; }
+  .onboard-name-input {
+    width: 100%; padding: 0.7rem 1rem; border-radius: var(--radius-lg);
+    border: 2px solid var(--border-bright); background: var(--bg-raised);
+    color: var(--text-bright); font-size: 1.1rem; text-align: center; outline: none;
+    font-family: var(--font);
+  }
+  .onboard-name-input:focus { border-color: var(--primary); }
+  .onboard-name-input::placeholder { color: var(--text-dim); }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="onboard-page">
+
+  <div class="onboard-steps">
+
+    <!-- Step 1: Welcome -->
+    <div class="onboard-step active" id="step-0">
+      <div class="onboard-icon">{% if theme == "playful" %}✨{% elif theme == "neural" %}🧠{% else %}⚡{% endif %}</div>
+      <h1 class="onboard-heading">
+        {% if theme == "playful" %}Welcome to the Primer!
+        {% elif theme == "neural" %}Welcome to AI Academy!
+        {% else %}Welcome, Operator.{% endif %}
+      </h1>
+      <p class="onboard-text">
+        {% if theme == "playful" %}
+          A magical learning adventure awaits! Puck — your glowing fairy guide — will help you
+          explore amazing worlds of knowledge. Are you ready?
+        {% elif theme == "neural" %}
+          Learn AI from the ground up. ARIA — your AI guide — will take you from the basics
+          to building autonomous agents. Let's get started.
+        {% else %}
+          Master the tools of the digital world. Each chapter is a mission.
+          Each zone is a challenge. Your skills are your weapons.
+        {% endif %}
+      </p>
+      <div class="onboard-nav">
+        <button class="btn btn-primary btn-lg" onclick="nextStep()">Let's Go →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: How it works -->
+    <div class="onboard-step" id="step-1">
+      <div class="onboard-icon">📚</div>
+      <h1 class="onboard-heading">How It Works</h1>
+      <div class="onboard-features">
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">🗺️</span>
+          <span><strong>Zones</strong> — themed groups of challenges</span>
+        </div>
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">❓</span>
+          <span><strong>Challenges</strong> — answer to earn XP</span>
+        </div>
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">💡</span>
+          <span><strong>Hints</strong> — stuck? Get a nudge</span>
+        </div>
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">📖</span>
+          <span><strong>Lessons</strong> — learn from every answer</span>
+        </div>
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">🏆</span>
+          <span><strong>Achievements</strong> — earn badges</span>
+        </div>
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">⚡</span>
+          <span><strong>Daily</strong> — 2× XP bonus every day</span>
+        </div>
+      </div>
+      <div class="onboard-nav">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+        <button class="btn btn-primary btn-lg" onclick="nextStep()">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Keyboard shortcuts -->
+    <div class="onboard-step" id="step-2">
+      <div class="onboard-icon">⌨️</div>
+      <h1 class="onboard-heading">Pro Tips</h1>
+      <div class="onboard-features">
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">🔤</span>
+          <span>Press <strong>A-D</strong> or <strong>1-4</strong> to answer</span>
+        </div>
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">⏎</span>
+          <span>Press <strong>Enter</strong> to advance</span>
+        </div>
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">💡</span>
+          <span>Press <strong>H</strong> for a hint</span>
+        </div>
+        <div class="onboard-feature">
+          <span class="onboard-feature-icon">⏭️</span>
+          <span>Press <strong>S</strong> to skip</span>
+        </div>
+      </div>
+      <div class="onboard-nav">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+        <button class="btn btn-primary btn-lg" onclick="nextStep()">Almost There →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Name -->
+    <div class="onboard-step" id="step-3">
+      <div class="onboard-icon">👤</div>
+      <h1 class="onboard-heading">What's Your Name?</h1>
+      <p class="onboard-text">
+        {% if theme == "playful" %}Puck wants to know who you are!
+        {% elif theme == "neural" %}ARIA needs a name for you.
+        {% else %}Your callsign, Operator.{% endif %}
+      </p>
+      <form method="POST" action="{{ pack_url_prefix }}/new-game" class="onboard-name-form">
+        <input type="text" name="player_name" class="onboard-name-input"
+          placeholder="{{ pack.default_player_name }}" maxlength="24" autofocus>
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
+          {% if theme == "playful" %}Start My Adventure!{% elif theme == "neural" %}Begin Training{% else %}Enter the Grid{% endif %}
+        </button>
+      </form>
+      <div class="onboard-nav">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="onboard-dots">
+    <div class="onboard-dot active" id="dot-0"></div>
+    <div class="onboard-dot" id="dot-1"></div>
+    <div class="onboard-dot" id="dot-2"></div>
+    <div class="onboard-dot" id="dot-3"></div>
+  </div>
+
+</div>
+
+<script>
+var currentStep = 0;
+function showStep(n) {
+  document.querySelectorAll('.onboard-step').forEach(function(s) { s.classList.remove('active'); });
+  document.querySelectorAll('.onboard-dot').forEach(function(d) { d.classList.remove('active'); });
+  document.getElementById('step-' + n).classList.add('active');
+  document.getElementById('dot-' + n).classList.add('active');
+  currentStep = n;
+  if (n === 3) {
+    setTimeout(function() {
+      var input = document.querySelector('.onboard-name-input');
+      if (input) input.focus();
+    }, 100);
+  }
+}
+function nextStep() { if (currentStep < 3) showStep(currentStep + 1); }
+function prevStep() { if (currentStep > 0) showStep(currentStep - 1); }
+</script>
+{% endblock %}

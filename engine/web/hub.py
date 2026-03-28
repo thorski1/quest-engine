@@ -114,10 +114,13 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     @hub.get(f"{prefix}/", response_class=HTMLResponse)
     async def menu(request: Request, _pid: str = pack_id):
         s = _session()
+        # Redirect new players to onboarding
+        if not s.has_progress():
+            return templates.TemplateResponse(request, "onboarding.html", _ctx(request))
         zones = s.all_zones_context()
         return templates.TemplateResponse(request, "menu.html", _ctx(
             request, zones=zones,
-            has_progress=s.has_progress(),
+            has_progress=True,
             intro_story=rich_to_html(skill_pack.intro_story),
         ))
 
