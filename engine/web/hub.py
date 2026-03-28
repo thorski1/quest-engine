@@ -179,6 +179,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             lesson_html=rich_to_html(challenge.get("lesson", "")),
             url=challenge.get("url", ""),
             result=None, hint_text=None, show_lesson=False,
+            difficulty_suggestion=s.engine.get_difficulty_suggestion(),
         ))
 
     @hub.post(f"{prefix}/answer", response_class=HTMLResponse)
@@ -210,6 +211,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             result=result, hint_text=None,
             show_lesson=not result.correct,
             submitted_answer=answer.strip(),
+            difficulty_suggestion=s.engine.get_difficulty_suggestion(),
         ))
 
     @hub.post(f"{prefix}/hint", response_class=HTMLResponse)

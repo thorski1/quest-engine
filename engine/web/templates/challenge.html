@@ -94,6 +94,26 @@
     </div>
     {% endif %}
 
+    <!-- ── Difficulty suggestion ──────────────────────────────────── -->
+    {% if difficulty_suggestion %}
+    <div class="difficulty-suggest" style="display:flex;align-items:center;gap:0.75rem;padding:0.7rem 1rem;background:rgba(34,211,238,0.06);border:1px solid var(--secondary);border-radius:var(--radius);margin-bottom:1rem;font-size:0.85rem;">
+      <span>📊</span>
+      <span style="flex:1;color:var(--text-bright);">
+        {% if difficulty_suggestion == "increase" %}
+          You're doing great! Want to increase the difficulty?
+        {% else %}
+          Having a tough time? Try dropping the difficulty.
+        {% endif %}
+      </span>
+      <form method="POST" action="{{ pack_url_prefix }}/difficulty" style="display:inline;">
+        <input type="hidden" name="mode" value="{% if difficulty_suggestion == 'increase' %}{% if difficulty == 'easy' %}normal{% else %}hard{% endif %}{% else %}{% if difficulty == 'hard' %}normal{% else %}easy{% endif %}{% endif %}">
+        <button type="submit" class="btn btn-ghost" style="padding:0.3rem 0.7rem;font-size:0.8rem;">
+          {% if difficulty_suggestion == "increase" %}Step Up{% else %}Step Down{% endif %}
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
     <!-- ── Answer area ──────────────────────────────────────────────── -->
     {% if result and result.correct %}
 

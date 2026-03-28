@@ -293,6 +293,36 @@ class GameEngine:
         self.session_wrong += 1
         self.save()
 
+    # ── Adaptive Difficulty ──────────────────────────────────────────────────
+
+    def get_difficulty_suggestion(self) -> str | None:
+        """Analyze recent performance and suggest a difficulty change.
+
+        Returns "increase", "decrease", or None (no change suggested).
+        Only triggers after enough data (10+ attempts in session).
+        """
+        total = self.session_correct + self.session_wrong
+        if total < 10:
+            return None
+
+        accuracy = self.session_correct / total
+
+        if self.difficulty_mode == "easy" and accuracy > 0.85:
+            return "increase"  # Doing great on easy — step up
+        elif self.difficulty_mode == "normal" and accuracy > 0.9:
+            return "increase"  # Cruising on normal — try hard
+        elif self.difficulty_mode == "normal" and accuracy < 0.5:
+            return "decrease"  # Struggling on normal — try easy
+        elif self.difficulty_mode == "hard" and accuracy < 0.6:
+            return "decrease"  # Struggling on hard — step down
+
+        return None
+
+    def get_session_accuracy(self) -> float:
+        """Return session accuracy as 0.0-1.0."""
+        total = self.session_correct + self.session_wrong
+        return self.session_correct / total if total > 0 else 0.0
+
     # ── Challenges & Zones ───────────────────────────────────────────────────
 
     def mark_challenge_complete(self, zone_id: str, challenge_id: str):
