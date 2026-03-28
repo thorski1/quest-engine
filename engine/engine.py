@@ -6,12 +6,20 @@ All skill-specific data comes from the SkillPack.
 
 import datetime
 import json
+import os
 import time
 from pathlib import Path
 
 from .skill_pack import SkillPack
 
-SAVE_BASE = Path.home() / ".quest_engine"
+# Use /tmp on serverless (read-only home dir), or override via env var.
+_save_dir_env = os.environ.get("QUEST_SAVE_DIR", "")
+if _save_dir_env:
+    SAVE_BASE = Path(_save_dir_env)
+elif os.access(str(Path.home()), os.W_OK):
+    SAVE_BASE = Path.home() / ".quest_engine"
+else:
+    SAVE_BASE = Path("/tmp/.quest_engine")
 
 # Engine-level achievements available in every game
 BASE_ACHIEVEMENTS = {
@@ -142,7 +150,10 @@ class GameEngine:
                 pass
 
     def save(self):
-        self._save_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self._save_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            return  # read-only filesystem (serverless); skip save
         data = {
             "player_name": self.player_name,
             "total_xp": self.total_xp,
