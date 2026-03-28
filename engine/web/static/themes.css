@@ -517,6 +517,33 @@ html, body {
 }
 [data-theme="playful"] .section-title { font-size: 1rem; letter-spacing: 0.05em; }
 
+/* Daily challenge banner on menu */
+.daily-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.2rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(255,165,0,0.05));
+  border: 1px solid var(--warn);
+  border-radius: var(--radius-lg);
+  color: var(--warn);
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+}
+.daily-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(251, 191, 36, 0.15);
+  color: var(--warn);
+}
+.daily-banner-icon { font-size: 1.3rem; }
+.daily-banner-text { flex: 1; }
+.daily-banner-arrow { font-size: 1.1rem; opacity: 0.7; transition: opacity 0.15s; }
+.daily-banner:hover .daily-banner-arrow { opacity: 1; }
+[data-theme="playful"] .daily-banner { border-radius: 20px; font-size: 1rem; }
+
 .zone-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

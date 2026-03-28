@@ -10,6 +10,7 @@ Usage:
 """
 
 from __future__ import annotations
+import datetime
 import os
 from pathlib import Path
 from typing import Optional
@@ -256,6 +257,54 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             request,
             zones=s.all_zones_context(),
             **s.detailed_stats_context(),
+        ))
+
+    @hub.get(f"{prefix}/daily", response_class=HTMLResponse)
+    async def daily_page(request: Request, _pid: str = pack_id):
+        s = _session()
+        engine = s.engine
+        ch = engine.get_daily_challenge(skill_pack)
+        today = datetime.date.today().strftime("%A, %B %d, %Y")
+        if engine.daily_challenge_completed and engine.daily_challenge_date == str(datetime.date.today()):
+            return templates.TemplateResponse(request, "daily.html", _ctx(
+                request, daily_completed=True, today_display=today,
+                daily_streak=engine.daily_streak,
+                daily_challenge_streak=engine.daily_challenge_streak,
+                prompt_html="", lesson_html="", ctype="quiz", options=[], result=None,
+            ))
+        if not ch:
+            return RedirectResponse(f"{prefix}/", status_code=303)
+        ctype = ch.get("type", "quiz")
+        if ctype == "live": ctype = "text"
+        return templates.TemplateResponse(request, "daily.html", _ctx(
+            request, daily_completed=False, today_display=today,
+            daily_streak=engine.daily_streak,
+            daily_challenge_streak=engine.daily_challenge_streak,
+            prompt_html=rich_to_html(ch.get("prompt", ch.get("question", ""))),
+            lesson_html=rich_to_html(ch.get("lesson", "")),
+            ctype=ctype, options=ch.get("options", []),
+            result=None, hint_text=None,
+        ))
+
+    @hub.post(f"{prefix}/daily/answer", response_class=HTMLResponse)
+    async def daily_answer(request: Request, answer: str = Form(default=""), _pid: str = pack_id):
+        s = _session()
+        engine = s.engine
+        ch = engine.get_daily_challenge(skill_pack)
+        if not ch or not answer.strip():
+            return RedirectResponse(f"{prefix}/daily", status_code=303)
+        result = s.check_daily_answer(ch, answer.strip())
+        today = datetime.date.today().strftime("%A, %B %d, %Y")
+        ctype = ch.get("type", "quiz")
+        if ctype == "live": ctype = "text"
+        return templates.TemplateResponse(request, "daily.html", _ctx(
+            request, daily_completed=False, today_display=today,
+            daily_streak=engine.daily_streak,
+            daily_challenge_streak=engine.daily_challenge_streak,
+            prompt_html=rich_to_html(ch.get("prompt", ch.get("question", ""))),
+            lesson_html=rich_to_html(ch.get("lesson", "")),
+            ctype=ctype, options=ch.get("options", []),
+            result=result, submitted_answer=answer.strip(),
         ))
 
     @hub.get(f"{prefix}/achievements", response_class=HTMLResponse)

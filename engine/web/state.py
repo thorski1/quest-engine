@@ -309,6 +309,24 @@ class WebGameSession:
             })
         return zones
 
+    def check_daily_answer(self, challenge: dict, user_input: str) -> "AnswerResult":
+        """Check answer for the daily challenge. Awards 2x XP on correct."""
+        result, _ = self.runner.run_challenge(challenge, user_input)
+        if result.success:
+            base_xp = challenge.get("xp", 30)
+            bonus_xp = base_xp * 2
+            actual_xp, did_level_up = self.engine.award_xp(bonus_xp)
+            self.engine.complete_daily_challenge()
+            new_achievements = self.engine.pop_new_achievements()
+            return AnswerResult(
+                correct=True, message=result.message,
+                xp=base_xp, actual_xp=actual_xp,
+                level_up=did_level_up, level=self.engine.level,
+                level_title=self.engine.level_title, streak=self.engine.streak,
+                new_achievements=new_achievements,
+            )
+        return AnswerResult(correct=False, message=result.message)
+
     def detailed_stats_context(self) -> dict:
         """Return rich stats context for the stats page."""
         engine = self.engine

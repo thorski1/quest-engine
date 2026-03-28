@@ -42,6 +42,15 @@
     </div>
   </section>
 
+  <!-- ── Daily Challenge Banner ────────────────────────────────────────── -->
+  {% if has_progress %}
+  <a href="{{ pack_url_prefix }}/daily" class="daily-banner">
+    <span class="daily-banner-icon">⚡</span>
+    <span class="daily-banner-text">Daily Challenge — 2× XP bonus!</span>
+    <span class="daily-banner-arrow">→</span>
+  </a>
+  {% endif %}
+
   <!-- ── Zones ─────────────────────────────────────────────────────────── -->
   <section class="zone-grid-section">
     <h2 class="section-title">Zones</h2>
