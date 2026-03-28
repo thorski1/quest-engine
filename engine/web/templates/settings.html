@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .settings-page { max-width: 600px; margin: 0 auto; }
+  .settings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+  .settings-title { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); }
+
+  .settings-section { margin-bottom: 2rem; }
+  .settings-section-title {
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+  }
+
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .setting-label { font-weight: 600; color: var(--text-bright); font-size: 0.9rem; }
+  .setting-desc { color: var(--text-dim); font-size: 0.78rem; margin-top: 0.15rem; }
+
+  .setting-control { display: flex; gap: 0.5rem; align-items: center; }
+
+  .toggle-btn {
+    width: 44px; height: 24px; border-radius: 12px;
+    background: var(--border); position: relative; cursor: pointer;
+    transition: background 0.2s; border: none;
+  }
+  .toggle-btn.active { background: var(--primary); }
+  .toggle-btn::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; transition: transform 0.2s;
+  }
+  .toggle-btn.active::after { transform: translateX(20px); }
+
+  .theme-picker { display: flex; gap: 0.5rem; }
+  .theme-swatch {
+    width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s;
+  }
+  .theme-swatch:hover { transform: scale(1.1); }
+  .theme-swatch.active { border-color: var(--primary); transform: scale(1.15); }
+  .swatch-cyberpunk { background: linear-gradient(135deg, #08111f, #00e5a0); }
+  .swatch-playful { background: linear-gradient(135deg, #fef6e4, #6c5ce7); }
+  .swatch-neural { background: linear-gradient(135deg, #0c0c1e, #7c6cf0); }
+
+  .font-size-control { display: flex; align-items: center; gap: 0.5rem; }
+  .font-btn {
+    width: 32px; height: 32px; border-radius: var(--radius);
+    background: var(--bg-raised); border: 1px solid var(--border);
+    color: var(--text-bright); font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s;
+  }
+  .font-btn:hover { border-color: var(--primary); }
+  .font-size-display { font-size: 0.85rem; color: var(--text-bright); min-width: 40px; text-align: center; }
+
+  .keyboard-shortcuts {
+    display: grid; grid-template-columns: auto 1fr; gap: 0.4rem 1rem;
+    font-size: 0.85rem;
+  }
+  .key-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 28px; height: 24px; padding: 0 6px;
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 4px; font-family: monospace; font-size: 0.75rem;
+    color: var(--text-bright); font-weight: 700;
+  }
+  .key-desc { color: var(--text-dim); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+
+  <div class="settings-header">
+    <h1 class="settings-title">Settings</h1>
+    <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Back</a>
+  </div>
+
+  <div class="settings-section">
+    <h2 class="settings-section-title">Display</h2>
+
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Theme Override</div>
+        <div class="setting-desc">Override the default pack theme</div>
+      </div>
+      <div class="theme-picker">
+        <button class="theme-swatch swatch-cyberpunk" title="Cyberpunk" onclick="setThemeOverride('cyberpunk')"></button>
+        <button class="theme-swatch swatch-playful" title="Playful" onclick="setThemeOverride('playful')"></button>
+        <button class="theme-swatch swatch-neural" title="Neural" onclick="setThemeOverride('neural')"></button>
+        <button class="theme-swatch" style="background:var(--border);font-size:0.6rem;color:var(--text-dim);display:flex;align-items:center;justify-content:center;" title="Default" onclick="setThemeOverride('')">Auto</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Font Size</div>
+        <div class="setting-desc">Adjust text size for readability</div>
+      </div>
+      <div class="font-size-control">
+        <button class="font-btn" onclick="adjustFontSize(-1)">−</button>
+        <span class="font-size-display" id="font-size-display">100%</span>
+        <button class="font-btn" onclick="adjustFontSize(1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h2 class="settings-section-title">Audio</h2>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Sound Effects</div>
+        <div class="setting-desc">Chimes, beeps, and celebration sounds</div>
+      </div>
+      <button class="toggle-btn" id="sound-toggle" onclick="toggleSetting('sound')"></button>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h2 class="settings-section-title">Accessibility</h2>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Reduced Motion</div>
+        <div class="setting-desc">Disable confetti and animations</div>
+      </div>
+      <button class="toggle-btn" id="motion-toggle" onclick="toggleSetting('motion')"></button>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h2 class="settings-section-title">Keyboard Shortcuts</h2>
+    <div class="keyboard-shortcuts">
+      <span class="key-badge">A-D</span><span class="key-desc">Select quiz option</span>
+      <span class="key-badge">1-4</span><span class="key-desc">Select quiz option (number keys)</span>
+      <span class="key-badge">Enter</span><span class="key-desc">Next challenge / submit answer</span>
+      <span class="key-badge">H</span><span class="key-desc">Get a hint</span>
+      <span class="key-badge">S</span><span class="key-desc">Skip challenge</span>
+      <span class="key-badge">Space</span><span class="key-desc">Advance to next challenge</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function setThemeOverride(theme) {
+  if (theme) {
+    localStorage.setItem('quest-theme-override', theme);
+    document.documentElement.dataset.theme = theme;
+  } else {
+    localStorage.removeItem('quest-theme-override');
+    document.documentElement.dataset.theme = '{{ theme }}';
+  }
+  updateSwatches();
+}
+
+function updateSwatches() {
+  var current = document.documentElement.dataset.theme;
+  document.querySelectorAll('.theme-swatch').forEach(function(s) {
+    s.classList.remove('active');
+    if (s.classList.contains('swatch-' + current)) s.classList.add('active');
+  });
+}
+
+function adjustFontSize(delta) {
+  var current = parseInt(localStorage.getItem('quest-font-size') || '100');
+  current = Math.max(80, Math.min(140, current + delta * 10));
+  localStorage.setItem('quest-font-size', current);
+  document.documentElement.style.fontSize = current + '%';
+  document.getElementById('font-size-display').textContent = current + '%';
+}
+
+function toggleSetting(name) {
+  var btn = document.getElementById(name + '-toggle');
+  if (name === 'sound') {
+    var on = window.QuestSounds && QuestSounds.toggle();
+    btn.classList.toggle('active', on);
+  } else if (name === 'motion') {
+    var reduced = localStorage.getItem('quest-reduced-motion') === '1';
+    if (reduced) {
+      localStorage.removeItem('quest-reduced-motion');
+      document.documentElement.style.setProperty('--anim-duration', '');
+      btn.classList.remove('active');
+    } else {
+      localStorage.setItem('quest-reduced-motion', '1');
+      btn.classList.add('active');
+    }
+  }
+}
+
+// Init state
+document.addEventListener('DOMContentLoaded', function() {
+  updateSwatches();
+  var fontSize = localStorage.getItem('quest-font-size') || '100';
+  document.getElementById('font-size-display').textContent = fontSize + '%';
+  document.getElementById('sound-toggle').classList.toggle('active', !window.QuestSounds || QuestSounds.isEnabled());
+  document.getElementById('motion-toggle').classList.toggle('active', localStorage.getItem('quest-reduced-motion') === '1');
+
+  // Apply saved theme override
+  var override = localStorage.getItem('quest-theme-override');
+  if (override) document.documentElement.dataset.theme = override;
+  updateSwatches();
+});
+</script>
+{% endblock %}

@@ -55,6 +55,7 @@
 <footer class="site-footer" role="contentinfo">
   <span>{{ pack.title }} · <a href="{{ pack_url_prefix }}/" class="footer-link">Menu</a></span>
   <div style="display:flex;align-items:center;gap:0.75rem;">
+    <a href="{{ pack_url_prefix }}/settings" class="action-btn" style="padding:0.2rem 0.4rem;font-size:0.85rem;" title="Settings" aria-label="Settings">⚙</a>
     <button class="sound-toggle" onclick="toggleSound(this)" aria-label="Toggle sound effects" title="Toggle sound">
       <span class="sound-icon">🔊</span>
     </button>
@@ -63,6 +64,13 @@
 </footer>
 
 <script>
+  // Apply saved theme override + font size
+  (function() {
+    var t = localStorage.getItem('quest-theme-override');
+    if (t) document.documentElement.dataset.theme = t;
+    var fs = localStorage.getItem('quest-font-size');
+    if (fs) document.documentElement.style.fontSize = fs + '%';
+  })();
   // Register service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/sw.js').catch(function(){});

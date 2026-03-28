@@ -112,18 +112,34 @@ class GameEngine:
         self.session_correct: int = 0
         self.session_wrong: int = 0
 
+        # Storage: use pluggable store, fall back to legacy JSON file
+        from .storage import get_store
+        self._store = get_store()
+        self._pack_save_name = skill_pack.save_file_name
+        self._player_id = "default"
+
+        # Legacy paths (kept for backward compat with existing saves)
         self._save_dir = SAVE_BASE / skill_pack.save_file_name
         self._save_file = self._save_dir / "progress.json"
+
         self.load()
         self._update_daily_streak()
 
     # ── Persistence ──────────────────────────────────────────────────────────
 
     def load(self):
-        if self._save_file.exists():
+        # Try store first, then legacy file
+        data = self._store.load(self._pack_save_name, self._player_id)
+        if data is None and self._save_file.exists():
             try:
                 with open(self._save_file, "r") as f:
                     data = json.load(f)
+                # Migrate to store
+                self._store.save(self._pack_save_name, self._player_id, data)
+            except (json.JSONDecodeError, OSError):
+                data = None
+        if data is not None:
+            try:
                 self.player_name = data.get("player_name", "Ghost")
                 self.total_xp = data.get("total_xp", 0)
                 self.streak = data.get("streak", 0)
@@ -149,12 +165,9 @@ class GameEngine:
             except (json.JSONDecodeError, KeyError):
                 pass
 
-    def save(self):
-        try:
-            self._save_dir.mkdir(parents=True, exist_ok=True)
-        except OSError:
-            return  # read-only filesystem (serverless); skip save
-        data = {
+    def _serialize(self) -> dict:
+        """Serialize all game state to a dict."""
+        return {
             "player_name": self.player_name,
             "total_xp": self.total_xp,
             "streak": self.streak,
@@ -176,8 +189,10 @@ class GameEngine:
             "difficulty_mode": self.difficulty_mode,
             "challenge_records": self.challenge_records,
         }
-        with open(self._save_file, "w") as f:
-            json.dump(data, f, indent=2)
+
+    def save(self):
+        data = self._serialize()
+        self._store.save(self._pack_save_name, self._player_id, data)
 
     def reset(self):
         self.player_name = "Ghost"
