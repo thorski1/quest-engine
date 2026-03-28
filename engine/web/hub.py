@@ -111,6 +111,79 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             **extra,
         }
 
+    # ── Auth routes ─────────────────────────────────────────────────────────
+
+    @hub.get(f"{prefix}/auth/login", response_class=HTMLResponse)
+    async def login_page(request: Request, _pid: str = pack_id):
+        return templates.TemplateResponse(request, "auth.html", {
+            "request": request, "theme": theme, "mode": "login",
+            "prefix": prefix, "error": None, "form_username": "",
+        })
+
+    @hub.get(f"{prefix}/auth/register", response_class=HTMLResponse)
+    async def register_page(request: Request, _pid: str = pack_id):
+        return templates.TemplateResponse(request, "auth.html", {
+            "request": request, "theme": theme, "mode": "register",
+            "prefix": prefix, "error": None, "form_username": "", "form_display_name": "",
+        })
+
+    @hub.post(f"{prefix}/auth/register", response_class=HTMLResponse)
+    async def register_submit(request: Request, username: str = Form(default=""), password: str = Form(default=""), display_name: str = Form(default=""), _pid: str = pack_id):
+        from .auth import AuthManager
+        from ..storage import get_store
+        store = get_store()
+        if not hasattr(store, 'create_user'):
+            # Not using Postgres — fall back to normal flow
+            return RedirectResponse(f"{prefix}/", status_code=303)
+        auth = AuthManager(store)
+        result = auth.register(username, password, display_name)
+        if not result["ok"]:
+            return templates.TemplateResponse(request, "auth.html", {
+                "request": request, "theme": theme, "mode": "register",
+                "prefix": prefix, "error": result["error"],
+                "form_username": username, "form_display_name": display_name,
+            })
+        # Auto-login after registration
+        login_result = auth.login(username, password)
+        if login_result["ok"]:
+            response = RedirectResponse(f"{prefix}/", status_code=303)
+            response.set_cookie("quest_session", login_result["session_id"], max_age=60*60*24*90, httponly=True, samesite="lax")
+            return response
+        return RedirectResponse(f"{prefix}/", status_code=303)
+
+    @hub.post(f"{prefix}/auth/login", response_class=HTMLResponse)
+    async def login_submit(request: Request, username: str = Form(default=""), password: str = Form(default=""), _pid: str = pack_id):
+        from .auth import AuthManager
+        from ..storage import get_store
+        store = get_store()
+        if not hasattr(store, 'create_user'):
+            return RedirectResponse(f"{prefix}/", status_code=303)
+        auth = AuthManager(store)
+        result = auth.login(username, password)
+        if not result["ok"]:
+            return templates.TemplateResponse(request, "auth.html", {
+                "request": request, "theme": theme, "mode": "login",
+                "prefix": prefix, "error": result["error"], "form_username": username,
+            })
+        response = RedirectResponse(f"{prefix}/", status_code=303)
+        response.set_cookie("quest_session", result["session_id"], max_age=60*60*24*90, httponly=True, samesite="lax")
+        return response
+
+    @hub.get(f"{prefix}/auth/logout")
+    async def logout(request: Request, _pid: str = pack_id):
+        from .auth import AuthManager, SESSION_COOKIE
+        from ..storage import get_store
+        store = get_store()
+        session_id = request.cookies.get(SESSION_COOKIE, "")
+        if hasattr(store, 'create_user') and session_id:
+            auth = AuthManager(store)
+            auth.logout(session_id)
+        response = RedirectResponse(f"{prefix}/", status_code=303)
+        response.delete_cookie(SESSION_COOKIE)
+        return response
+
+    # ── Main routes ──────────────────────────────────────────────────────────
+
     @hub.get(f"{prefix}/", response_class=HTMLResponse)
     async def menu(request: Request, _pid: str = pack_id):
         s = _session()
