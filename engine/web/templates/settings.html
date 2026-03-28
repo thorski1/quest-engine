@@ -45,6 +45,11 @@
   .swatch-cyberpunk { background: linear-gradient(135deg, #08111f, #00e5a0); }
   .swatch-playful { background: linear-gradient(135deg, #fef6e4, #6c5ce7); }
   .swatch-neural { background: linear-gradient(135deg, #0c0c1e, #7c6cf0); }
+  .swatch-medieval { background: linear-gradient(135deg, #1a1209, #d4a843); }
+  .swatch-unicorn { background: linear-gradient(135deg, #1a0825, #e040fb, #40c4ff); }
+  .swatch-alien { background: linear-gradient(135deg, #050510, #39ff14); }
+  .swatch-ocean { background: linear-gradient(135deg, #041825, #00c9db); }
+  .swatch-sunset { background: linear-gradient(135deg, #1a0a1e, #ff6b35, #c850c0); }
 
   .font-size-control { display: flex; align-items: center; gap: 0.5rem; }
   .font-btn {
@@ -88,11 +93,16 @@
         <div class="setting-label">Theme Override</div>
         <div class="setting-desc">Override the default pack theme</div>
       </div>
-      <div class="theme-picker">
-        <button class="theme-swatch swatch-cyberpunk" title="Cyberpunk" onclick="setThemeOverride('cyberpunk')"></button>
-        <button class="theme-swatch swatch-playful" title="Playful" onclick="setThemeOverride('playful')"></button>
-        <button class="theme-swatch swatch-neural" title="Neural" onclick="setThemeOverride('neural')"></button>
-        <button class="theme-swatch" style="background:var(--border);font-size:0.6rem;color:var(--text-dim);display:flex;align-items:center;justify-content:center;" title="Default" onclick="setThemeOverride('')">Auto</button>
+      <div class="theme-picker" style="flex-wrap:wrap;gap:0.4rem;">
+        <button class="theme-swatch swatch-cyberpunk" title="Cyberpunk — neon green" onclick="setThemeOverride('cyberpunk')"></button>
+        <button class="theme-swatch swatch-playful" title="Playful — purple & cream" onclick="setThemeOverride('playful')"></button>
+        <button class="theme-swatch swatch-neural" title="Neural — electric purple" onclick="setThemeOverride('neural')"></button>
+        <button class="theme-swatch swatch-medieval" title="Medieval — gold & parchment" onclick="setThemeOverride('medieval')"></button>
+        <button class="theme-swatch swatch-unicorn" title="Unicorn — rainbow magic" onclick="setThemeOverride('unicorn')"></button>
+        <button class="theme-swatch swatch-alien" title="Alien — cosmic green" onclick="setThemeOverride('alien')"></button>
+        <button class="theme-swatch swatch-ocean" title="Ocean — deep sea aqua" onclick="setThemeOverride('ocean')"></button>
+        <button class="theme-swatch swatch-sunset" title="Sunset — orange & purple" onclick="setThemeOverride('sunset')"></button>
+        <button class="theme-swatch" style="background:var(--border);font-size:0.55rem;color:var(--text-dim);display:flex;align-items:center;justify-content:center;" title="Default" onclick="setThemeOverride('')">Auto</button>
       </div>
     </div>
 
