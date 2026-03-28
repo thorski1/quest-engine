@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quest Engine</title>
+  <title>{% if theme == "playful" %}The Primer — Choose Your Chapter{% else %}Quest Engine — Choose Your Chapter{% endif %}</title>
+  <meta name="description" content="{% if theme == 'playful' %}An interactive educational adventure for young learners. Choose a chapter and begin!{% else %}A terminal RPG for learning DevOps. Choose a chapter and sharpen your skills.{% endif %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -13,13 +14,15 @@
 <header class="site-header">
   <span class="site-logo">{% if theme == "playful" %}✨ The Primer{% else %}Quest Engine{% endif %}</span>
   <nav class="header-nav"></nav>
-  <div class="header-stats"></div>
+  <div class="header-stats">
+    <span class="hub-total-stats">{{ packs | length }} chapters · {{ total_challenges }} challenges</span>
+  </div>
 </header>
 <main class="site-main">
   <div class="hub-page">
     <div class="hub-hero">
-      <h1 class="hub-title">Choose Your Chapter</h1>
-      <p class="hub-subtitle">Select a skill domain to begin</p>
+      <h1 class="hub-title">{% if theme == "playful" %}Choose Your Adventure{% else %}Choose Your Chapter{% endif %}</h1>
+      <p class="hub-subtitle">{% if theme == "playful" %}Pick a chapter and Puck will guide you!{% else %}Select a skill domain to begin your training{% endif %}</p>
     </div>
     <div class="hub-grid">
       {% for pack in packs %}
@@ -44,7 +47,8 @@
   </div>
 </main>
 <footer class="site-footer">
-  <span>Quest Engine</span>
+  <span>{% if theme == "playful" %}The Young Lady's Illustrated Primer{% else %}Quest Engine{% endif %}</span>
+  <span class="footer-link">{{ packs | length }} chapters</span>
 </footer>
 </body>
 </html>

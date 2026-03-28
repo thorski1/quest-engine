@@ -68,10 +68,15 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             })
         # Use playful theme if all packs are kids_mode; cyberpunk otherwise
         hub_theme = "playful" if all(p.kids_mode for p in skill_packs) else "cyberpunk"
+        total_challenges = sum(
+            sum(len(z.get("challenges", [])) for z in p.zones.values())
+            for p in skill_packs
+        )
         return templates.TemplateResponse(request, "hub.html", {
             "request": request,
             "packs": pack_cards,
             "theme": hub_theme,
+            "total_challenges": total_challenges,
         })
 
     # ── Per-pack routes ────────────────────────────────────────────────────────
