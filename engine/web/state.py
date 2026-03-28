@@ -309,6 +309,52 @@ class WebGameSession:
             })
         return zones
 
+    def parent_dashboard_context(self) -> dict:
+        """Return context for the parent dashboard page."""
+        engine = self.engine
+        from ..engine import BASE_ACHIEVEMENTS
+
+        # Accuracy
+        total_correct = sum(len(c) for c in engine.completed_challenges.values())
+        total_wrong = sum(zs.get("wrong", 0) for zs in engine.zone_scores.values())
+        total = total_correct + total_wrong
+        accuracy = int((total_correct / total * 100) if total > 0 else 0)
+
+        # Strength zones: completed with 3 stars (no wrong answers, no hints)
+        strengths = []
+        for zone_id in self.skill_pack.zone_order:
+            if zone_id in engine.completed_zones:
+                stars = engine.get_zone_stars(zone_id)
+                zs = engine.zone_scores.get(zone_id, {})
+                if stars >= 3 and zs.get("wrong", 0) == 0:
+                    zone = self.skill_pack.get_zone(zone_id)
+                    if zone:
+                        strengths.append({"name": zone.get("name", zone_id), "stars": stars})
+
+        # Struggle zones: most wrong answers + hints
+        struggles = []
+        for zone_id, zs in engine.zone_scores.items():
+            wrong = zs.get("wrong", 0)
+            hints = zs.get("hints", 0)
+            if wrong > 0 or hints > 2:
+                zone = self.skill_pack.get_zone(zone_id)
+                if zone:
+                    struggles.append({
+                        "id": zone_id,
+                        "name": zone.get("name", zone_id),
+                        "wrong_count": wrong,
+                        "hint_count": hints,
+                    })
+        struggles.sort(key=lambda x: x["wrong_count"], reverse=True)
+
+        return {
+            "accuracy_pct": accuracy,
+            "max_streak": engine.max_streak,
+            "daily_streak": engine.daily_streak,
+            "strength_zones": strengths[:5],
+            "struggle_zones": struggles[:5],
+        }
+
     def check_daily_answer(self, challenge: dict, user_input: str) -> "AnswerResult":
         """Check answer for the daily challenge. Awards 2x XP on correct."""
         result, _ = self.runner.run_challenge(challenge, user_input)

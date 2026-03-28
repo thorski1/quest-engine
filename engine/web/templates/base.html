@@ -55,6 +55,9 @@
 <footer class="site-footer" role="contentinfo">
   <span>{{ pack.title }} · <a href="{{ pack_url_prefix }}/" class="footer-link">Menu</a></span>
   <div style="display:flex;align-items:center;gap:0.75rem;">
+    {% if theme == "playful" %}
+    <a href="{{ pack_url_prefix }}/parent" class="action-btn" style="padding:0.2rem 0.4rem;font-size:0.85rem;" title="Parent Dashboard" aria-label="Parent Dashboard">👪</a>
+    {% endif %}
     <a href="{{ pack_url_prefix }}/settings" class="action-btn" style="padding:0.2rem 0.4rem;font-size:0.85rem;" title="Settings" aria-label="Settings">⚙</a>
     <button class="sound-toggle" onclick="toggleSound(this)" aria-label="Toggle sound effects" title="Toggle sound">
       <span class="sound-icon">🔊</span>

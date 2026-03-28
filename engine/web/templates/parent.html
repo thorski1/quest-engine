@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .parent-page { max-width: 760px; margin: 0 auto; }
+  .parent-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .parent-title { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); }
+  .parent-subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; }
+
+  .parent-summary {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem; margin-bottom: 2rem;
+  }
+  .ps-card {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1rem; text-align: center;
+  }
+  .ps-value { font-size: 1.5rem; font-weight: 800; color: var(--text-bright); }
+  .ps-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.2rem; }
+  .ps-good .ps-value { color: var(--primary); }
+  .ps-warn .ps-value { color: var(--warn); }
+
+  .section-label {
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.75rem; margin-top: 1.5rem;
+    padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+  }
+
+  .strength-list, .struggle-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .strength-row, .struggle-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem 0.85rem; background: var(--bg-surface);
+    border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.88rem;
+  }
+  .strength-row { border-left: 3px solid var(--primary); }
+  .struggle-row { border-left: 3px solid var(--warn); }
+  .sr-name { flex: 1; font-weight: 600; color: var(--text-bright); }
+  .sr-detail { font-size: 0.75rem; color: var(--text-dim); }
+
+  .activity-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 1.5rem;
+  }
+  .activity-cell {
+    aspect-ratio: 1; border-radius: 3px; background: var(--bg-raised);
+    transition: background 0.15s;
+  }
+  .activity-cell.level-1 { background: rgba(0, 229, 160, 0.2); }
+  .activity-cell.level-2 { background: rgba(0, 229, 160, 0.4); }
+  .activity-cell.level-3 { background: rgba(0, 229, 160, 0.7); }
+  .activity-cell.level-4 { background: var(--primary); }
+  [data-theme="playful"] .activity-cell.level-1 { background: rgba(108, 92, 231, 0.2); }
+  [data-theme="playful"] .activity-cell.level-2 { background: rgba(108, 92, 231, 0.4); }
+  [data-theme="playful"] .activity-cell.level-3 { background: rgba(108, 92, 231, 0.7); }
+  [data-theme="playful"] .activity-cell.level-4 { background: var(--primary); }
+  .activity-label { font-size: 0.7rem; color: var(--text-dim); text-align: center; }
+
+  .tip-box {
+    padding: 1rem 1.2rem; background: var(--lesson-bg); border: 1px solid var(--lesson-border);
+    border-radius: var(--radius-lg); font-size: 0.88rem; line-height: 1.6; color: var(--text);
+  }
+  .tip-box strong { color: var(--text-bright); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="parent-page">
+
+  <div class="parent-header">
+    <h1 class="parent-title">Parent Dashboard</h1>
+    <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Back</a>
+  </div>
+  <p class="parent-subtitle">{{ player_name }}'s progress in {{ pack.title }}</p>
+
+  <!-- ── Summary cards ─────────────────────────────────────────────── -->
+  <div class="parent-summary">
+    <div class="ps-card ps-good">
+      <div class="ps-value">{{ total_xp }}</div>
+      <div class="ps-label">Total XP</div>
+    </div>
+    <div class="ps-card">
+      <div class="ps-value">{{ level }} — {{ level_title }}</div>
+      <div class="ps-label">Level & Rank</div>
+    </div>
+    <div class="ps-card {% if accuracy_pct >= 70 %}ps-good{% elif accuracy_pct >= 50 %}{% else %}ps-warn{% endif %}">
+      <div class="ps-value">{{ accuracy_pct }}%</div>
+      <div class="ps-label">Accuracy</div>
+    </div>
+    <div class="ps-card">
+      <div class="ps-value">{{ completed_zones }}/{{ total_zones }}</div>
+      <div class="ps-label">Zones Complete</div>
+    </div>
+    <div class="ps-card">
+      <div class="ps-value">{{ daily_streak }}</div>
+      <div class="ps-label">Day Streak</div>
+    </div>
+    <div class="ps-card">
+      <div class="ps-value">{{ max_streak }}</div>
+      <div class="ps-label">Best Streak</div>
+    </div>
+  </div>
+
+  <!-- ── Strengths ─────────────────────────────────────────────────── -->
+  {% if strength_zones %}
+  <div class="section-label">Strengths</div>
+  <div class="strength-list">
+    {% for sz in strength_zones %}
+    <div class="strength-row">
+      <span>⭐</span>
+      <span class="sr-name">{{ sz.name }}</span>
+      <span class="sr-detail">{{ sz.stars }}★ · No wrong answers</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Areas needing practice ────────────────────────────────────── -->
+  {% if struggle_zones %}
+  <div class="section-label">Needs More Practice</div>
+  <div class="struggle-list">
+    {% for sz in struggle_zones %}
+    <div class="struggle-row">
+      <span>📝</span>
+      <span class="sr-name">{{ sz.name }}</span>
+      <span class="sr-detail">{{ sz.wrong_count }} wrong answers · {{ sz.hint_count }} hints used</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Tips for parents ──────────────────────────────────────────── -->
+  <div class="section-label">Tips</div>
+  <div class="tip-box">
+    {% if accuracy_pct >= 85 %}
+      <strong>{{ player_name }} is doing wonderfully!</strong> They're answering most questions correctly.
+      Consider increasing the difficulty in Settings to keep them challenged and growing.
+    {% elif accuracy_pct >= 60 %}
+      <strong>{{ player_name }} is making great progress.</strong> They're learning and improving.
+      If they get stuck, encourage them to use hints — that's what they're for! Reading the lesson
+      after a wrong answer is one of the best ways to learn.
+    {% elif accuracy_pct >= 1 %}
+      <strong>{{ player_name }} is working hard.</strong> Some topics are tough right now, and that's okay.
+      Try sitting together for a few challenges — reading the questions aloud can help younger learners.
+      Consider switching to Easy difficulty in Settings for a confidence boost.
+    {% else %}
+      <strong>{{ player_name }} is just getting started!</strong> The best way to begin is together —
+      read the questions aloud and talk about the answers. Every wrong answer teaches something new.
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

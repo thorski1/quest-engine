@@ -315,6 +315,13 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             request, achievements=_session().achievements_context(),
         ))
 
+    @hub.get(f"{prefix}/parent", response_class=HTMLResponse)
+    async def parent_page(request: Request, _pid: str = pack_id):
+        s = _session()
+        return templates.TemplateResponse(request, "parent.html", _ctx(
+            request, **s.parent_dashboard_context(),
+        ))
+
     @hub.get(f"{prefix}/settings", response_class=HTMLResponse)
     async def settings_page(request: Request, _pid: str = pack_id):
         return templates.TemplateResponse(request, "settings.html", _ctx(request))
