@@ -326,8 +326,13 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/achievements", response_class=HTMLResponse)
     async def achievements_page(request: Request, _pid: str = pack_id):
+        all_ach = _session().achievements_context()
+        unlocked = [a for a in all_ach if a.get("unlocked")]
+        locked = [a for a in all_ach if not a.get("unlocked")]
         return templates.TemplateResponse(request, "achievements.html", _ctx(
-            request, achievements=_session().achievements_context(),
+            request, achievements=all_ach,
+            unlocked=unlocked, locked=locked,
+            unlocked_count=len(unlocked), total_count=len(all_ach),
         ))
 
     @hub.get(f"{prefix}/leaderboard", response_class=HTMLResponse)
