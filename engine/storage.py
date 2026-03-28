@@ -198,8 +198,12 @@ def get_store() -> BaseStore:
     # Check env override
     backend = os.environ.get("QUEST_STORAGE", "").lower()
     save_dir = os.environ.get("QUEST_SAVE_DIR", "")
+    database_url = os.environ.get("QUEST_DATABASE_URL", "") or os.environ.get("DATABASE_URL", "")
 
-    if backend == "memory":
+    if backend == "postgres" or (not backend and database_url):
+        from .storage_postgres import PostgresStore
+        _store_instance = PostgresStore(database_url)
+    elif backend == "memory":
         _store_instance = MemoryStore()
     elif backend == "sqlite":
         db_path = Path(save_dir) / "quest_engine.db" if save_dir else _default_base() / "quest_engine.db"
