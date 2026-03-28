@@ -148,9 +148,19 @@
       </div>
     </div>
 
-    <!-- Step 4: Name -->
+    <!-- Step 4: Start -->
     <div class="onboard-step" id="step-3">
-      <div class="onboard-icon">👤</div>
+      <div class="onboard-icon">🚀</div>
+      {% if current_user %}
+      <h1 class="onboard-heading">Ready, {{ current_user.display_name }}?</h1>
+      <p class="onboard-text">Your progress will be saved to your account across all devices.</p>
+      <form method="POST" action="{{ pack_url_prefix }}/new-game" class="onboard-name-form">
+        <input type="hidden" name="player_name" value="{{ current_user.display_name }}">
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
+          {% if theme == "playful" %}Start My Adventure!{% elif theme == "neural" %}Begin Training{% else %}Enter the Grid{% endif %}
+        </button>
+      </form>
+      {% else %}
       <h1 class="onboard-heading">What's Your Name?</h1>
       <p class="onboard-text">
         {% if theme == "playful" %}Puck wants to know who you are!
@@ -164,6 +174,7 @@
           {% if theme == "playful" %}Start My Adventure!{% elif theme == "neural" %}Begin Training{% else %}Enter the Grid{% endif %}
         </button>
       </form>
+      {% endif %}
       <div class="onboard-nav">
         <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
       </div>

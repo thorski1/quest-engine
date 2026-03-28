@@ -50,6 +50,36 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         if pack.id not in _sessions:
             _sessions[pack.id] = WebGameSession(pack)
 
+    # ── Auth middleware: gate all game routes when Postgres is active ─────────
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.responses import RedirectResponse as StarletteRedirect
+
+    class AuthGateMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            path = request.url.path
+            # Always allow: static files, auth routes, hub root
+            if (path.startswith("/static") or "/auth/" in path or path == "/"):
+                return await call_next(request)
+            # Check if Postgres is in use
+            from ..storage import get_store
+            store = get_store()
+            if not hasattr(store, 'create_user'):
+                return await call_next(request)  # no auth in local mode
+            # Check session cookie
+            from .auth import AuthManager, SESSION_COOKIE
+            session_id = request.cookies.get(SESSION_COOKIE, "")
+            if session_id:
+                user = AuthManager(store).get_user_from_session(session_id)
+                if user:
+                    request.state.user = user
+                    return await call_next(request)
+            # No valid session — find the pack prefix for redirect
+            parts = path.strip("/").split("/")
+            pack_prefix = f"/{parts[0]}" if parts else ""
+            return StarletteRedirect(f"{pack_prefix}/auth/login", status_code=303)
+
+    hub.add_middleware(AuthGateMiddleware)
+
     # ── Hub landing page ───────────────────────────────────────────────────────
 
     @hub.get("/", response_class=HTMLResponse)
@@ -97,16 +127,64 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     prefix = f"/{pack_id}"
     theme = skill_pack.theme or ("playful" if skill_pack.kids_mode else "cyberpunk")
 
-    def _session() -> WebGameSession:
+    def _is_postgres() -> bool:
+        """Check if we're using Postgres (auth-gated mode)."""
+        from ..storage import get_store
+        return hasattr(get_store(), 'create_user')
+
+    def _get_user(request: Request) -> dict | None:
+        """Get authenticated user from session cookie, or None."""
+        if not _is_postgres():
+            return None  # no auth in local mode
+        from .auth import AuthManager, SESSION_COOKIE
+        from ..storage import get_store
+        session_id = request.cookies.get(SESSION_COOKIE, "")
+        if not session_id:
+            return None
+        return AuthManager(get_store()).get_user_from_session(session_id)
+
+    def _require_auth(request: Request) -> dict | RedirectResponse:
+        """Check auth. Returns user dict or a redirect response."""
+        if not _is_postgres():
+            return {"id": 0, "username": "local", "display_name": "Player"}
+        user = _get_user(request)
+        if not user:
+            return RedirectResponse(f"{prefix}/auth/login", status_code=303)
+        return user
+
+    def _session_for_user(user: dict) -> WebGameSession:
+        """Get or create a session for a specific user."""
+        user_id = user.get("id", 0)
+        session_key = f"{pack_id}:{user_id}"
+        if session_key not in _sessions:
+            sess = WebGameSession(skill_pack)
+            # Set the player ID so saves go to the right user
+            sess.engine._player_id = str(user_id) if user_id else "default"
+            sess.engine.player_name = user.get("display_name", "Player")
+            sess.engine.load()  # reload from store for this user
+            _sessions[session_key] = sess
+        return _sessions[session_key]
+
+    def _session(request: Request = None) -> WebGameSession:
+        """Get session — user-specific if authed, default otherwise."""
+        if request and _is_postgres():
+            user = _get_user(request)
+            if user:
+                return _session_for_user(user)
+        # Fallback to default session
+        if pack_id not in _sessions:
+            _sessions[pack_id] = WebGameSession(skill_pack)
         return _sessions[pack_id]
 
     def _ctx(request: Request, **extra) -> dict:
-        sess = _session()
+        sess = _session(request)
+        user = _get_user(request) if _is_postgres() else None
         return {
             "request": request,
             "theme": theme,
             "pack": skill_pack,
             "pack_url_prefix": prefix,
+            "current_user": user,
             **sess.stats_context(),
             **extra,
         }
@@ -186,7 +264,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/", response_class=HTMLResponse)
     async def menu(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         # Redirect new players to onboarding
         if not s.has_progress():
             return templates.TemplateResponse(request, "onboarding.html", _ctx(request))
@@ -215,7 +293,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         zone = skill_pack.get_zone(zone_id)
         if not zone:
             return RedirectResponse(f"{prefix}/", status_code=303)
-        s = _session()
+        s = _session(request)
         s.start_zone(zone_id)
         intro_text = skill_pack.zone_intros.get(zone_id, "")
         challenges = zone.get("challenges", [])
@@ -236,7 +314,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/challenge", response_class=HTMLResponse)
     async def challenge_page(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         challenge = s.get_current_challenge()
         if not challenge:
             zone_id = s.engine.current_zone
@@ -274,7 +352,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     async def submit_answer(request: Request, answer: str = Form(default=""), challenge_id: str = Form(default=""), _pid: str = pack_id):
         if not answer.strip():
             return RedirectResponse(f"{prefix}/challenge", status_code=303)
-        s = _session()
+        s = _session(request)
 
         # Get the specific challenge that was displayed, not the "current" one
         challenge = s.get_current_challenge()
@@ -314,7 +392,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.post(f"{prefix}/hint", response_class=HTMLResponse)
     async def get_hint(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         hint_text = s.get_hint()
         challenge = s.get_current_challenge()
         zone = s.get_current_zone()
@@ -352,7 +430,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/stats", response_class=HTMLResponse)
     async def stats_page(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         return templates.TemplateResponse(request, "stats.html", _ctx(
             request,
             zones=s.all_zones_context(),
@@ -361,7 +439,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/daily", response_class=HTMLResponse)
     async def daily_page(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         engine = s.engine
         ch = engine.get_daily_challenge(skill_pack)
         today = datetime.date.today().strftime("%A, %B %d, %Y")
@@ -388,7 +466,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.post(f"{prefix}/daily/answer", response_class=HTMLResponse)
     async def daily_answer(request: Request, answer: str = Form(default=""), _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         engine = s.engine
         ch = engine.get_daily_challenge(skill_pack)
         if not ch or not answer.strip():
@@ -420,7 +498,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/zone/{{zone_id}}/complete", response_class=HTMLResponse)
     async def zone_complete_page(request: Request, zone_id: str, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         zone = skill_pack.get_zone(zone_id)
         if not zone:
             return RedirectResponse(f"{prefix}/", status_code=303)
@@ -452,28 +530,28 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/review", response_class=HTMLResponse)
     async def review_page(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         return templates.TemplateResponse(request, "review.html", _ctx(
             request, review_items=s.review_context(),
         ))
 
     @hub.get(f"{prefix}/bookmarks", response_class=HTMLResponse)
     async def bookmarks_page(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         return templates.TemplateResponse(request, "bookmarks.html", _ctx(
             request, bookmarked_challenges=s.bookmarks_context(),
         ))
 
     @hub.get(f"{prefix}/leaderboard", response_class=HTMLResponse)
     async def leaderboard_page(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         return templates.TemplateResponse(request, "leaderboard.html", _ctx(
             request, **s.leaderboard_context(),
         ))
 
     @hub.get(f"{prefix}/parent", response_class=HTMLResponse)
     async def parent_page(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         return templates.TemplateResponse(request, "parent.html", _ctx(
             request, **s.parent_dashboard_context(),
         ))
@@ -484,7 +562,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/zones", response_class=HTMLResponse)
     async def zones_page(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         return templates.TemplateResponse(request, "menu.html", _ctx(
             request, zones=s.all_zones_context(),
             has_progress=s.has_progress(), intro_story="",
@@ -492,7 +570,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/complete", response_class=HTMLResponse)
     async def pack_complete(request: Request, _pid: str = pack_id):
-        s = _session()
+        s = _session(request)
         return templates.TemplateResponse(request, "complete.html", _ctx(
             request,
             completed_zones=len(s.engine.completed_zones),

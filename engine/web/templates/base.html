@@ -43,7 +43,11 @@
       </div>
       <span class="stat-label">{{ total_xp }} XP</span>
     </div>
+    {% if current_user %}
+    <a href="{{ pack_url_prefix }}/auth/logout" class="stat-name" aria-label="Sign out" title="Sign out: {{ current_user.display_name }}" style="cursor:pointer;">{{ current_user.display_name }}</a>
+    {% else %}
     <span class="stat-name" aria-label="Player name">{{ player_name }}</span>
+    {% endif %}
   </div>
 </header>
 
