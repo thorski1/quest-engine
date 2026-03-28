@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .review-page { max-width: 680px; margin: 0 auto; }
+  .review-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .review-title { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); }
+  .review-subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; line-height: 1.5; }
+
+  .review-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .review-card {
+    padding: 1rem 1.2rem; background: var(--bg-surface);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    border-left: 3px solid var(--accent);
+    animation: fade-in-up 0.3s ease both;
+  }
+  .review-card:nth-child(odd) { animation-delay: 0.05s; }
+  .review-card:nth-child(even) { animation-delay: 0.1s; }
+
+  .review-zone { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+  .review-question { font-weight: 600; color: var(--text-bright); font-size: 0.95rem; margin-bottom: 0.5rem; line-height: 1.5; }
+  .review-lesson {
+    font-size: 0.82rem; color: var(--text); line-height: 1.6;
+    padding: 0.6rem 0.8rem; background: var(--lesson-bg);
+    border-radius: var(--radius); border: 1px solid var(--lesson-border);
+  }
+  .review-action { margin-top: 0.6rem; }
+
+  .review-empty { text-align: center; padding: 3rem 1rem; }
+  .review-empty-icon { font-size: 3.5rem; margin-bottom: 0.75rem; }
+  .review-empty-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 0.3rem; }
+  .review-empty-text { color: var(--text-dim); font-size: 0.9rem; }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="review-page">
+
+  <div class="review-header">
+    <h1 class="review-title">
+      {% if theme == "playful" %}Let's Review!{% else %}Wrong Answer Journal{% endif %}
+    </h1>
+    <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Back</a>
+  </div>
+
+  <p class="review-subtitle">
+    {% if theme == "playful" %}
+      Everyone gets things wrong sometimes — that's how we learn! These are the questions you found tricky. Read the lessons again and you'll master them in no time.
+    {% else %}
+      Challenges you've struggled with. Review the lessons to strengthen weak areas.
+    {% endif %}
+  </p>
+
+  {% if review_items %}
+  <div class="review-list">
+    {% for item in review_items %}
+    <div class="review-card">
+      <div class="review-zone">{{ item.zone_name }}</div>
+      <div class="review-question">{{ item.question }}</div>
+      <div class="review-lesson">{{ item.lesson_html | safe }}</div>
+      <div class="review-action">
+        <a href="{{ pack_url_prefix }}/zone/{{ item.zone_id }}/intro" class="btn btn-ghost" style="padding:0.3rem 0.7rem;font-size:0.78rem;">
+          Replay Zone →
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="review-empty">
+    <div class="review-empty-icon">✨</div>
+    <p class="review-empty-title">Nothing to review!</p>
+    <p class="review-empty-text">
+      {% if theme == "playful" %}
+        You haven't gotten any wrong yet — or you've mastered everything! Keep going!
+      {% else %}
+        No wrong answers recorded. Either you're perfect or you haven't started yet.
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -309,6 +309,33 @@ class WebGameSession:
             })
         return zones
 
+    def review_context(self) -> list[dict]:
+        """Return wrong-answer journal entries with question + lesson for review."""
+        from .markup import rich_to_html
+        result = []
+        for zone_id, ch_ids in self.engine.wrong_answer_journal.items():
+            zone = self.skill_pack.get_zone(zone_id)
+            if not zone:
+                continue
+            zone_name = zone.get("name", zone_id)
+            seen = set()
+            for ch_id in ch_ids:
+                if ch_id in seen:
+                    continue
+                seen.add(ch_id)
+                for ch in zone.get("challenges", []):
+                    if ch.get("id") == ch_id:
+                        question = ch.get("question", ch.get("prompt", ""))
+                        lesson = ch.get("lesson", ch.get("explanation", ""))
+                        result.append({
+                            "zone_id": zone_id,
+                            "zone_name": zone_name,
+                            "question": question,
+                            "lesson_html": rich_to_html(lesson) if lesson else "",
+                        })
+                        break
+        return result
+
     def bookmarks_context(self) -> list[dict]:
         """Return bookmarked challenges with zone context."""
         result = []

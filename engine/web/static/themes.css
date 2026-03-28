@@ -931,10 +931,23 @@ html, body {
   .header-stats { gap: 0.5rem; }
   .stat-xp-block { display: none; }
   .site-main { padding: 1.25rem 0.75rem; }
-  .options-grid { grid-template-columns: 1fr; }
+  .options-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+  .option-btn { min-height: 48px; padding: 0.9rem 1rem; font-size: 0.95rem; }
   .challenge-card { padding: 1.25rem; }
+  .challenge-prompt { font-size: 1.05rem; }
   .menu-title { font-size: 1.6rem; }
   .zone-grid { grid-template-columns: 1fr 1fr; }
+  .btn-lg { min-height: 48px; padding: 0.8rem 1.5rem; }
+  .action-bar { gap: 0.4rem; }
+  .action-btn { min-height: 44px; padding: 0.6rem 0.85rem; }
+  .daily-banner { padding: 0.75rem 1rem; }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+  .zone-grid { grid-template-columns: 1fr; }
+  .options-grid { gap: 0.4rem; }
+  .hub-grid { grid-template-columns: 1fr; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
