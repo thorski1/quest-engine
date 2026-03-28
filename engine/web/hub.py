@@ -335,6 +335,13 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             unlocked_count=len(unlocked), total_count=len(all_ach),
         ))
 
+    @hub.get(f"{prefix}/bookmarks", response_class=HTMLResponse)
+    async def bookmarks_page(request: Request, _pid: str = pack_id):
+        s = _session()
+        return templates.TemplateResponse(request, "bookmarks.html", _ctx(
+            request, bookmarked_challenges=s.bookmarks_context(),
+        ))
+
     @hub.get(f"{prefix}/leaderboard", response_class=HTMLResponse)
     async def leaderboard_page(request: Request, _pid: str = pack_id):
         s = _session()

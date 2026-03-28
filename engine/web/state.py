@@ -309,6 +309,28 @@ class WebGameSession:
             })
         return zones
 
+    def bookmarks_context(self) -> list[dict]:
+        """Return bookmarked challenges with zone context."""
+        result = []
+        for bm_id in self.engine.bookmarks:
+            # bm_id format: "zone_id:challenge_id"
+            parts = bm_id.split(":", 1) if ":" in bm_id else [None, bm_id]
+            zone_id, ch_id = parts[0], parts[1] if len(parts) > 1 else bm_id
+            # Find the challenge
+            for zid, zone in self.skill_pack.zones.items():
+                for ch in zone.get("challenges", []):
+                    if ch.get("id") == ch_id or ch.get("id") == bm_id:
+                        question = ch.get("question", ch.get("prompt", ""))
+                        lesson = ch.get("lesson", ch.get("explanation", ""))
+                        result.append({
+                            "zone_name": zone.get("name", zid),
+                            "question": question[:120] + "..." if len(question) > 120 else question,
+                            "lesson": lesson,
+                            "lesson_preview": lesson[:150] + "..." if len(lesson) > 150 else lesson,
+                        })
+                        break
+        return result
+
     def leaderboard_context(self) -> dict:
         """Return leaderboard data from the store."""
         store = self.engine._store
