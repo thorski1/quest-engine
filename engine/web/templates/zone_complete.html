@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .zc-page { max-width: 680px; margin: 0 auto; text-align: center; }
+  .zc-celebration { animation: pop-scale 0.5s ease both; }
+  @keyframes pop-scale {
+    0% { opacity: 0; transform: scale(0.85); }
+    60% { transform: scale(1.03); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .zc-icon { font-size: 4rem; margin: 2rem 0 1rem; }
+  .zc-title { font-size: 1.6rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem; }
+  [data-theme="playful"] .zc-title { font-size: 1.9rem; }
+
+  .zc-stars { font-size: 2rem; margin-bottom: 1rem; letter-spacing: 0.3rem; }
+  .zc-star-filled { color: var(--warn); }
+  .zc-star-empty { color: var(--border); }
+
+  .zc-stats {
+    display: flex; justify-content: center; gap: 2rem; margin: 1.5rem 0;
+    animation: fade-in-up 0.4s ease 0.2s both;
+  }
+  .zc-stat { text-align: center; }
+  .zc-stat-value { font-size: 1.5rem; font-weight: 800; color: var(--text-bright); }
+  .zc-stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .zc-narrative {
+    text-align: left; padding: 1.25rem; margin: 1.5rem 0;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    animation: fade-in-up 0.4s ease 0.3s both;
+  }
+
+  .zc-actions {
+    display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;
+    margin-top: 1.5rem;
+    animation: fade-in-up 0.4s ease 0.4s both;
+  }
+
+  .zc-achievement {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 1rem; background: rgba(251,191,36,0.08);
+    border: 1px solid var(--warn); border-radius: var(--radius);
+    color: var(--warn); font-weight: 700; font-size: 0.85rem;
+    margin-bottom: 1rem;
+    animation: fade-in-up 0.4s ease 0.15s both;
+  }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="zc-page">
+  <div class="zc-celebration">
+    <div class="zc-icon">{% if theme == "playful" %}🌟{% elif theme == "neural" %}🧠{% else %}⚡{% endif %}</div>
+    <h1 class="zc-title">{{ zone_name }} Complete!</h1>
+
+    <div class="zc-stars">
+      {% for i in range(3) %}
+        {% if i < stars %}
+          <span class="zc-star-filled">★</span>
+        {% else %}
+          <span class="zc-star-empty">☆</span>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% if new_achievement %}
+    <div class="zc-achievement">🏆 {{ new_achievement }}</div>
+    {% endif %}
+
+    <div class="zc-stats">
+      <div class="zc-stat">
+        <div class="zc-stat-value">+{{ zone_xp }}</div>
+        <div class="zc-stat-label">XP Earned</div>
+      </div>
+      <div class="zc-stat">
+        <div class="zc-stat-value">{{ challenges_done }}/{{ challenges_total }}</div>
+        <div class="zc-stat-label">Challenges</div>
+      </div>
+      <div class="zc-stat">
+        <div class="zc-stat-value">{{ hints_used }}</div>
+        <div class="zc-stat-label">Hints Used</div>
+      </div>
+    </div>
+  </div>
+
+  {% if completion_html %}
+  <div class="zc-narrative narrative-text">
+    {{ completion_html | safe }}
+  </div>
+  {% endif %}
+
+  <div class="zc-actions">
+    {% if next_zone_id %}
+      <a href="{{ pack_url_prefix }}/zone/{{ next_zone_id }}/intro" class="btn btn-primary btn-lg">
+        {% if theme == "playful" %}Next Chapter →{% else %}Next Zone →{% endif %}
+      </a>
+    {% else %}
+      <a href="{{ pack_url_prefix }}/complete" class="btn btn-primary btn-lg">See Final Results</a>
+    {% endif %}
+    <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Menu</a>
+    <a href="https://x.com/intent/tweet?text=I%20just%20completed%20{{ zone_name | urlencode }}%20in%20{{ pack.title | urlencode }}!%20{{ stars }}%20stars%20%E2%AD%90%20%23QuestEngine" target="_blank" rel="noopener" class="share-btn" style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 1rem;border-radius:var(--radius);background:#000;color:#fff;font-size:0.8rem;font-weight:600;">𝕏 Share</a>
+  </div>
+</div>
+
+<script>
+(function() {
+  var colors = ['#ffd93d','#ff6b6b','#6bcb77','#4d96ff','#ff6eb4','#a855f7','#00e5a0'];
+  var c = document.createElement('div');
+  c.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998;overflow:hidden;';
+  document.body.appendChild(c);
+  for (var i = 0; i < 50; i++) {
+    var p = document.createElement('div');
+    p.style.cssText = 'position:absolute;top:-20px;left:'+Math.random()*100+'%;background:'+colors[Math.floor(Math.random()*colors.length)]+';width:'+(6+Math.random()*8)+'px;height:'+(6+Math.random()*8)+'px;border-radius:2px;animation:zc-fall '+(2+Math.random()*2)+'s ease-out '+Math.random()*1+'s forwards;';
+    c.appendChild(p);
+  }
+  setTimeout(function(){c.remove();},5000);
+  if(window.QuestSounds)QuestSounds.zoneComplete();
+})();
+</script>
+<style>
+@keyframes zc-fall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(100vh) rotate(720deg) scale(.3)}}
+</style>
+{% endblock %}

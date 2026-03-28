@@ -335,6 +335,38 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             unlocked_count=len(unlocked), total_count=len(all_ach),
         ))
 
+    @hub.get(f"{prefix}/zone/{{zone_id}}/complete", response_class=HTMLResponse)
+    async def zone_complete_page(request: Request, zone_id: str, _pid: str = pack_id):
+        s = _session()
+        zone = skill_pack.get_zone(zone_id)
+        if not zone:
+            return RedirectResponse(f"{prefix}/", status_code=303)
+        challenges = zone.get("challenges", [])
+        stars = s.engine.get_zone_stars(zone_id)
+        zs = s.engine.zone_scores.get(zone_id, {})
+        zone_xp = sum(c.get("xp", 25) for c in challenges)
+        completion_text = skill_pack.zone_completions.get(zone_id, "")
+        # Find achievement for this zone
+        ach_id = skill_pack.zone_achievement_map.get(zone_id)
+        ach_name = ""
+        if ach_id and ach_id in s.engine.achievements:
+            ach_data = skill_pack.achievements.get(ach_id)
+            if ach_data:
+                ach_name = ach_data[0]
+        next_zone = s._next_zone_id(zone_id)
+        return templates.TemplateResponse(request, "zone_complete.html", _ctx(
+            request,
+            zone_name=zone.get("name", zone_id),
+            stars=stars,
+            zone_xp=zone_xp,
+            challenges_done=len(challenges),
+            challenges_total=len(challenges),
+            hints_used=zs.get("hints", 0),
+            completion_html=rich_to_html(completion_text) if completion_text else "",
+            new_achievement=ach_name,
+            next_zone_id=next_zone,
+        ))
+
     @hub.get(f"{prefix}/review", response_class=HTMLResponse)
     async def review_page(request: Request, _pid: str = pack_id):
         s = _session()

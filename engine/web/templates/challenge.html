@@ -117,21 +117,15 @@
     <!-- ── Answer area ──────────────────────────────────────────────── -->
     {% if result and result.correct %}
 
-      <!-- After correct answer: show next-challenge action -->
+      <!-- After correct answer: zone/pack complete redirect -->
       {% if result.zone_complete %}
         <div class="zone-complete-banner">
           {% if result.pack_complete %}
-            <p class="zone-complete-text">🎉 Pack Complete! You finished everything!</p>
-            <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
-              <a href="{{ pack_url_prefix }}/complete" class="btn btn-primary btn-lg">See Results</a>
-              <a href="https://x.com/intent/tweet?text=I%20just%20completed%20{{ pack.title | urlencode }}%20%E2%9C%A8%20{{ total_xp }}%20XP%20earned!%20%23QuestEngine" target="_blank" rel="noopener" class="share-btn">𝕏 Share</a>
-            </div>
+            <p class="zone-complete-text">🎉 Pack Complete!</p>
+            <a href="{{ pack_url_prefix }}/complete" class="btn btn-primary btn-lg">See Results →</a>
           {% else %}
             <p class="zone-complete-text">✨ Zone Complete!</p>
-            <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
-              <a href="{{ pack_url_prefix }}/zone/{{ result.next_zone_id }}/intro" class="btn btn-primary btn-lg">Next Zone →</a>
-              <a href="https://x.com/intent/tweet?text=I%20just%20completed%20{{ zone.name | urlencode }}%20in%20{{ pack.title | urlencode }}!%20%E2%9C%A8%20%23QuestEngine" target="_blank" rel="noopener" class="share-btn">𝕏 Share</a>
-            </div>
+            <a href="{{ pack_url_prefix }}/zone/{{ zone_id }}/complete" class="btn btn-primary btn-lg">See Results →</a>
           {% endif %}
         </div>
       {% else %}
