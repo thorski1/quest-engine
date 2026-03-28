@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyber">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signup Dashboard — Quest Engine Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep:    #0a0e17;
+      --bg-surface: #111827;
+      --bg-card:    #1a2233;
+      --border:     #1e293b;
+      --primary:    #00e5a0;
+      --secondary:  #00b4d8;
+      --accent:     #7c6cf0;
+      --warn:       #fbbf24;
+      --danger:     #ef4444;
+      --text:       #94a3b8;
+      --text-bright:#e2e8f0;
+      --text-dim:   #64748b;
+      --radius:     8px;
+      --radius-lg:  12px;
+      --font-mono:  'JetBrains Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-mono);
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 229, 160, 0.015) 2px,
+        rgba(0, 229, 160, 0.015) 4px
+      );
+      z-index: 1000;
+    }
+
+    .admin-wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .admin-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-shadow: 0 0 20px rgba(0, 229, 160, 0.3);
+    }
+
+    .admin-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 0.25rem;
+    }
+
+    .admin-badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: rgba(0, 229, 160, 0.1);
+      color: var(--primary);
+      border: 1px solid rgba(0, 229, 160, 0.2);
+    }
+
+    /* ── Stats Cards ────────────────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+
+    .stat-card-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-bright);
+    }
+
+    .stat-card-detail {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-top: 0.25rem;
+    }
+
+    /* ── Filter Bar ─────────────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .filter-btn {
+      padding: 0.35rem 0.75rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--secondary); color: var(--secondary); }
+    .filter-btn.active { border-color: var(--primary); color: var(--primary); background: rgba(0,229,160,0.08); }
+
+    /* ── Table ──────────────────────────────────────────────────── */
+    .signup-table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .signup-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .signup-table thead th {
+      background: var(--bg-surface);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .signup-table tbody td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .signup-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .signup-table tbody tr {
+      transition: background 0.1s;
+    }
+
+    .signup-table tbody tr:hover {
+      background: rgba(0, 229, 160, 0.03);
+    }
+
+    .cell-username {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .cell-display {
+      color: var(--text-bright);
+    }
+
+    .cell-game {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .game-nexus-quest { background: rgba(0, 229, 160, 0.12); color: #00e5a0; }
+    .game-primer      { background: rgba(108, 92, 231, 0.15); color: #a78bfa; }
+    .game-ai-academy  { background: rgba(0, 180, 216, 0.12); color: #00b4d8; }
+    .game-unknown     { background: rgba(100, 116, 139, 0.15); color: #94a3b8; }
+
+    .cell-time {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    .cell-id {
+      color: var(--text-dim);
+      font-size: 0.72rem;
+    }
+
+    /* ── Empty state ────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-dim);
+    }
+
+    .empty-state-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.5;
+    }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .admin-wrap { padding: 1rem; }
+      .admin-header { flex-direction: column; gap: 0.75rem; align-items: flex-start; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .signup-table { font-size: 0.75rem; }
+      .signup-table thead th, .signup-table tbody td { padding: 0.5rem 0.6rem; }
+      .col-id { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-wrap">
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <div class="admin-header">
+    <div>
+      <h1 class="admin-title">// SIGNUP_MONITOR</h1>
+      <div class="admin-subtitle">New player registration events</div>
+    </div>
+    <span class="admin-badge">ADMIN</span>
+  </div>
+
+  <!-- ── Stats Row ───────────────────────────────────────────── -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-card-label">Total Users</div>
+      <div class="stat-card-value">{{ total_users }}</div>
+      <div class="stat-card-detail">Active accounts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Recent Signups</div>
+      <div class="stat-card-value">{{ signups | length }}</div>
+      <div class="stat-card-detail">Showing last {{ limit }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Today</div>
+      <div class="stat-card-value">{{ today_count }}</div>
+      <div class="stat-card-detail">Signups today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Games</div>
+      <div class="stat-card-value">{{ game_names | length }}</div>
+      <div class="stat-card-detail">Active titles</div>
+    </div>
+  </div>
+
+  <!-- ── Filter Bar ──────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-btn active" onclick="filterGame('all', this)">All</button>
+    {% for gn in game_names %}
+    <button class="filter-btn" onclick="filterGame('{{ gn }}', this)">{{ gn }}</button>
+    {% endfor %}
+  </div>
+
+  <!-- ── Signup Table ────────────────────────────────────────── -->
+  <div class="signup-table-wrap">
+    {% if signups %}
+    <table class="signup-table">
+      <thead>
+        <tr>
+          <th class="col-id">#</th>
+          <th>Username</th>
+          <th>Display Name</th>
+          <th>Game</th>
+          <th>Signed Up</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in signups %}
+        <tr data-game="{{ s.game_name or 'unknown' }}">
+          <td class="col-id cell-id">{{ s.user_id }}</td>
+          <td class="cell-username">{{ s.username }}</td>
+          <td class="cell-display">{{ s.display_name or s.username }}</td>
+          <td>
+            {% set gclass = 'game-' + (s.game_name or 'unknown') | replace(' ', '-') %}
+            <span class="cell-game {{ gclass }}">{{ s.game_name or 'unknown' }}</span>
+          </td>
+          <td class="cell-time">{{ s.created_at.strftime('%Y-%m-%d %H:%M') if s.created_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">📡</div>
+      <div>No signup events recorded yet.</div>
+      <div style="margin-top:0.5rem;font-size:0.8rem;">Events appear here once <code>notify_signup()</code> is wired into registration.</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+function filterGame(game, btn) {
+  // Update active button
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Filter rows
+  document.querySelectorAll('.signup-table tbody tr').forEach(row => {
+    if (game === 'all') {
+      row.style.display = '';
+    } else {
+      row.style.display = row.dataset.game === game ? '' : 'none';
+    }
+  });
+}
+</script>
+
+</body>
+</html>

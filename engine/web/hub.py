@@ -111,6 +111,67 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "total_challenges": total_challenges,
         })
 
+    # ── Admin analytics (hub-level, cross-game) ────────────────────────────────
+
+    @hub.get("/admin/analytics", response_class=HTMLResponse)
+    async def admin_analytics(request: Request):
+        from ..storage import get_store
+        store = get_store()
+        ctx = {
+            "request": request,
+            "total_users": 0, "total_attempts": 0, "global_pass_rate": 0,
+            "signups_today": 0, "active_today": 0,
+            "recent_signups": [], "hardest_challenges": [], "easiest_challenges": [],
+        }
+        if not hasattr(store, '_get_conn'):
+            return templates.TemplateResponse(request, "admin_analytics.html", ctx)
+        try:
+            import psycopg2.extras
+            conn = store._get_conn()
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                cur.execute("SELECT COUNT(*) FROM users WHERE is_active = TRUE")
+                ctx["total_users"] = cur.fetchone()[0]
+
+                cur.execute("SELECT COUNT(*), SUM(CASE WHEN correct THEN 1 ELSE 0 END) FROM challenge_attempts")
+                row = cur.fetchone()
+                ctx["total_attempts"] = row[0] or 0
+                correct = row[1] or 0
+                ctx["global_pass_rate"] = round(correct / max(row[0] or 1, 1) * 100)
+
+                cur.execute("SELECT COUNT(*) FROM users WHERE created_at::date = CURRENT_DATE")
+                ctx["signups_today"] = cur.fetchone()[0]
+
+                cur.execute("SELECT COUNT(DISTINCT user_id) FROM challenge_attempts WHERE attempted_at::date = CURRENT_DATE")
+                ctx["active_today"] = cur.fetchone()[0]
+
+                cur.execute("""
+                    SELECT username, display_name, created_at FROM users
+                    WHERE is_active = TRUE ORDER BY created_at DESC LIMIT 20
+                """)
+                ctx["recent_signups"] = [dict(r) for r in cur.fetchall()]
+
+                cur.execute("""
+                    SELECT challenge_id, pack_name, COUNT(*) as total,
+                           ROUND(SUM(CASE WHEN correct THEN 1 ELSE 0 END)::numeric / COUNT(*) * 100) as rate
+                    FROM challenge_attempts GROUP BY challenge_id, pack_name
+                    HAVING COUNT(*) >= 3 ORDER BY rate ASC LIMIT 15
+                """)
+                ctx["hardest_challenges"] = [dict(r) for r in cur.fetchall()]
+
+                cur.execute("""
+                    SELECT challenge_id, pack_name, COUNT(*) as total,
+                           ROUND(SUM(CASE WHEN correct THEN 1 ELSE 0 END)::numeric / COUNT(*) * 100) as rate
+                    FROM challenge_attempts GROUP BY challenge_id, pack_name
+                    HAVING COUNT(*) >= 5 ORDER BY rate DESC LIMIT 10
+                """)
+                ctx["easiest_challenges"] = [dict(r) for r in cur.fetchall()]
+
+            conn.commit()
+        except Exception:
+            pass
+
+        return templates.TemplateResponse(request, "admin_analytics.html", ctx)
+
     # ── Per-pack routes ────────────────────────────────────────────────────────
     # All routes are duplicated from server.py but with /{pack_id} prefix.
     # We import and call create_app to create per-pack sub-apps, then add the hub routes inline.
@@ -221,6 +282,14 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
                 "prefix": prefix, "error": result["error"],
                 "form_username": username, "form_display_name": display_name,
             })
+        # Notify signup
+        try:
+            from .notifications import notify_signup
+            game_name = "primer" if skill_pack.kids_mode else ("ai-academy" if (skill_pack.theme == "neural") else "nexus-quest")
+            notify_signup(result["user_id"], username, display_name or username, game_name, store)
+        except Exception:
+            pass
+
         # Auto-login after registration
         login_result = auth.login(username, password)
         if login_result["ok"]:
@@ -368,6 +437,23 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
         result = s.submit_answer(answer.strip(), challenge=challenge)
+
+        # Record attempt to Postgres for analytics
+        try:
+            from ..storage import get_store
+            store = get_store()
+            if hasattr(store, 'record_attempt'):
+                user = getattr(request.state, 'user', None)
+                if user:
+                    store.record_attempt(
+                        user_id=user["id"], pack_name=skill_pack.save_file_name,
+                        zone_id=zone_id, challenge_id=challenge.get("id", ""),
+                        correct=result.correct, answer=answer.strip(),
+                        hints=s._hint_index, difficulty=s.engine.difficulty_mode,
+                    )
+        except Exception:
+            pass  # analytics should never block gameplay
+
         zone = s.get_current_zone()
         num, total = s.challenge_position()
         ctype = challenge.get("type", "quiz")

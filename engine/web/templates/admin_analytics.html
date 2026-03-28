@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberpunk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Analytics Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/themes.css">
+  <style>
+    .admin-page { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .admin-title { font-size: 1.5rem; font-weight: 700; color: var(--primary); margin-bottom: 0.25rem; }
+    .admin-subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; }
+
+    .admin-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+    .admin-stat { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+    .admin-stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text-bright); }
+    .admin-stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .admin-section { margin-bottom: 2rem; }
+    .admin-section-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .admin-table th { text-align: left; color: var(--text-dim); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+    .admin-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--text); }
+    .admin-table tr:hover td { background: rgba(0,229,160,0.03); }
+
+    .pass-rate { font-weight: 700; }
+    .pass-high { color: var(--primary); }
+    .pass-mid { color: var(--warn); }
+    .pass-low { color: var(--accent); }
+
+    .signup-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem; }
+    .signup-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #000; font-size: 0.75rem; }
+    .signup-info { flex: 1; }
+    .signup-name { font-weight: 600; color: var(--text-bright); }
+    .signup-meta { font-size: 0.75rem; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+<div class="admin-page">
+  <h1 class="admin-title">Analytics Dashboard</h1>
+  <p class="admin-subtitle">Quest Engine — across all games</p>
+
+  <div class="admin-stats">
+    <div class="admin-stat">
+      <div class="admin-stat-value">{{ total_users }}</div>
+      <div class="admin-stat-label">Total Users</div>
+    </div>
+    <div class="admin-stat">
+      <div class="admin-stat-value">{{ total_attempts }}</div>
+      <div class="admin-stat-label">Total Attempts</div>
+    </div>
+    <div class="admin-stat">
+      <div class="admin-stat-value">{{ global_pass_rate }}%</div>
+      <div class="admin-stat-label">Pass Rate</div>
+    </div>
+    <div class="admin-stat">
+      <div class="admin-stat-value">{{ signups_today }}</div>
+      <div class="admin-stat-label">Signups Today</div>
+    </div>
+    <div class="admin-stat">
+      <div class="admin-stat-value">{{ active_today }}</div>
+      <div class="admin-stat-label">Active Today</div>
+    </div>
+  </div>
+
+  {% if recent_signups %}
+  <div class="admin-section">
+    <div class="admin-section-title">Recent Signups</div>
+    {% for s in recent_signups %}
+    <div class="signup-row">
+      <div class="signup-avatar">{{ s.display_name[:1] | upper }}</div>
+      <div class="signup-info">
+        <div class="signup-name">{{ s.display_name }} <span style="color:var(--text-dim);font-weight:400;">@{{ s.username }}</span></div>
+        <div class="signup-meta">{{ s.created_at }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if hardest_challenges %}
+  <div class="admin-section">
+    <div class="admin-section-title">Hardest Challenges (Lowest Pass Rate)</div>
+    <table class="admin-table">
+      <tr><th>Challenge</th><th>Pack</th><th>Attempts</th><th>Pass Rate</th></tr>
+      {% for c in hardest_challenges %}
+      <tr>
+        <td>{{ c.challenge_id }}</td>
+        <td>{{ c.pack_name }}</td>
+        <td>{{ c.total }}</td>
+        <td><span class="pass-rate {% if c.rate < 40 %}pass-low{% elif c.rate < 70 %}pass-mid{% else %}pass-high{% endif %}">{{ c.rate }}%</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if easiest_challenges %}
+  <div class="admin-section">
+    <div class="admin-section-title">Easiest Challenges (Highest Pass Rate, 5+ attempts)</div>
+    <table class="admin-table">
+      <tr><th>Challenge</th><th>Pack</th><th>Attempts</th><th>Pass Rate</th></tr>
+      {% for c in easiest_challenges %}
+      <tr>
+        <td>{{ c.challenge_id }}</td>
+        <td>{{ c.pack_name }}</td>
+        <td>{{ c.total }}</td>
+        <td><span class="pass-rate pass-high">{{ c.rate }}%</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+</body>
+</html>

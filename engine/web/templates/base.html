@@ -3,8 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ pack.title }}</title>
-  <meta name="theme-color" content="{% if theme == 'playful' %}#6c5ce7{% else %}#00e5a0{% endif %}">
+  <title>{{ pack.title }} — {% if theme == "playful" %}The Primer{% elif theme == "neural" %}AI Academy{% else %}Quest Engine{% endif %}</title>
+  <meta name="description" content="{{ pack.subtitle | replace('◈', '') | trim }} — Free, interactive educational RPG.">
+  <meta name="theme-color" content="{% if theme == 'playful' %}#6c5ce7{% elif theme == 'neural' %}#7c6cf0{% else %}#00e5a0{% endif %}">
+  <meta property="og:title" content="{{ pack.title }}">
+  <meta property="og:description" content="{{ pack.subtitle | replace('◈', '') | trim }}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="robots" content="index, follow">
   <link rel="manifest" href="/static/manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
   <link rel="apple-touch-icon" href="/static/icon-192.png">
