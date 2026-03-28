@@ -309,6 +309,73 @@ class WebGameSession:
             })
         return zones
 
+    def leaderboard_context(self) -> dict:
+        """Return leaderboard data from the store."""
+        store = self.engine._store
+        pack_name = self.engine._pack_save_name
+        players = store.list_players(pack_name)
+
+        entries = []
+        for pid in players:
+            data = store.load(pack_name, pid)
+            if data:
+                entries.append({
+                    "player_id": pid,
+                    "name": data.get("player_name", "Ghost"),
+                    "xp": data.get("total_xp", 0),
+                    "level": self._level_from_xp(data.get("total_xp", 0)),
+                    "max_streak": data.get("max_streak", 0),
+                    "completed_zones": len(data.get("completed_zones", [])),
+                    "daily_streak": data.get("daily_streak", 0),
+                    "is_you": pid == self.engine._player_id,
+                })
+
+        # If no multi-player data, create entry from current session
+        if not entries:
+            entries.append({
+                "player_id": "default",
+                "name": self.engine.player_name,
+                "xp": self.engine.total_xp,
+                "level": self.engine.level,
+                "max_streak": self.engine.max_streak,
+                "completed_zones": len(self.engine.completed_zones),
+                "daily_streak": self.engine.daily_streak,
+                "is_you": True,
+            })
+
+        xp_sorted = sorted(entries, key=lambda e: e["xp"], reverse=True)[:20]
+        streak_sorted = sorted(entries, key=lambda e: e["max_streak"], reverse=True)[:20]
+
+        # Hall of fame
+        top_xp = xp_sorted[0] if xp_sorted else {}
+        top_streak = streak_sorted[0] if streak_sorted else {}
+        zone_sorted = sorted(entries, key=lambda e: e["completed_zones"], reverse=True)
+        top_zones = zone_sorted[0] if zone_sorted else {}
+        daily_sorted = sorted(entries, key=lambda e: e["daily_streak"], reverse=True)
+        top_daily = daily_sorted[0] if daily_sorted else {}
+
+        return {
+            "xp_leaders": xp_sorted,
+            "streak_leaders": streak_sorted,
+            "top_scorer_name": top_xp.get("name", "—"),
+            "top_scorer_xp": top_xp.get("xp", 0),
+            "top_streak_name": top_streak.get("name", "—"),
+            "top_streak_value": top_streak.get("max_streak", 0),
+            "top_zones_name": top_zones.get("name", "—"),
+            "top_zones_value": top_zones.get("completed_zones", 0),
+            "top_daily_name": top_daily.get("name", "—"),
+            "top_daily_value": top_daily.get("daily_streak", 0),
+        }
+
+    @staticmethod
+    def _level_from_xp(xp: int) -> int:
+        """Calculate level from XP (simplified)."""
+        level = 1
+        while xp >= level * 100:
+            xp -= level * 100
+            level += 1
+        return level
+
     def parent_dashboard_context(self) -> dict:
         """Return context for the parent dashboard page."""
         engine = self.engine
