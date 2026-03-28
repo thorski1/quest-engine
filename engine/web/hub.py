@@ -57,8 +57,8 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
     class AuthGateMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request, call_next):
             path = request.url.path
-            # Always allow: static files, auth routes, hub root
-            if (path.startswith("/static") or "/auth/" in path or path == "/"):
+            # Always allow: static files, auth routes, hub root, admin
+            if (path.startswith("/static") or "/auth/" in path or path == "/" or path.startswith("/admin")):
                 return await call_next(request)
             # Check if Postgres is in use
             from ..storage import get_store
