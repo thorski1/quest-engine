@@ -347,13 +347,13 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     @hub.post(f"{prefix}/new-game", response_class=HTMLResponse)
     async def new_game(request: Request, player_name: str = Form(default=""), _pid: str = pack_id):
         name = player_name.strip() or skill_pack.default_player_name
-        _session().new_game(name)
+        _session(request).new_game(name)
         first_zone = skill_pack.zone_order[0]
         return RedirectResponse(f"{prefix}/zone/{first_zone}/intro", status_code=303)
 
     @hub.post(f"{prefix}/continue", response_class=HTMLResponse)
     async def continue_game(request: Request, _pid: str = pack_id):
-        if not _session().has_progress():
+        if not _session(request).has_progress():
             return RedirectResponse(f"{prefix}/", status_code=303)
         return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
@@ -501,17 +501,17 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.post(f"{prefix}/skip", response_class=HTMLResponse)
     async def skip_challenge(request: Request, _pid: str = pack_id):
-        _session().skip_challenge()
+        _session(request).skip_challenge()
         return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
     @hub.post(f"{prefix}/bookmark", response_class=HTMLResponse)
     async def toggle_bookmark(request: Request, _pid: str = pack_id):
-        _session().toggle_bookmark()
+        _session(request).toggle_bookmark()
         return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
     @hub.post(f"{prefix}/difficulty", response_class=HTMLResponse)
     async def set_difficulty(request: Request, mode: str = Form(default="normal"), _pid: str = pack_id):
-        _session().set_difficulty(mode)
+        _session(request).set_difficulty(mode)
         return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
     @hub.get(f"{prefix}/stats", response_class=HTMLResponse)
@@ -573,7 +573,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/achievements", response_class=HTMLResponse)
     async def achievements_page(request: Request, _pid: str = pack_id):
-        all_ach = _session().achievements_context()
+        all_ach = _session(request).achievements_context()
         unlocked = [a for a in all_ach if a.get("unlocked")]
         locked = [a for a in all_ach if not a.get("unlocked")]
         return templates.TemplateResponse(request, "achievements.html", _ctx(

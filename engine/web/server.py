@@ -205,7 +205,7 @@ def create_app(skill_pack: SkillPack, url_prefix: str = "") -> FastAPI:
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge,
-            challenge_num=num if not result.correct else next_num,
+            challenge_num=num,
             challenge_total=total,
             zone=zone,
             zone_id=session.engine.current_zone,
