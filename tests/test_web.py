@@ -193,6 +193,27 @@ class TestHubRoutes:
         assert r.status_code == 200
 
 
+    def test_explore_page(self, client):
+        client.post("/test/new-game", data={"player_name": "Explorer"})
+        r = client.get("/test/explore")
+        assert r.status_code == 200
+        assert "overworld" in r.text.lower() or "explore" in r.text.lower()
+
+    def test_profile_page(self, client):
+        client.post("/test/new-game", data={"player_name": "Profiler"})
+        r = client.get("/test/profile")
+        assert r.status_code == 200
+        assert "Profiler" in r.text
+
+    def test_zone_complete_page(self, client):
+        client.post("/test/new-game", data={"player_name": "Completer"})
+        # Complete both challenges
+        client.post("/test/answer", data={"answer": "b", "challenge_id": "c1"})
+        client.post("/test/answer", data={"answer": "b", "challenge_id": "c2"})
+        r = client.get("/test/zone/z1/complete")
+        assert r.status_code == 200
+
+
 class TestAuthPages:
     """Test auth pages render (actual auth requires Postgres)."""
 
