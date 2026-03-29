@@ -644,7 +644,16 @@ html, body {
   font-size: 0.8rem;
 }
 
-.stat-streak { color: var(--warn); font-weight: 700; }
+.stat-streak {
+  color: var(--warn); font-weight: 700;
+  transition: transform 0.2s;
+}
+.stat-streak:not(:empty) { animation: streak-pulse 0.4s ease; }
+@keyframes streak-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
 .stat-name {
   color: var(--primary);
   font-weight: 600;
@@ -1034,6 +1043,13 @@ html, body {
   color: var(--option-hover-text);
   transform: translateY(-1px);
 }
+.option-btn:active { transform: scale(0.97); }
+.option-selected-wrong { border-color: var(--accent) !important; animation: shake 0.3s ease; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
 .option-letter {
   font-weight: 700;
   color: var(--secondary);
@@ -1084,7 +1100,22 @@ html, body {
 .result-correct .result-icon { color: var(--primary); }
 .result-wrong   .result-icon { color: var(--accent);  }
 .result-body { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; }
-.xp-gained { color: var(--primary); font-weight: 700; font-size: 0.85rem; }
+.xp-gained {
+  color: var(--primary); font-weight: 700; font-size: 0.85rem;
+  animation: xp-pop 0.5s ease both;
+}
+@keyframes xp-pop {
+  0% { opacity: 0; transform: translateY(8px) scale(0.8); }
+  60% { transform: translateY(-2px) scale(1.1); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.level-up-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.3rem 0.7rem; border-radius: var(--radius);
+  background: rgba(255,215,0,0.1); border: 1px solid var(--warn);
+  color: var(--warn); font-weight: 700; font-size: 0.8rem;
+  animation: xp-pop 0.6s ease 0.2s both;
+}
 .level-up-badge {
   color: var(--warn);
   font-weight: 700;
