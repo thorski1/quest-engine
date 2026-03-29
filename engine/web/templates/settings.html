@@ -51,6 +51,17 @@
   .swatch-ocean { background: linear-gradient(135deg, #041825, #00c9db); }
   .swatch-sunset { background: linear-gradient(135deg, #1a0a1e, #ff6b35, #c850c0); }
 
+  .theme-preview {
+    margin-top: 0.75rem; padding: 0.75rem;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 0.8rem; text-align: center; color: var(--text-dim);
+    transition: all 0.3s ease;
+    min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .theme-preview-label { font-weight: 700; font-size: 0.85rem; margin-bottom: 0.25rem; }
+  .theme-preview-colors { display: flex; gap: 4px; }
+  .theme-preview-dot { width: 16px; height: 16px; border-radius: 50%; }
+
   .font-size-control { display: flex; align-items: center; gap: 0.5rem; }
   .font-btn {
     width: 32px; height: 32px; border-radius: var(--radius);
@@ -103,6 +114,10 @@
         <button class="theme-swatch swatch-ocean" title="Ocean — deep sea aqua" onclick="setThemeOverride('ocean')"></button>
         <button class="theme-swatch swatch-sunset" title="Sunset — orange & purple" onclick="setThemeOverride('sunset')"></button>
         <button class="theme-swatch" style="background:var(--border);font-size:0.55rem;color:var(--text-dim);display:flex;align-items:center;justify-content:center;" title="Default" onclick="setThemeOverride('')">Auto</button>
+      </div>
+      <div class="theme-preview" id="theme-preview">
+        <div class="theme-preview-label">Current theme</div>
+        <div class="theme-preview-colors" id="theme-preview-colors"></div>
       </div>
     </div>
 
@@ -167,12 +182,35 @@ function setThemeOverride(theme) {
   updateSwatches();
 }
 
+var themeNames = {
+  cyberpunk: 'Cyberpunk', playful: 'Playful', neural: 'Neural',
+  medieval: 'Medieval', unicorn: 'Unicorn', alien: 'Alien',
+  ocean: 'Ocean', sunset: 'Sunset'
+};
+var themeColors = {
+  cyberpunk: ['#08111f','#00e5a0','#00b4d8','#ff3c78'],
+  playful: ['#fef6e4','#6c5ce7','#0097a7','#ff7043'],
+  neural: ['#0c0c1e','#7c6cf0','#22d3ee','#f472b6'],
+  medieval: ['#1a1209','#d4a843','#c47a4a','#cc3333'],
+  unicorn: ['#1a0825','#e040fb','#40c4ff','#ffd740'],
+  alien: ['#050510','#39ff14','#00d4ff','#ff1493'],
+  ocean: ['#041825','#00c9db','#2196f3','#ff7043'],
+  sunset: ['#1a0a1e','#ff6b35','#c850c0','#ff3366'],
+};
 function updateSwatches() {
   var current = document.documentElement.dataset.theme;
   document.querySelectorAll('.theme-swatch').forEach(function(s) {
     s.classList.remove('active');
     if (s.classList.contains('swatch-' + current)) s.classList.add('active');
   });
+  // Update preview
+  var preview = document.getElementById('theme-preview');
+  var label = preview.querySelector('.theme-preview-label');
+  var colors = document.getElementById('theme-preview-colors');
+  label.textContent = themeNames[current] || current;
+  colors.innerHTML = (themeColors[current] || []).map(function(c) {
+    return '<div class="theme-preview-dot" style="background:' + c + '"></div>';
+  }).join('');
 }
 
 function adjustFontSize(delta) {

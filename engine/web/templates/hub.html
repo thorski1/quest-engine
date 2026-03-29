@@ -18,6 +18,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
   <link rel="apple-touch-icon" href="/static/icon-192.png">
   <link rel="stylesheet" href="/static/themes.css">
+  <script src="/static/illustrations.js" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -40,10 +41,11 @@
           <h2 class="hub-card-title">{{ pack.title }}</h2>
           <p class="hub-card-sub">{{ pack.subtitle | replace("◈", "") | trim }}</p>
           {% if pack.has_progress %}
-          <div class="hub-card-progress">
-            <span class="hub-progress-text">{{ pack.completed_zones }}/{{ pack.total_zones }} zones · {{ pack.total_xp }} XP</span>
-            <div class="hub-progress-bar">
-              <div class="hub-progress-fill" style="width: {{ (pack.completed_zones / pack.total_zones * 100) | int }}%"></div>
+          <div class="hub-card-progress" style="display:flex;align-items:center;gap:0.75rem;">
+            <div data-progress-ring="{{ (pack.completed_zones / pack.total_zones * 100) | int }}" data-size="48" data-label="" style="flex-shrink:0;"></div>
+            <div>
+              <span class="hub-progress-text">{{ pack.completed_zones }}/{{ pack.total_zones }} zones</span>
+              <span class="hub-progress-text">{{ pack.total_xp }} XP earned</span>
             </div>
           </div>
           {% else %}
