@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .profile-page { max-width: 680px; margin: 0 auto; }
+  .profile-header {
+    display: flex; align-items: center; gap: 1.5rem;
+    padding: 1.5rem 0; margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    animation: fade-in-up 0.4s ease both;
+  }
+  .profile-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; font-weight: 800; color: var(--bg);
+    flex-shrink: 0;
+  }
+  .profile-info h1 { font-size: 1.4rem; font-weight: 800; color: var(--text-bright); margin-bottom: 0.15rem; }
+  .profile-info p { color: var(--text-dim); font-size: 0.85rem; }
+  .profile-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.2rem 0.5rem; border-radius: 100px; font-size: 0.7rem; font-weight: 700;
+    background: rgba(var(--primary), 0.1); color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+
+  .profile-stats-row {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.75rem; margin-bottom: 2rem;
+  }
+  .profile-stat {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1rem; text-align: center;
+    animation: fade-in-up 0.3s ease both;
+  }
+  .profile-stat:nth-child(1) { animation-delay: 0.05s; }
+  .profile-stat:nth-child(2) { animation-delay: 0.1s; }
+  .profile-stat:nth-child(3) { animation-delay: 0.15s; }
+  .profile-stat:nth-child(4) { animation-delay: 0.2s; }
+  .profile-stat-value { font-size: 1.5rem; font-weight: 800; color: var(--text-bright); }
+  .profile-stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .profile-section { margin-bottom: 1.5rem; }
+  .profile-section-title {
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim);
+    margin-bottom: 0.75rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+  }
+
+  .profile-game-card {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.85rem 1rem; background: var(--bg-surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 0.5rem; transition: border-color 0.15s;
+  }
+  .profile-game-card:hover { border-color: var(--primary); }
+  .profile-game-icon { font-size: 1.5rem; }
+  .profile-game-info { flex: 1; }
+  .profile-game-title { font-weight: 700; color: var(--text-bright); font-size: 0.9rem; }
+  .profile-game-meta { font-size: 0.75rem; color: var(--text-dim); }
+  .profile-game-xp { font-weight: 700; color: var(--primary); font-size: 0.9rem; }
+
+  .profile-actions { display: flex; gap: 0.75rem; margin-top: 2rem; }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+
+  <div class="profile-header">
+    <div class="profile-avatar">
+      {% if current_user %}{{ current_user.display_name[:1] | upper }}{% else %}{{ player_name[:1] | upper }}{% endif %}
+    </div>
+    <div class="profile-info">
+      <h1>{% if current_user %}{{ current_user.display_name }}{% else %}{{ player_name }}{% endif %}</h1>
+      <p>
+        {% if current_user %}@{{ current_user.username }}{% endif %}
+        · Level {{ level }} {{ level_title }}
+      </p>
+    </div>
+  </div>
+
+  <div class="profile-stats-row">
+    <div class="profile-stat">
+      <div class="profile-stat-value">{{ total_xp }}</div>
+      <div class="profile-stat-label">Total XP</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat-value">{{ completed_zones }}/{{ total_zones }}</div>
+      <div class="profile-stat-label">Zones Done</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat-value">{{ max_streak }}</div>
+      <div class="profile-stat-label">Best Streak</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat-value" data-progress-ring="{{ (completed_zones / total_zones * 100) | int if total_zones else 0 }}" data-size="60" data-label=""></div>
+      <div class="profile-stat-label">Completion</div>
+    </div>
+  </div>
+
+  <div class="profile-actions">
+    <a href="{{ pack_url_prefix }}/" class="btn btn-primary">Continue Playing</a>
+    <a href="{{ pack_url_prefix }}/settings" class="btn btn-ghost">Settings</a>
+    {% if current_user %}
+    <a href="{{ pack_url_prefix }}/auth/logout" class="btn btn-ghost" style="margin-left:auto;">Sign Out</a>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

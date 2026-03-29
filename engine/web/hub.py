@@ -642,6 +642,20 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             request, **s.parent_dashboard_context(),
         ))
 
+    @hub.get(f"{prefix}/profile", response_class=HTMLResponse)
+    async def profile_page(request: Request, _pid: str = pack_id):
+        s = _session(request)
+        return templates.TemplateResponse(request, "profile.html", _ctx(
+            request, **s.detailed_stats_context(),
+        ))
+
+    @hub.get(f"{prefix}/explore", response_class=HTMLResponse)
+    async def explore_page(request: Request, _pid: str = pack_id):
+        s = _session(request)
+        return templates.TemplateResponse(request, "explore.html", _ctx(
+            request, zones=s.all_zones_context(),
+        ))
+
     @hub.get(f"{prefix}/settings", response_class=HTMLResponse)
     async def settings_page(request: Request, _pid: str = pack_id):
         return templates.TemplateResponse(request, "settings.html", _ctx(request))
