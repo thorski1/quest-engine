@@ -90,6 +90,13 @@
     <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Back to Menu</a>
   </div>
 
+  <!-- ── Visual progress ────────────────────────────────────────────── -->
+  <div style="display:flex;justify-content:center;gap:2rem;margin-bottom:2rem;flex-wrap:wrap;">
+    <div data-progress-ring="{{ (completed_zones / total_zones * 100) | int if total_zones else 0 }}" data-label="Zones" data-size="110"></div>
+    <div data-progress-ring="{{ accuracy_pct }}" data-label="Accuracy" data-size="110"></div>
+    <div data-progress-ring="{{ level_progress_pct }}" data-label="Next Level" data-size="110"></div>
+  </div>
+
   <!-- ── Overview cards ────────────────────────────────────────────────── -->
   <div class="stats-grid">
     <div class="stat-card stat-accent">
@@ -133,7 +140,7 @@
     <div class="zone-stat-row">
       <span class="zone-stat-name">{{ zone.name }}</span>
       {% if zone.completed %}
-        <span class="zone-stars">{% for _ in range(zone.stars) %}★{% endfor %}{% for _ in range(3 - zone.stars) %}☆{% endfor %}</span>
+        <span data-stars="{{ zone.stars }}"></span>
         <span class="zone-stat-badge zone-stat-done">Done</span>
       {% elif zone.in_progress %}
         <span class="zone-stat-detail">{{ zone.done }}/{{ zone.total }}</span>
