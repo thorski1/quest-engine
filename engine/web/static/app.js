@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTypewriter();
   initConfetti();
   initSoundTriggers();
+  initTimer();
   focusAnswerInput();
 });
 
@@ -211,6 +212,22 @@ function initSoundTriggers() {
   // Option click sounds
   document.querySelectorAll('.option-btn').forEach(btn => {
     btn.addEventListener('mousedown', () => QuestSounds.click());
+  });
+}
+
+// ── Challenge timer ──────────────────────────────────────────────────────────
+
+function initTimer() {
+  var display = document.getElementById('timer-display');
+  if (!display) return;
+  var start = Date.now();
+  var interval = setInterval(function() {
+    var elapsed = ((Date.now() - start) / 1000).toFixed(1);
+    display.textContent = elapsed + 's';
+  }, 100);
+  // Stop when an answer form is submitted
+  document.querySelectorAll('.option-form, .text-answer-form').forEach(function(form) {
+    form.addEventListener('submit', function() { clearInterval(interval); });
   });
 }
 

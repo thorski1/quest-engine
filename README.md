@@ -20,11 +20,61 @@
 
 | Game | Audience | Chapters | Challenges | What You Learn |
 |------|----------|----------|------------|----------------|
-| [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 17 | 1,091 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases |
-| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 16 | 893 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money |
+| [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 18 | 1,137 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go |
+| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 17 | 934 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment |
 | [AI Academy](https://github.com/thorski1/ai-academy) | Everyone | 8 | 328 | AI Fundamentals, Prompt Engineering, Chatbots, AI Tools, Ethics, AI at Work, AI Coding, Agents |
+| [Learn Chinese](https://github.com/thorski1/learn-chinese) | Language learners | 8 | 340 | Pinyin, Greetings, Numbers, Food & Drink, Family, Daily Life, Travel, Culture |
 
-**3 games. 41 chapters. 2,312 challenges. One engine.**
+**4 games. 51 chapters. 2,739 challenges. One engine.**
+
+---
+
+## Roadmap
+
+```
+ ✅ SHIPPED                    🔨 IN PROGRESS               📋 PLANNED
+ ─────────                    ──────────────               ─────────
+ ✅ Terminal TUI               🔨 Cross-game profiles       📋 Multiplayer challenges
+ ✅ Web mode (FastAPI)          🔨 Social media automation   📋 AI-generated challenges
+ ✅ 8 visual themes             🔨 More game content         📋 Voice input for answers
+ ✅ PWA + offline               🔨 Promotional site updates  📋 Spaced repetition mode
+ ✅ Sound effects                                            📋 Parent email reports
+ ✅ User accounts + auth                                     📋 Classroom/teacher mode
+ ✅ Postgres persistence                                     📋 Mobile native app (Expo)
+ ✅ Daily challenges                                         📋 AI tutor (explain wrong answers)
+ ✅ Adaptive difficulty                                      📋 Challenge editor (web UI)
+ ✅ Leaderboards                                             📋 Multi-language i18n
+ ✅ Parent dashboard                                         📋 Video lesson integration
+ ✅ Admin analytics                                          📋 Certification/badges (PDF)
+ ✅ Signup notifications                                     📋 LTI integration (LMS)
+ ✅ 62 tests + CI pipeline                                   📋 Plugin marketplace
+ ✅ Onboarding flow                                          📋 Drag-and-drop challenges
+ ✅ Zone completion celebrations                             📋 Real-time multiplayer
+ ✅ OG meta / SEO
+ ✅ Review/bookmarks pages
+```
+
+### Architecture Vision
+
+```
+                    ┌──────────────────┐
+                    │   Quest Engine   │
+                    │   (framework)    │
+                    └────────┬─────────┘
+           ┌─────────┬──────┴──────┬─────────┐
+           │         │             │          │
+      ┌────┴───┐ ┌───┴────┐ ┌─────┴──┐ ┌────┴─────┐
+      │ Primer │ │ NEXUS  │ │   AI   │ │  Learn   │
+      │ (kids) │ │ Quest  │ │Academy │ │ Chinese  │
+      └────┬───┘ └───┬────┘ └────┬───┘ └────┬─────┘
+           │         │           │           │
+           └─────────┴─────┬─────┴───────────┘
+                           │
+                    ┌──────┴──────┐
+                    │ Neon Postgres│
+                    │  (shared)    │
+                    └─────────────┘
+```
 
 ---
 
