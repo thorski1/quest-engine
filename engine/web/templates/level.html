@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+<script src="/static/platformer.js"></script>
+<style>
+  .level-page { max-width: 820px; margin: 0 auto; }
+  .level-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+  .level-title { font-size: 1.2rem; font-weight: 700; color: var(--text-bright); }
+  .level-meta { font-size: 0.8rem; color: var(--text-dim); }
+  .level-canvas-wrap {
+    border-radius: var(--radius-lg); overflow: hidden;
+    border: 2px solid var(--border); box-shadow: var(--card-shadow);
+  }
+  .level-controls {
+    display: flex; justify-content: center; gap: 1.5rem; padding: 0.6rem;
+    background: var(--bg-surface); border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg); font-size: 0.75rem; color: var(--text-dim);
+  }
+  .level-key { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .key-sm {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 20px; padding: 0 4px;
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 3px; font-family: monospace; font-size: 0.65rem;
+    color: var(--text-bright); font-weight: 700;
+  }
+  .level-result {
+    text-align: center; padding: 2rem;
+    animation: fade-in-up 0.4s ease both;
+  }
+  .level-result-icon { font-size: 4rem; margin-bottom: 1rem; }
+  .level-result-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .level-result-stats { color: var(--text-dim); margin-bottom: 1.5rem; }
+  @keyframes fade-in-up { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="level-page">
+
+  <div class="level-header">
+    <div>
+      <h1 class="level-title">🎮 {{ zone.name }}</h1>
+      <span class="level-meta">{{ challenge_count }} challenges · Platformer Mode</span>
+    </div>
+    <a href="{{ pack_url_prefix }}/zone/{{ zone_id }}/intro" class="btn btn-ghost">Classic Mode</a>
+  </div>
+
+  <div class="level-canvas-wrap">
+    <div id="platformer-container"></div>
+  </div>
+
+  <div class="level-controls">
+    <span class="level-key"><span class="key-sm">←</span><span class="key-sm">→</span> Move</span>
+    <span class="level-key"><span class="key-sm">↑</span> Jump</span>
+    <span class="level-key"><span class="key-sm">E</span> Answer</span>
+    <span class="level-key"><span class="key-sm">A-D</span> Choose</span>
+  </div>
+
+  <div id="level-result" style="display:none;">
+    <div class="level-result">
+      <div class="level-result-icon" id="result-icon">🎉</div>
+      <div class="level-result-title" id="result-title" style="color:var(--primary);">Level Complete!</div>
+      <div class="level-result-stats" id="result-stats"></div>
+      <div style="display:flex;gap:0.75rem;justify-content:center;">
+        <a href="{{ pack_url_prefix }}/" class="btn btn-primary btn-lg">Menu</a>
+        <a href="{{ pack_url_prefix }}/explore" class="btn btn-ghost">Overworld</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+window.QUEST_PLATFORMER_CONFIG = {
+  zoneName: "{{ zone.name }}",
+  theme: "{{ theme }}",
+  challenges: [
+    {% for ch in challenges %}
+    {
+      id: "{{ ch.id }}",
+      question: {{ ch.question | tojson if ch.question else ch.prompt | tojson }},
+      options: {{ ch.options | tojson if ch.options else '[]' }},
+      answer: "{{ ch.answer | default('') }}",
+      xp: {{ ch.xp | default(25) }},
+    }{{ "," if not loop.last }}
+    {% endfor %}
+  ],
+  onComplete: function(data) {
+    document.getElementById('platformer-container').style.display = 'none';
+    document.querySelector('.level-controls').style.display = 'none';
+    var result = document.getElementById('level-result');
+    result.style.display = 'block';
+    document.getElementById('result-icon').textContent = '🎉';
+    document.getElementById('result-title').textContent = 'Level Complete!';
+    document.getElementById('result-stats').textContent =
+      '🪙 ' + data.coins + ' XP · ❤️ ' + data.hearts + ' hearts remaining';
+    if (window.QuestSounds) QuestSounds.zoneComplete();
+  },
+  onFail: function(data) {
+    document.getElementById('platformer-container').style.display = 'none';
+    document.querySelector('.level-controls').style.display = 'none';
+    var result = document.getElementById('level-result');
+    result.style.display = 'block';
+    document.getElementById('result-icon').textContent = '💔';
+    document.getElementById('result-title').textContent = 'Game Over';
+    document.getElementById('result-title').style.color = 'var(--accent)';
+    document.getElementById('result-stats').textContent = '🪙 ' + data.coins + ' XP collected';
+    if (window.QuestSounds) QuestSounds.wrong();
+  },
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  QuestPlatformer.init('platformer-container');
+});
+</script>
+{% endblock %}

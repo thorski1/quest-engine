@@ -34,25 +34,57 @@
 ```
  ✅ SHIPPED                    🔨 IN PROGRESS               📋 PLANNED
  ─────────                    ──────────────               ─────────
- ✅ Terminal TUI               🔨 Cross-game profiles       📋 Multiplayer challenges
- ✅ Web mode (FastAPI)          🔨 Social media automation   📋 AI-generated challenges
- ✅ 8 visual themes             🔨 More game content         📋 Voice input for answers
- ✅ PWA + offline               🔨 Promotional site updates  📋 Spaced repetition mode
- ✅ Sound effects                                            📋 Parent email reports
- ✅ User accounts + auth                                     📋 Classroom/teacher mode
- ✅ Postgres persistence                                     📋 Mobile native app (Expo)
- ✅ Daily challenges                                         📋 AI tutor (explain wrong answers)
- ✅ Adaptive difficulty                                      📋 Challenge editor (web UI)
- ✅ Leaderboards                                             📋 Multi-language i18n
- ✅ Parent dashboard                                         📋 Video lesson integration
- ✅ Admin analytics                                          📋 Certification/badges (PDF)
- ✅ Signup notifications                                     📋 LTI integration (LMS)
- ✅ 62 tests + CI pipeline                                   📋 Plugin marketplace
- ✅ Onboarding flow                                          📋 Drag-and-drop challenges
- ✅ Zone completion celebrations                             📋 Real-time multiplayer
+ ✅ Terminal TUI               🔨 Mario-style 2D world      📋 Multiplayer PvP challenges
+ ✅ Web mode (FastAPI)          🔨 More game content         📋 AI-generated challenges (LLM)
+ ✅ 8 visual themes             🔨 Social media automation   📋 Voice input for answers
+ ✅ Phaser.js RPG overworld                                  📋 Spaced repetition engine
+ ✅ PWA + offline                                            📋 Parent email reports
+ ✅ Sound effects                                            📋 Classroom/teacher mode
+ ✅ User accounts + auth                                     📋 Mobile app (React Native)
+ ✅ Postgres persistence                                     📋 AI tutor (Claude explains)
+ ✅ Daily challenges                                         📋 Challenge editor (web UI)
+ ✅ Adaptive difficulty                                      📋 Multi-language i18n
+ ✅ Leaderboards                                             📋 Video lesson integration
+ ✅ Parent dashboard                                         📋 Certification/badges (PDF)
+ ✅ Admin analytics                                          📋 LTI integration (LMS)
+ ✅ Signup notifications                                     📋 Plugin marketplace
+ ✅ SVG illustrations                                        📋 Real-time multiplayer
+ ✅ 66 tests + CI pipeline                                   📋 3D world (Three.js)
+ ✅ Streak tracking + combos
  ✅ OG meta / SEO
  ✅ Review/bookmarks pages
+ ✅ Profile page
+ ✅ 6 games, 73 chapters
 ```
+
+### 2D Game World Roadmap (Phaser.js)
+
+The overworld at `/{pack}/explore` is the foundation. Here's where it's going:
+
+```
+ Phase 1 ✅ DONE          Phase 2 🔨 NEXT          Phase 3 📋 FUTURE
+ ─────────────           ──────────────           ────────────────
+ ✅ Top-down overworld    🔨 Side-scrolling        📋 Procedural worlds
+ ✅ WASD movement            Mario-style levels    📋 Boss battle mini-games
+ ✅ Zone buildings        🔨 Platforms + jumping   📋 NPC dialogue system
+ ✅ Proximity detection   🔨 Collectible coins     📋 Inventory system
+ ✅ Enter zone on key        (XP pickups)          📋 Weather effects
+ ✅ Theme palettes (8)    🔨 Enemies (wrong        📋 Day/night cycle
+ ✅ Ambient particles        answers = damage)     📋 Multiplayer rooms
+ ✅ Completion markers    🔨 Power-ups (hints,     📋 Custom character skins
+ ✅ Locked zone gates        streak shield)        📋 Level editor
+                          🔨 Animated sprites      📋 Leaderboard races
+                          🔨 Sound effects per     📋 Seasonal events
+                             action                📋 Achievement trophies
+                          🔨 Death + respawn           in trophy room
+                          🔨 Level progression
+                             (zone = level)
+```
+
+**The vision:** Each zone becomes a Mario-style level. Platforms contain quiz
+questions — answer correctly to progress, wrong answers cost a life. Coins
+(XP) scattered through the level. Boss at the end of each zone. The overworld
+map connects all levels. Your character levels up visually as you progress.
 
 ### Architecture Vision
 

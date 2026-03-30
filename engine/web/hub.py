@@ -662,6 +662,17 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             request, **s.detailed_stats_context(),
         ))
 
+    @hub.get(f"{prefix}/zone/{{zone_id}}/level", response_class=HTMLResponse)
+    async def zone_level(request: Request, zone_id: str, _pid: str = pack_id):
+        zone = skill_pack.get_zone(zone_id)
+        if not zone:
+            return RedirectResponse(f"{prefix}/", status_code=303)
+        challenges = zone.get("challenges", [])
+        return templates.TemplateResponse(request, "level.html", _ctx(
+            request, zone=zone, zone_id=zone_id,
+            challenges=challenges, challenge_count=len(challenges),
+        ))
+
     @hub.get(f"{prefix}/explore", response_class=HTMLResponse)
     async def explore_page(request: Request, _pid: str = pack_id):
         s = _session(request)
