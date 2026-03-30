@@ -147,21 +147,15 @@ class PostgresStore(BaseStore):
         self._init_schema()
 
     def _get_conn(self):
-        if self._conn is None or self._conn.closed:
-            self._conn = psycopg2.connect(self.database_url)
-            self._conn.autocommit = True  # Prevent transaction state leaking between serverless requests
-        else:
-            # Check connection health
+        # Always create a fresh connection in serverless environments.
+        # Neon handles connection pooling at the infrastructure level.
+        if self._conn is not None:
             try:
-                with self._conn.cursor() as cur:
-                    cur.execute("SELECT 1")
+                self._conn.close()
             except Exception:
-                try:
-                    self._conn.close()
-                except Exception:
-                    pass
-                self._conn = psycopg2.connect(self.database_url)
-                self._conn.autocommit = True
+                pass
+        self._conn = psycopg2.connect(self.database_url)
+        self._conn.autocommit = True
         return self._conn
 
     def _init_schema(self):
