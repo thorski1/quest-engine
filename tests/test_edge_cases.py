@@ -103,6 +103,34 @@ class TestSingleChallengePack:
         assert "complete" in loc or "zone" in loc  # should go to complete page
 
 
+class TestTextInputChallenge:
+    """Test that challenges without options show a text input."""
+
+    def test_quiz_with_no_options_shows_text_input(self):
+        """When ctype='quiz' but no options, should show text input not empty grid."""
+        from engine.skill_pack import SkillPack
+        pack = SkillPack(
+            id="text_test", title="Text", subtitle="", save_file_name="text_test",
+            intro_story="", quit_message="", name_prompt="?", default_player_name="P",
+            zone_order=["z"], zones={"z": {"id": "z", "name": "Z", "description": "",
+                "level_required": 1, "challenges": [
+                    {"id": "c", "type": "quiz", "question": "What is pwd?",
+                     "answers": ["pwd"], "lesson": "pwd prints working dir",
+                     "hints": ["think directory"], "xp": 10}
+                ]}},
+            zone_intros={}, zone_completions={}, boss_intros={},
+            zone_achievement_map={}, achievements={}, kids_mode=False,
+        )
+        app = create_hub_app([pack])
+        c = TestClient(app)
+        c.post("/text_test/new-game", data={"player_name": "Test"})
+        r = c.get("/text_test/challenge")
+        assert r.status_code == 200
+        # Should have text input, not empty options grid
+        assert "text-answer-input" in r.text
+        assert "option-btn" not in r.text  # NO option buttons
+
+
 class TestRapidSubmissions:
     """Test rapid-fire answer submissions (fast clicking)."""
 
