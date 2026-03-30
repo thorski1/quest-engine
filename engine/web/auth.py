@@ -104,7 +104,7 @@ class AuthManager:
             with conn.cursor() as cur:
                 cur.execute(
                     """INSERT INTO sessions (id, user_id, expires_at)
-                       VALUES (%s, %s, NOW() + INTERVAL '%s seconds')""",
+                       VALUES (%s, %s, NOW() + make_interval(secs => %s))""",
                     (session_id, user["id"], SESSION_MAX_AGE),
                 )
                 cur.execute(
@@ -113,8 +113,8 @@ class AuthManager:
                 )
             conn.commit()
         except Exception:
-            if conn and not conn.closed:
-                conn.rollback()
+            if self.store._conn and not self.store._conn.closed:
+                self.store._conn.rollback()
 
         return {"ok": True, "user_id": user["id"], "session_id": session_id, "display_name": user.get("display_name", username)}
 
