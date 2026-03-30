@@ -9,14 +9,52 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  initPageTransition();
   initKeyboardShortcuts();
   initScrollToResult();
   initTypewriter();
   initConfetti();
   initSoundTriggers();
   initTimer();
+  initOptionHoverEffects();
   focusAnswerInput();
 });
+
+// ── Page transition ─────────────────────────────────────────────────────────
+
+function initPageTransition() {
+  // Fade in on load
+  document.body.style.opacity = '0';
+  document.body.style.transition = 'opacity 0.25s ease';
+  requestAnimationFrame(() => { document.body.style.opacity = '1'; });
+
+  // Fade out on navigation
+  document.querySelectorAll('a[href]:not([target="_blank"]):not([href^="#"]):not([href^="javascript"])').forEach(link => {
+    link.addEventListener('click', function(e) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return; // Allow new tab
+      e.preventDefault();
+      document.body.style.opacity = '0';
+      setTimeout(() => { window.location.href = this.href; }, 200);
+    });
+  });
+}
+
+// ── Option hover micro-interactions ─────────────────────────────────────────
+
+function initOptionHoverEffects() {
+  document.querySelectorAll('.option-btn').forEach(btn => {
+    btn.addEventListener('mouseenter', () => {
+      if (window.QuestSounds) QuestSounds.click();
+    });
+  });
+
+  // Hub card hover sound
+  document.querySelectorAll('.hub-card').forEach(card => {
+    card.addEventListener('mouseenter', () => {
+      if (window.QuestSounds) QuestSounds.click();
+    });
+  });
+}
 
 // ── Keyboard shortcuts ──────────────────────────────────────────────────────
 
