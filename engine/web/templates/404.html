@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberpunk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Not Found — Quest Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/themes.css">
+  <style>
+    .error-page {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 2rem; text-align: center;
+    }
+    .error-card { max-width: 400px; animation: fade-in-up 0.4s ease both; }
+    .error-icon { font-size: 5rem; margin-bottom: 1rem; }
+    .error-code { font-size: 4rem; font-weight: 800; color: var(--primary); margin-bottom: 0.25rem; }
+    .error-title { font-size: 1.2rem; font-weight: 700; color: var(--text-bright); margin-bottom: 0.5rem; }
+    .error-text { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 2rem; line-height: 1.6; }
+    .error-actions { display: flex; gap: 0.75rem; justify-content: center; }
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+<div class="error-page">
+  <div class="error-card">
+    <div class="error-icon">🗺️</div>
+    <div class="error-code">404</div>
+    <h1 class="error-title">Lost in the Quest</h1>
+    <p class="error-text">The page you're looking for doesn't exist — maybe it was a secret passage that hasn't been unlocked yet.</p>
+    <div class="error-actions">
+      <a href="/" class="btn btn-primary btn-lg">Back to Hub</a>
+    </div>
+  </div>
+</div>
+<script>
+  var t = localStorage.getItem('quest-theme-override');
+  if (t) document.documentElement.dataset.theme = t;
+</script>
+</body>
+</html>

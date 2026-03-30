@@ -42,6 +42,18 @@
     </div>
   </section>
 
+  <!-- ── Motivational Banner ─────────────────────────────────────────── -->
+  {% if has_progress and streak >= 3 %}
+  <div class="motivation-banner" style="text-align:center;padding:0.5rem;margin-bottom:0.5rem;font-size:0.85rem;color:var(--warn);">
+    🔥 {{ streak }}-day streak!
+    {% if streak >= 30 %}You're on fire — a whole month!
+    {% elif streak >= 14 %}Two weeks strong — incredible!
+    {% elif streak >= 7 %}A full week — keep the momentum!
+    {% elif streak >= 3 %}Great consistency — don't break the chain!
+    {% endif %}
+  </div>
+  {% endif %}
+
   <!-- ── Quick Stats Bar ────────────────────────────────────────────────── -->
   {% if has_progress %}
   <div class="menu-quick-stats">

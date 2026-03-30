@@ -179,6 +179,15 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
     for pack in skill_packs:
         _register_pack_routes(hub, pack, templates)
 
+    # ── 404 handler ──────────────────────────────────────────────────────────
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+    from starlette.responses import HTMLResponse as StarletteHTML
+
+    @hub.exception_handler(404)
+    async def not_found(request, exc):
+        content = templates.get_template("404.html").render()
+        return StarletteHTML(content=content, status_code=404)
+
     return hub
 
 

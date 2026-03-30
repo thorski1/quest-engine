@@ -133,6 +133,38 @@
     </div>
   </div>
 
+  <!-- ── Activity streak calendar ───────────────────────────────────── -->
+  <div class="section-label">Activity</div>
+  <div id="streak-calendar" style="margin-bottom:2rem;"></div>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var cal = document.getElementById('streak-calendar');
+    if (!cal) return;
+    var streak = {{ daily_streak }};
+    var days = 28; // show 4 weeks
+    var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;max-width:280px;">';
+    // Day labels
+    ['M','T','W','T','F','S','S'].forEach(function(d) {
+      html += '<div style="text-align:center;font-size:0.6rem;color:var(--text-dim);">'+d+'</div>';
+    });
+    // Calendar cells
+    var today = new Date();
+    for (var i = days - 1; i >= 0; i--) {
+      var d = new Date(today);
+      d.setDate(d.getDate() - i);
+      var isActive = i < streak; // rough approximation
+      var level = isActive ? (i < streak/3 ? 'level-3' : i < streak*2/3 ? 'level-2' : 'level-1') : '';
+      html += '<div style="aspect-ratio:1;border-radius:3px;background:' +
+        (isActive ? 'var(--primary)' : 'var(--bg-raised)') +
+        ';opacity:' + (isActive ? (0.4 + (streak-i)/streak*0.6) : '0.3') +
+        ';" title="' + d.toDateString() + '"></div>';
+    }
+    html += '</div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-dim);margin-top:4px;">Last ' + days + ' days · ' + streak + '-day streak</div>';
+    cal.innerHTML = html;
+  });
+  </script>
+
   <!-- ── Zone breakdown ────────────────────────────────────────────────── -->
   <div class="section-label">Zone Breakdown</div>
   <div class="zone-stats-list">

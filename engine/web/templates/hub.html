@@ -58,8 +58,8 @@
   </div>
 </main>
 <footer class="site-footer">
-  <span>{% if theme == "playful" %}The Young Lady's Illustrated Primer{% else %}Quest Engine{% endif %}</span>
-  <span class="footer-link">{{ packs | length }} chapters</span>
+  <span>{% if theme == "playful" %}The Young Lady's Illustrated Primer{% elif theme == "neural" %}AI Academy{% elif theme == "medieval" %}Learn Chinese{% elif theme == "sunset" %}Learn Spanish{% elif theme == "ocean" %}Learn Japanese{% else %}Quest Engine{% endif %}</span>
+  <span class="footer-link">{{ packs | length }} chapters · Powered by Quest Engine</span>
 </footer>
 </body>
 </html>
