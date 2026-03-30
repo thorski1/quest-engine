@@ -150,6 +150,18 @@ class PostgresStore(BaseStore):
         if self._conn is None or self._conn.closed:
             self._conn = psycopg2.connect(self.database_url)
             self._conn.autocommit = False
+        else:
+            # Check connection health — stale connections cause InFailedSqlTransaction
+            try:
+                self._conn.cursor().execute("SELECT 1")
+                self._conn.commit()
+            except Exception:
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
+                self._conn = psycopg2.connect(self.database_url)
+                self._conn.autocommit = False
         return self._conn
 
     def _init_schema(self):
@@ -254,22 +266,33 @@ class PostgresStore(BaseStore):
 
     def create_user(self, username: str, display_name: str = "", email: str = "", password_hash: str = "") -> int:
         """Create a new user. Returns user ID."""
-        conn = self._get_conn()
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO users (username, display_name, email, password_hash) VALUES (%s, %s, %s, %s) RETURNING id",
-                (username, display_name or username, email or None, password_hash or None),
-            )
-            user_id = cur.fetchone()[0]
-        conn.commit()
-        return user_id
+        try:
+            conn = self._get_conn()
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO users (username, display_name, email, password_hash) VALUES (%s, %s, %s, %s) RETURNING id",
+                    (username, display_name or username, email or None, password_hash or None),
+                )
+                user_id = cur.fetchone()[0]
+            conn.commit()
+            return user_id
+        except Exception as e:
+            if self._conn and not self._conn.closed:
+                self._conn.rollback()
+            raise
 
     def get_user_by_username(self, username: str) -> dict | None:
-        conn = self._get_conn()
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-            cur.execute("SELECT * FROM users WHERE username = %s AND is_active = TRUE", (username,))
-            row = cur.fetchone()
+        try:
+            conn = self._get_conn()
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                cur.execute("SELECT * FROM users WHERE username = %s AND is_active = TRUE", (username,))
+                row = cur.fetchone()
+            conn.commit()  # close transaction
             return dict(row) if row else None
+        except Exception:
+            if self._conn and not self._conn.closed:
+                self._conn.rollback()
+            return None
 
     def record_attempt(self, user_id: int, pack_name: str, zone_id: str,
                        challenge_id: str, correct: bool, answer: str = "",

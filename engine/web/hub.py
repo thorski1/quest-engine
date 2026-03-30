@@ -291,7 +291,13 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
                 "prefix": prefix, "error": result["error"],
                 "form_username": username, "form_display_name": display_name,
             })
-        # Notify signup
+        # Auto-login after registration
+        try:
+            login_result = auth.login(username, password)
+        except Exception:
+            login_result = {"ok": False}
+
+        # Notify signup (non-blocking)
         try:
             from .notifications import notify_signup
             game_name = "primer" if skill_pack.kids_mode else ("ai-academy" if (skill_pack.theme == "neural") else "nexus-quest")
@@ -299,13 +305,11 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         except Exception:
             pass
 
-        # Auto-login after registration
-        login_result = auth.login(username, password)
-        if login_result["ok"]:
+        if login_result.get("ok"):
             response = RedirectResponse(f"{prefix}/", status_code=303)
             response.set_cookie("quest_session", login_result["session_id"], max_age=60*60*24*90, httponly=True, samesite="lax")
             return response
-        return RedirectResponse(f"{prefix}/", status_code=303)
+        return RedirectResponse(f"{prefix}/auth/login", status_code=303)
 
     @hub.post(f"{prefix}/auth/login", response_class=HTMLResponse)
     async def login_submit(request: Request, username: str = Form(default=""), password: str = Form(default=""), _pid: str = pack_id):
