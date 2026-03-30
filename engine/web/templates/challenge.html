@@ -46,12 +46,24 @@
     <div class="zone-progress-fill" style="width: {{ (challenge_num - 1) / challenge_total * 100 if challenge_total else 0 }}%"></div>
   </div>
 
-  <!-- ── Timer (hidden, tracks answer speed) ───────────────────────── -->
-  {% if not result %}
-  <div class="challenge-timer" id="challenge-timer" style="text-align:right;font-size:0.75rem;color:var(--text-dim);margin-bottom:0.5rem;">
-    <span id="timer-display">0.0s</span>
+  <!-- ── Timer + streak ──────────────────────────────────────────── -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+    {% if streak > 0 %}
+    <div class="streak-display" style="font-size:0.8rem;font-weight:700;color:var(--warn);">
+      🔥 {{ streak }} streak
+      {% if streak >= 10 %}<span style="font-size:0.7rem;color:var(--primary);margin-left:0.3rem;">COMBO!</span>{% endif %}
+    </div>
+    {% else %}
+    <div></div>
+    {% endif %}
+    {% if not result %}
+    <div class="challenge-timer" id="challenge-timer" style="font-size:0.75rem;color:var(--text-dim);">
+      <span id="timer-display">0.0s</span>
+    </div>
+    {% else %}
+    <div></div>
+    {% endif %}
   </div>
-  {% endif %}
 
   <!-- ── Boss intro ──────────────────────────────────────────────────── -->
   {% if is_boss and boss_intro %}

@@ -205,9 +205,17 @@ function initSoundTriggers() {
     if (achievement) setTimeout(() => QuestSounds.achievement(), 600);
   }
 
-  // Wrong answer sound
+  // Wrong answer sound + streak break
   const wrongBanner = document.querySelector('.result-wrong');
-  if (wrongBanner) QuestSounds.wrong();
+  if (wrongBanner) {
+    QuestSounds.wrong();
+    // If there was a streak, flash the streak display
+    const streakEl = document.querySelector('.streak-display');
+    if (streakEl) {
+      streakEl.style.animation = 'shake 0.3s ease';
+      streakEl.style.opacity = '0.3';
+    }
+  }
 
   // Option click sounds
   document.querySelectorAll('.option-btn').forEach(btn => {
