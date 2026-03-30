@@ -149,19 +149,19 @@ class PostgresStore(BaseStore):
     def _get_conn(self):
         if self._conn is None or self._conn.closed:
             self._conn = psycopg2.connect(self.database_url)
-            self._conn.autocommit = False
+            self._conn.autocommit = True  # Prevent transaction state leaking between serverless requests
         else:
-            # Check connection health — stale connections cause InFailedSqlTransaction
+            # Check connection health
             try:
-                self._conn.cursor().execute("SELECT 1")
-                self._conn.commit()
+                with self._conn.cursor() as cur:
+                    cur.execute("SELECT 1")
             except Exception:
                 try:
                     self._conn.close()
                 except Exception:
                     pass
                 self._conn = psycopg2.connect(self.database_url)
-                self._conn.autocommit = False
+                self._conn.autocommit = True
         return self._conn
 
     def _init_schema(self):

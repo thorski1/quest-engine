@@ -294,13 +294,8 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         # Auto-login after registration
         try:
             login_result = auth.login(username, password)
-        except Exception as e:
+        except Exception:
             login_result = {"ok": False}
-            return templates.TemplateResponse(request, "auth.html", {
-                "request": request, "theme": theme, "mode": "register",
-                "prefix": prefix, "error": f"Account created but login failed: {e}",
-                "form_username": username, "form_display_name": display_name,
-            })
 
         # Notify signup (non-blocking)
         try:
