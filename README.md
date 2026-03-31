@@ -20,12 +20,14 @@
 
 | Game | Audience | Chapters | Challenges | What You Learn |
 |------|----------|----------|------------|----------------|
-| [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 18 | 1,137 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go |
-| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 17 | 934 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment |
+| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 28 | 1,381 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment, Thinking, Time, Inventions, Oceans, Civics, Emotions, Measurement, Safety, Dinosaurs, Weather, Maps |
+| [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 27 | 1,551 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go, API Design, Rust, TypeScript, System Design, Data Engineering, Shell Scripting, Cloud Native, Web Dev, Python Advanced |
 | [AI Academy](https://github.com/thorski1/ai-academy) | Everyone | 8 | 328 | AI Fundamentals, Prompt Engineering, Chatbots, AI Tools, Ethics, AI at Work, AI Coding, Agents |
 | [Learn Chinese](https://github.com/thorski1/learn-chinese) | Language learners | 8 | 340 | Pinyin, Greetings, Numbers, Food & Drink, Family, Daily Life, Travel, Culture |
+| [Learn Spanish](https://github.com/thorski1/learn-spanish) | Language learners | 8 | 293 | Basics, Greetings, Numbers, Food, Family, Travel, Daily Life, Culture |
+| [Learn Japanese](https://github.com/thorski1/learn-japanese) | Language learners | 8 | 304 | Hiragana, Katakana, Greetings, Numbers, Food, Daily Life, Travel, Culture |
 
-**4 games. 51 chapters. 2,739 challenges. One engine.**
+**6 games. 87 chapters. 4,237 challenges. One engine.**
 
 ---
 
@@ -54,7 +56,10 @@
  ✅ OG meta / SEO
  ✅ Review/bookmarks pages
  ✅ Profile page
- ✅ 6 games, 73 chapters
+ ✅ 6 games, 87 chapters, 4,237 ch.
+ ✅ Google TTS (character voices)
+ ✅ Images on zone intros
+ ✅ Rich media (code/img/video)
 ```
 
 ### 2D Game World Roadmap (Phaser.js)
