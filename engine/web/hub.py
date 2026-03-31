@@ -252,16 +252,17 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         return user
 
     def _session_for_user(user: dict) -> WebGameSession:
-        """Get or create a session for a specific user."""
+        """Get or create a session for a specific user.
+        Always reloads from store to prevent stale data in serverless warm instances."""
         user_id = user.get("id", 0)
         session_key = f"{pack_id}:{user_id}"
         if session_key not in _sessions:
             sess = WebGameSession(skill_pack)
-            # Set the player ID so saves go to the right user
             sess.engine._player_id = str(user_id) if user_id else "default"
             sess.engine.player_name = user.get("display_name", "Player")
-            sess.engine.load()  # reload from store for this user
             _sessions[session_key] = sess
+        # ALWAYS reload from store — prevents stale state between serverless requests
+        _sessions[session_key].engine.load()
         return _sessions[session_key]
 
     def _session(request: Request = None) -> WebGameSession:
@@ -417,6 +418,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         return templates.TemplateResponse(request, "zone_intro.html", _ctx(
             request, zone=zone, zone_id=zone_id,
             intro_html=rich_to_html(intro_text) if intro_text else "",
+            zone_intros_raw=intro_text,
             challenge_count=len(challenges),
             zone_xp=zone_xp,
             zone_progress=zone_progress,

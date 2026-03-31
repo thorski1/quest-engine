@@ -205,6 +205,7 @@
     <details class="lesson-panel" {% if show_lesson %}open{% endif %}>
       <summary class="lesson-summary">
         <span class="lesson-toggle-icon">📖</span> Lesson
+        <button class="tts-btn" onclick="event.stopPropagation();playTTS(this)" data-text="{{ challenge.lesson | default(challenge.explanation, '') | e }}" title="Listen" style="background:none;border:1px solid var(--border);border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:0.75rem;color:var(--text-dim);margin-left:auto;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">🔊</button>
       </summary>
       <div class="lesson-content narrative-text">
         {{ lesson_html | safe }}

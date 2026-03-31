@@ -83,6 +83,9 @@
     {% if intro_html %}
     <div class="intro-narrative narrative-text typewriter-target">
       {{ intro_html | safe }}
+      <div style="margin-top:0.75rem;">
+        <button class="tts-btn" onclick="playTTS(this)" data-text="{{ zone_intros_raw | default('', true) | e }}" title="Listen to intro" style="background:none;border:1px solid var(--border);border-radius:var(--radius);padding:0.35rem 0.75rem;cursor:pointer;font-size:0.8rem;color:var(--text-dim);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">🔊 Listen</button>
+      </div>
     </div>
     {% endif %}
 
