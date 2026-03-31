@@ -27,35 +27,35 @@ from typing import Optional
 # Cache directory
 CACHE_DIR = Path(os.environ.get("QUEST_TTS_CACHE_DIR", "/tmp/quest_tts_cache"))
 
-# Voice configs — Studio voices (highest quality) with character differentiation
-# Each character gets a distinct voice personality
+# Voice configs — maximally differentiated character voices
+# Using different voice models + extreme pitch/rate to make each character distinct
 VOICE_CONFIGS = {
-    # ── NARRATORS (read questions, lessons) ──────────────────────────
-    # Puck — warm, bright, young-sounding (kids game narrator)
-    "puck":        {"language_code": "en-US", "name": "en-US-Studio-O", "pitch": 3.0, "rate": 0.95},
-    # CIPHER — deep, authoritative, tech (NEXUS Quest narrator)
-    "cipher":      {"language_code": "en-US", "name": "en-US-Studio-M", "pitch": -3.0, "rate": 0.98},
-    # ARIA — clear, calm, intelligent (AI Academy narrator)
-    "aria":        {"language_code": "en-US", "name": "en-US-Studio-Q", "pitch": 0.0, "rate": 1.0},
-    # Long Long — warm, wise (Chinese dragon guide)
-    "longlong":    {"language_code": "en-US", "name": "en-US-Studio-M", "pitch": -1.0, "rate": 0.92},
-    # Sofia — warm, encouraging (Spanish teacher)
-    "sofia":       {"language_code": "es-US", "name": "es-US-Studio-B", "pitch": 1.0, "rate": 0.95},
-    # Sensei — patient, measured (Japanese teacher)
-    "sensei":      {"language_code": "en-US", "name": "en-US-Studio-M", "pitch": -2.0, "rate": 0.88},
+    # ── CHARACTERS (distinct, expressive, whimsical) ─────────────────
+    # Puck — playful fairy, high-pitched, fast, excited energy
+    "puck":        {"language_code": "en-US", "name": "en-US-Studio-O", "pitch": 8.0, "rate": 1.08},
+    # CIPHER — gruff hacker, very deep, measured, intense
+    "cipher":      {"language_code": "en-GB", "name": "en-GB-Studio-B", "pitch": -8.0, "rate": 0.88},
+    # ARIA — smooth, knowing, slightly playful AI
+    "aria":        {"language_code": "en-US", "name": "en-US-Studio-Q", "pitch": 2.0, "rate": 1.02},
+    # Long Long — ancient dragon, deep rumble, slow and wise
+    "longlong":    {"language_code": "en-GB", "name": "en-GB-Studio-B", "pitch": -10.0, "rate": 0.82},
+    # Sofia — bright, enthusiastic, warm Spanish accent
+    "sofia":       {"language_code": "es-US", "name": "es-US-Studio-B", "pitch": 4.0, "rate": 1.05},
+    # Sensei — calm, deliberate, measured pauses
+    "sensei":      {"language_code": "en-AU", "name": "en-AU-Studio-B", "pitch": -4.0, "rate": 0.8},
 
-    # ── QUESTION/LESSON READERS (neutral, clear) ─────────────────────
+    # ── NARRATORS (neutral, clear — for questions/lessons) ───────────
     "en-playful":  {"language_code": "en-US", "name": "en-US-Studio-O", "pitch": 1.0, "rate": 0.95},
-    "en-cyberpunk": {"language_code": "en-US", "name": "en-US-Studio-M", "pitch": -2.0, "rate": 1.0},
-    "en-neural":   {"language_code": "en-US", "name": "en-US-Studio-Q", "pitch": 0.0, "rate": 1.0},
+    "en-cyberpunk": {"language_code": "en-GB", "name": "en-GB-Studio-C", "pitch": -1.0, "rate": 1.0},
+    "en-neural":   {"language_code": "en-US", "name": "en-US-Studio-Q", "pitch": -1.0, "rate": 1.0},
 
     # ── LANGUAGE-SPECIFIC (native speakers) ──────────────────────────
     "zh":          {"language_code": "cmn-CN", "name": "cmn-CN-Wavenet-A", "pitch": 0.0, "rate": 0.85},
-    "zh-slow":     {"language_code": "cmn-CN", "name": "cmn-CN-Wavenet-A", "pitch": 0.0, "rate": 0.7},
+    "zh-slow":     {"language_code": "cmn-CN", "name": "cmn-CN-Wavenet-A", "pitch": 0.0, "rate": 0.65},
     "ja":          {"language_code": "ja-JP", "name": "ja-JP-Wavenet-B", "pitch": 0.0, "rate": 0.85},
-    "ja-slow":     {"language_code": "ja-JP", "name": "ja-JP-Wavenet-B", "pitch": 0.0, "rate": 0.7},
+    "ja-slow":     {"language_code": "ja-JP", "name": "ja-JP-Wavenet-B", "pitch": 0.0, "rate": 0.65},
     "es":          {"language_code": "es-US", "name": "es-US-Studio-B", "pitch": 0.0, "rate": 0.9},
-    "es-slow":     {"language_code": "es-US", "name": "es-US-Studio-B", "pitch": 0.0, "rate": 0.75},
+    "es-slow":     {"language_code": "es-US", "name": "es-US-Studio-B", "pitch": 0.0, "rate": 0.7},
 
     # ── FALLBACK ─────────────────────────────────────────────────────
     "default":     {"language_code": "en-US", "name": "en-US-Studio-O", "pitch": 0.0, "rate": 1.0},
