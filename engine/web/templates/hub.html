@@ -34,7 +34,15 @@
       <h1 class="hub-title">{% if theme == "playful" %}Choose Your Adventure{% elif theme == "neural" %}Choose Your Path{% else %}Choose Your Chapter{% endif %}</h1>
       <p class="hub-subtitle">{% if theme == "playful" %}Pick a chapter and Puck will guide you!{% elif theme == "neural" %}ARIA will guide you from AI basics to the frontier{% else %}Select a skill domain to begin your training{% endif %}</p>
     </div>
-    <div class="hub-grid">
+    {% if packs | length > 8 %}
+    <div style="margin-bottom:1rem;">
+      <input type="text" id="hub-search" placeholder="Search chapters..." oninput="filterHubCards(this.value)"
+        style="width:100%;max-width:400px;padding:0.5rem 1rem;border:1px solid var(--border);border-radius:var(--radius-lg);
+        background:var(--bg-raised);color:var(--text-bright);font-size:0.9rem;outline:none;font-family:var(--font);"
+        onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    {% endif %}
+    <div class="hub-grid" id="hub-grid">
       {% for pack in packs %}
       <a href="/{{ pack.id }}/" class="hub-card" data-theme="{{ pack.theme }}">
         {% if pack.image_url is defined and pack.image_url %}
@@ -73,7 +81,24 @@
 </main>
 <footer class="site-footer">
   <span>{% if theme == "playful" %}The Young Lady's Illustrated Primer{% elif theme == "neural" %}AI Academy{% elif theme == "medieval" %}Learn Chinese{% elif theme == "sunset" %}Learn Spanish{% elif theme == "ocean" %}Learn Japanese{% else %}Quest Engine{% endif %}</span>
-  <span class="footer-link">{{ packs | length }} chapters · Powered by Quest Engine</span>
+  <span class="footer-link">{{ packs | length }} chapters · Powered by <a href="https://github.com/thorski1/quest-engine" target="_blank" rel="noopener" style="color:var(--primary);">Quest Engine</a></span>
 </footer>
+<script>
+function filterHubCards(query) {
+  var cards = document.querySelectorAll('.hub-card');
+  var q = query.toLowerCase();
+  cards.forEach(function(card) {
+    var title = card.querySelector('.hub-card-title');
+    var sub = card.querySelector('.hub-card-sub');
+    var text = (title ? title.textContent : '') + ' ' + (sub ? sub.textContent : '');
+    card.style.display = text.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+// Apply saved theme override
+var t = localStorage.getItem('quest-theme-override');
+if (t) document.documentElement.dataset.theme = t;
+var fs = localStorage.getItem('quest-font-size');
+if (fs) document.documentElement.style.fontSize = fs + '%';
+</script>
 </body>
 </html>
