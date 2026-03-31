@@ -261,6 +261,20 @@ function initSoundTriggers() {
   });
 }
 
+// ── TTS playback ────────────────────────────────────────────────────────────
+
+function playTTS(btn) {
+  var text = btn.dataset.text;
+  if (!text) return;
+  // Strip Rich markup
+  text = text.replace(/\[\/?\w+[^\]]*\]/g, '');
+  btn.textContent = '⏳';
+  var audio = new Audio('/api/tts?text=' + encodeURIComponent(text.substring(0, 500)) + '&voice=default');
+  audio.onended = function() { btn.textContent = '🔊'; };
+  audio.onerror = function() { btn.textContent = '🔇'; setTimeout(function(){ btn.textContent = '🔊'; }, 2000); };
+  audio.play().catch(function() { btn.textContent = '🔊'; });
+}
+
 // ── Challenge timer ──────────────────────────────────────────────────────────
 
 function initTimer() {

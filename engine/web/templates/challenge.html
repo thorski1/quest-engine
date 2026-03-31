@@ -78,6 +78,7 @@
     <!-- Question -->
     <div class="challenge-prompt">
       {{ prompt_html | safe }}
+      <button class="tts-btn" onclick="playTTS(this)" data-text="{{ challenge.question | default(challenge.prompt, '') | e }}" title="Listen" style="background:none;border:1px solid var(--border);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:0.9rem;color:var(--text-dim);margin-left:0.5rem;vertical-align:middle;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">🔊</button>
     </div>
 
     <!-- ── Result feedback (shown after submission) ─────────────────── -->

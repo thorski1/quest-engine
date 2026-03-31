@@ -193,6 +193,21 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
     for pack in skill_packs:
         _register_pack_routes(hub, pack, templates)
 
+    # ── TTS audio endpoint ─────────────────────────────────────────────────
+    from starlette.responses import Response
+
+    @hub.get("/api/tts")
+    async def tts_audio(request: Request, text: str = "", voice: str = "default"):
+        """Generate and serve TTS audio. Cached after first generation."""
+        from .tts import synthesize, is_tts_available
+        if not is_tts_available() or not text:
+            return Response(status_code=204)
+        audio = synthesize(text[:500], voice)  # Limit to 500 chars
+        if not audio:
+            return Response(status_code=204)
+        return Response(content=audio, media_type="audio/mpeg",
+                       headers={"Cache-Control": "public, max-age=86400"})
+
     # ── 404 handler ──────────────────────────────────────────────────────────
     from starlette.exceptions import HTTPException as StarletteHTTPException
     from starlette.responses import HTMLResponse as StarletteHTML
