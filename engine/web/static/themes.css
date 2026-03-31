@@ -818,9 +818,11 @@ html, body {
 .rq-blue   { color: #64b5f6; }
 
 .narrative-text {
-  line-height: 1.8;
+  line-height: 1.7;
   max-width: 680px;
 }
+.narrative-text p { margin-bottom: 0.5rem; }
+.narrative-text p:last-child { margin-bottom: 0; }
 [data-theme="cyberpunk"] .narrative-text { color: var(--text); }
 [data-theme="playful"]   .narrative-text { color: var(--text); font-size: 1.05rem; }
 
@@ -986,8 +988,8 @@ html, body {
 .intro-breadcrumb { display: flex; align-items: center; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1.5rem; }
 .intro-zone-name { font-size: 1.8rem; font-weight: 700; color: var(--primary); margin-bottom: 1.5rem; }
 [data-theme="playful"] .intro-zone-name { font-size: 2rem; }
-.intro-narrative { margin-bottom: 2rem; }
-.intro-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+.intro-narrative { margin-bottom: 1rem; }
+.intro-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    CHALLENGE PAGE
