@@ -75,6 +75,20 @@
   <!-- ── Challenge card ──────────────────────────────────────────────── -->
   <div class="challenge-card {% if is_boss %}challenge-boss{% endif %} {% if result %}{% if result.correct %}challenge-correct{% else %}challenge-wrong{% endif %}{% endif %}">
 
+    <!-- Media (image, video, map) -->
+    {% if challenge.image_url is defined and challenge.image_url %}
+    <div class="challenge-media" style="margin-bottom:1rem;border-radius:var(--radius);overflow:hidden;">
+      <img src="{{ challenge.image_url }}" alt="{{ challenge.title | default('') }}" loading="lazy"
+        style="width:100%;max-height:280px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);">
+    </div>
+    {% endif %}
+    {% if challenge.video_url is defined and challenge.video_url %}
+    <div class="challenge-media" style="margin-bottom:1rem;border-radius:var(--radius);overflow:hidden;aspect-ratio:16/9;">
+      <iframe src="{{ challenge.video_url }}" frameborder="0" allowfullscreen loading="lazy"
+        style="width:100%;height:100%;border-radius:var(--radius);border:1px solid var(--border);"></iframe>
+    </div>
+    {% endif %}
+
     <!-- Question -->
     <div class="challenge-prompt">
       {{ prompt_html | safe }}

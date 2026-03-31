@@ -87,11 +87,19 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         pack_cards = []
         for pack in skill_packs:
             session = _sessions[pack.id]
+            # Get pack image
+            pack_image = ""
+            try:
+                from .images import get_zone_image
+                pack_image = get_zone_image(pack.id)
+            except Exception:
+                pass
             pack_cards.append({
                 "id": pack.id,
                 "title": pack.title,
                 "subtitle": pack.subtitle,
                 "theme": pack.theme or ("playful" if pack.kids_mode else "cyberpunk"),
+                "image_url": pack_image,
                 "has_progress": session.has_progress(),
                 "completed_zones": len(session.engine.completed_zones),
                 "total_zones": len(pack.zone_order),
@@ -415,8 +423,19 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         zone_status = "complete" if zone_id in s.engine.completed_zones else (
             "in_progress" if zone_progress > 0 else "not_started"
         )
+        # Get zone image from curated library
+        zone_image = ""
+        try:
+            from .images import get_zone_image
+            zone_image = get_zone_image(zone_id)
+        except Exception:
+            pass
+        zone_with_image = dict(zone)
+        if zone_image:
+            zone_with_image["image_url"] = zone_image
+
         return templates.TemplateResponse(request, "zone_intro.html", _ctx(
-            request, zone=zone, zone_id=zone_id,
+            request, zone=zone_with_image, zone_id=zone_id,
             intro_html=rich_to_html(intro_text) if intro_text else "",
             zone_intros_raw=intro_text,
             challenge_count=len(challenges),

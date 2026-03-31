@@ -69,6 +69,13 @@
       <span>{{ zone.name }}</span>
     </div>
 
+    {% if zone.image_url is defined and zone.image_url %}
+    <div style="margin-bottom:1rem;border-radius:var(--radius-lg);overflow:hidden;">
+      <img src="{{ zone.image_url }}" alt="{{ zone.name }}" loading="lazy"
+        style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-lg);border:1px solid var(--border);">
+    </div>
+    {% endif %}
+
     <h1 class="intro-zone-name">{{ zone.name }}</h1>
 
     <div class="intro-zone-meta">

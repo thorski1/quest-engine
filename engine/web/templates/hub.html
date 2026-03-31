@@ -37,6 +37,11 @@
     <div class="hub-grid">
       {% for pack in packs %}
       <a href="/{{ pack.id }}/" class="hub-card" data-theme="{{ pack.theme }}">
+        {% if pack.image_url is defined and pack.image_url %}
+        <div style="margin:-1.5rem -1.5rem 1rem;border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;height:100px;">
+          <img src="{{ pack.image_url }}" alt="{{ pack.title }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+        {% endif %}
         <div class="hub-card-inner">
           <h2 class="hub-card-title">{{ pack.title }}</h2>
           <p class="hub-card-sub">{{ pack.subtitle | replace("◈", "") | trim }}</p>
