@@ -57,8 +57,8 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
     class AuthGateMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request, call_next):
             path = request.url.path
-            # Always allow: static files, auth routes, hub root, admin
-            if (path.startswith("/static") or "/auth/" in path or path == "/" or path.startswith("/admin")):
+            # Always allow: static files, auth routes, hub root, admin, API
+            if (path.startswith("/static") or "/auth/" in path or path == "/" or path.startswith("/admin") or path.startswith("/api/")):
                 return await call_next(request)
             # Check if Postgres is in use
             from ..storage import get_store
@@ -207,14 +207,19 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
     @hub.get("/api/tts")
     async def tts_audio(request: Request, text: str = "", voice: str = "default"):
         """Generate and serve TTS audio. Cached after first generation."""
-        from .tts import synthesize, is_tts_available
-        if not is_tts_available() or not text:
+        if not text:
             return Response(status_code=204)
-        audio = synthesize(text[:500], voice)  # Limit to 500 chars
-        if not audio:
+        try:
+            from .tts import synthesize, is_tts_available
+            if not is_tts_available():
+                return Response(status_code=204)
+            audio = synthesize(text[:500], voice)
+            if not audio:
+                return Response(status_code=204)
+            return Response(content=audio, media_type="audio/mpeg",
+                           headers={"Cache-Control": "public, max-age=86400"})
+        except Exception:
             return Response(status_code=204)
-        return Response(content=audio, media_type="audio/mpeg",
-                       headers={"Cache-Control": "public, max-age=86400"})
 
     # ── 404 handler ──────────────────────────────────────────────────────────
     from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -710,24 +715,6 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         s = _session(request)
         return templates.TemplateResponse(request, "profile.html", _ctx(
             request, **s.detailed_stats_context(),
-        ))
-
-    @hub.get(f"{prefix}/zone/{{zone_id}}/level", response_class=HTMLResponse)
-    async def zone_level(request: Request, zone_id: str, _pid: str = pack_id):
-        zone = skill_pack.get_zone(zone_id)
-        if not zone:
-            return RedirectResponse(f"{prefix}/", status_code=303)
-        challenges = zone.get("challenges", [])
-        return templates.TemplateResponse(request, "level.html", _ctx(
-            request, zone=zone, zone_id=zone_id,
-            challenges=challenges, challenge_count=len(challenges),
-        ))
-
-    @hub.get(f"{prefix}/explore", response_class=HTMLResponse)
-    async def explore_page(request: Request, _pid: str = pack_id):
-        s = _session(request)
-        return templates.TemplateResponse(request, "explore.html", _ctx(
-            request, zones=s.all_zones_context(),
         ))
 
     @hub.get(f"{prefix}/settings", response_class=HTMLResponse)

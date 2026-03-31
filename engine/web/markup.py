@@ -72,7 +72,18 @@ def rich_to_html(text: str) -> str:
     # Actually handle properly:
     text = re.sub(r'\x00ESC\x00([^\x00]*)\x00ESC\x00', r'[\1]', text)
 
-    # 5. Newlines → <br>
+    # 5. Convert markdown-style code blocks: ```code``` → <pre><code>code</code></pre>
+    text = re.sub(r'```(\w*)\n(.*?)```', lambda m: f'<pre><code class="lang-{m.group(1)}">{m.group(2)}</code></pre>', text, flags=re.DOTALL)
+    # Inline code: `code` → <code>code</code>
+    text = re.sub(r'`([^`]+)`', r'<code>\1</code>', text)
+
+    # 6. Convert markdown images: ![alt](url) → <img>
+    text = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', r'<img src="\2" alt="\1" loading="lazy">', text)
+
+    # 7. Convert markdown links: [text](url) → <a>
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2" target="_blank" rel="noopener">\1</a>', text)
+
+    # 8. Newlines → <br>
     text = text.replace("\n", "<br>\n")
 
     return text

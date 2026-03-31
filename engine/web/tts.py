@@ -39,8 +39,13 @@ VOICE_CONFIGS = {
 }
 
 
+_tts_client = None
+
 def _get_client():
     """Get or create the Google TTS client."""
+    global _tts_client
+    if _tts_client is not None:
+        return _tts_client
     try:
         # Check for base64-encoded credentials (Vercel)
         b64_creds = os.environ.get("GOOGLE_TTS_CREDENTIALS", "")
@@ -51,10 +56,13 @@ def _get_client():
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(creds_path)
 
         from google.cloud import texttospeech
-        return texttospeech.TextToSpeechClient()
+        _tts_client = texttospeech.TextToSpeechClient()
+        return _tts_client
     except ImportError:
         return None
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger("quest-engine.tts").warning(f"TTS client init failed: {e}")
         return None
 
 

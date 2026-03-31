@@ -96,9 +96,6 @@
     {% endif %}
 
     <div class="intro-actions" style="flex-wrap:wrap;">
-      <a href="{{ pack_url_prefix }}/zone/{{ zone_id }}/level" class="btn btn-ghost btn-lg" style="border-color:var(--warn);color:var(--warn);">
-        🎮 Play as Level
-      </a>
       <a href="{{ pack_url_prefix }}/challenge" class="btn btn-primary btn-lg">
         {% if theme == "playful" %}
           {% if zone_status == "in_progress" %}Keep Going! →{% else %}Let's Go! →{% endif %}

@@ -1236,6 +1236,40 @@ html, body {
 }
 [data-theme="playful"] .lesson-content { font-size: 1rem; }
 
+/* Rich media in lessons and challenges */
+.lesson-content img, .challenge-prompt img, .narrative-text img {
+  max-width: 100%; height: auto; border-radius: var(--radius);
+  border: 1px solid var(--border); margin: 0.5rem 0;
+}
+.lesson-content code, .challenge-prompt code {
+  background: var(--bg-raised); padding: 0.15rem 0.4rem;
+  border-radius: 4px; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em; color: var(--secondary);
+}
+.lesson-content pre, .challenge-prompt pre {
+  background: var(--bg-raised); padding: 0.75rem 1rem;
+  border-radius: var(--radius); overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+  line-height: 1.5; border: 1px solid var(--border); margin: 0.5rem 0;
+  color: var(--text-bright);
+}
+.lesson-content pre code { background: none; padding: 0; border-radius: 0; font-size: inherit; color: inherit; }
+.lesson-content blockquote, .narrative-text blockquote {
+  border-left: 3px solid var(--primary); padding: 0.5rem 1rem;
+  margin: 0.5rem 0; background: rgba(0,229,160,0.03);
+  font-style: italic; color: var(--text);
+}
+.lesson-content table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; font-size: 0.82rem; }
+.lesson-content th { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 2px solid var(--border); color: var(--text-bright); font-weight: 600; }
+.lesson-content td { padding: 0.4rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.lesson-content ul, .lesson-content ol { padding-left: 1.5rem; margin: 0.4rem 0; }
+.lesson-content li { margin-bottom: 0.25rem; }
+.lesson-content .media-embed {
+  border-radius: var(--radius); overflow: hidden;
+  margin: 0.75rem 0; border: 1px solid var(--border);
+}
+.lesson-content .media-embed iframe { width: 100%; aspect-ratio: 16/9; border: none; }
+
 /* Action bar */
 .action-bar {
   display: flex;
