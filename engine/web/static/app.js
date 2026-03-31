@@ -268,8 +268,11 @@ function playTTS(btn) {
   if (!text) return;
   // Strip Rich markup
   text = text.replace(/\[\/?\w+[^\]]*\]/g, '');
+  // Get theme from page
+  var theme = document.documentElement.dataset.theme || '';
   btn.textContent = '⏳';
-  var audio = new Audio('/api/tts?text=' + encodeURIComponent(text.substring(0, 500)) + '&voice=default');
+  var url = '/api/tts?text=' + encodeURIComponent(text.substring(0, 500)) + '&theme=' + theme;
+  var audio = new Audio(url);
   audio.onended = function() { btn.textContent = '🔊'; };
   audio.onerror = function() { btn.textContent = '🔇'; setTimeout(function(){ btn.textContent = '🔊'; }, 2000); };
   audio.play().catch(function() { btn.textContent = '🔊'; });

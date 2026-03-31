@@ -205,14 +205,17 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
     from starlette.responses import Response
 
     @hub.get("/api/tts")
-    async def tts_audio(request: Request, text: str = "", voice: str = "default"):
-        """Generate and serve TTS audio. Cached after first generation."""
+    async def tts_audio(request: Request, text: str = "", voice: str = "", theme: str = ""):
+        """Generate and serve TTS audio with character-aware voice selection."""
         if not text:
             return Response(status_code=204)
         try:
-            from .tts import synthesize, is_tts_available
+            from .tts import synthesize, is_tts_available, get_character_voice
             if not is_tts_available():
                 return Response(status_code=204)
+            # Auto-detect voice from text content + theme if not specified
+            if not voice:
+                voice = get_character_voice(text, theme)
             audio = synthesize(text[:500], voice)
             if not audio:
                 return Response(status_code=204)

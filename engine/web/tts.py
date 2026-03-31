@@ -27,15 +27,38 @@ from typing import Optional
 # Cache directory
 CACHE_DIR = Path(os.environ.get("QUEST_TTS_CACHE_DIR", "/tmp/quest_tts_cache"))
 
-# Voice configs per language/theme
+# Voice configs — Studio voices (highest quality) with character differentiation
+# Each character gets a distinct voice personality
 VOICE_CONFIGS = {
-    "en-playful": {"language_code": "en-US", "name": "en-US-Neural2-C", "pitch": 2.0, "rate": 0.95},  # Warm, friendly (Puck)
-    "en-cyberpunk": {"language_code": "en-US", "name": "en-US-Neural2-D", "pitch": -2.0, "rate": 1.0},  # Deep, tech
-    "en-neural": {"language_code": "en-US", "name": "en-US-Neural2-F", "pitch": 0.0, "rate": 1.0},  # Neutral (ARIA)
-    "zh": {"language_code": "cmn-CN", "name": "cmn-CN-Neural2-A", "pitch": 0.0, "rate": 0.9},  # Mandarin
-    "ja": {"language_code": "ja-JP", "name": "ja-JP-Neural2-B", "pitch": 0.0, "rate": 0.9},  # Japanese
-    "es": {"language_code": "es-US", "name": "es-US-Neural2-A", "pitch": 0.0, "rate": 0.95},  # Spanish
-    "default": {"language_code": "en-US", "name": "en-US-Neural2-C", "pitch": 0.0, "rate": 1.0},
+    # ── NARRATORS (read questions, lessons) ──────────────────────────
+    # Puck — warm, bright, young-sounding (kids game narrator)
+    "puck":        {"language_code": "en-US", "name": "en-US-Studio-O", "pitch": 3.0, "rate": 0.95},
+    # CIPHER — deep, authoritative, tech (NEXUS Quest narrator)
+    "cipher":      {"language_code": "en-US", "name": "en-US-Studio-M", "pitch": -3.0, "rate": 0.98},
+    # ARIA — clear, calm, intelligent (AI Academy narrator)
+    "aria":        {"language_code": "en-US", "name": "en-US-Studio-Q", "pitch": 0.0, "rate": 1.0},
+    # Long Long — warm, wise (Chinese dragon guide)
+    "longlong":    {"language_code": "en-US", "name": "en-US-Studio-M", "pitch": -1.0, "rate": 0.92},
+    # Sofia — warm, encouraging (Spanish teacher)
+    "sofia":       {"language_code": "es-US", "name": "es-US-Studio-B", "pitch": 1.0, "rate": 0.95},
+    # Sensei — patient, measured (Japanese teacher)
+    "sensei":      {"language_code": "en-US", "name": "en-US-Studio-M", "pitch": -2.0, "rate": 0.88},
+
+    # ── QUESTION/LESSON READERS (neutral, clear) ─────────────────────
+    "en-playful":  {"language_code": "en-US", "name": "en-US-Studio-O", "pitch": 1.0, "rate": 0.95},
+    "en-cyberpunk": {"language_code": "en-US", "name": "en-US-Studio-M", "pitch": -2.0, "rate": 1.0},
+    "en-neural":   {"language_code": "en-US", "name": "en-US-Studio-Q", "pitch": 0.0, "rate": 1.0},
+
+    # ── LANGUAGE-SPECIFIC (native speakers) ──────────────────────────
+    "zh":          {"language_code": "cmn-CN", "name": "cmn-CN-Wavenet-A", "pitch": 0.0, "rate": 0.85},
+    "zh-slow":     {"language_code": "cmn-CN", "name": "cmn-CN-Wavenet-A", "pitch": 0.0, "rate": 0.7},
+    "ja":          {"language_code": "ja-JP", "name": "ja-JP-Wavenet-B", "pitch": 0.0, "rate": 0.85},
+    "ja-slow":     {"language_code": "ja-JP", "name": "ja-JP-Wavenet-B", "pitch": 0.0, "rate": 0.7},
+    "es":          {"language_code": "es-US", "name": "es-US-Studio-B", "pitch": 0.0, "rate": 0.9},
+    "es-slow":     {"language_code": "es-US", "name": "es-US-Studio-B", "pitch": 0.0, "rate": 0.75},
+
+    # ── FALLBACK ─────────────────────────────────────────────────────
+    "default":     {"language_code": "en-US", "name": "en-US-Studio-O", "pitch": 0.0, "rate": 1.0},
 }
 
 
@@ -129,7 +152,7 @@ def synthesize(text: str, voice_id: str = "default") -> Optional[bytes]:
 
 
 def get_voice_for_pack(theme: str, language_hint: str = "") -> str:
-    """Determine the best voice ID for a skill pack."""
+    """Determine the best voice ID for a skill pack's question/lesson reader."""
     if language_hint == "zh" or "chinese" in theme.lower():
         return "zh"
     if language_hint == "ja" or "japanese" in theme.lower():
@@ -142,6 +165,35 @@ def get_voice_for_pack(theme: str, language_hint: str = "") -> str:
         return "en-cyberpunk"
     if theme == "neural":
         return "en-neural"
+    return "default"
+
+
+def get_character_voice(text: str, theme: str = "") -> str:
+    """Detect character dialogue in text and return the appropriate voice.
+
+    Characters are identified by their speech patterns:
+    - Puck: appears in playful theme intros
+    - CIPHER: appears in cyberpunk theme intros
+    - ARIA: appears in neural theme intros
+    - 龙龙/Long Long: appears in medieval theme
+    - Sofia: appears in sunset theme
+    - Sensei/先生: appears in ocean theme
+    """
+    text_lower = text.lower()
+
+    if "puck" in text_lower or theme == "playful":
+        return "puck"
+    if "cipher" in text_lower or theme == "cyberpunk":
+        return "cipher"
+    if "aria" in text_lower or theme == "neural":
+        return "aria"
+    if "龙龙" in text or "long long" in text_lower or "lóng" in text_lower or theme == "medieval":
+        return "longlong"
+    if "sofia" in text_lower or theme == "sunset":
+        return "sofia"
+    if "sensei" in text_lower or "先生" in text or theme == "ocean":
+        return "sensei"
+
     return "default"
 
 
