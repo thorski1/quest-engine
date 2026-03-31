@@ -1236,6 +1236,30 @@ html, body {
 }
 [data-theme="playful"] .lesson-content { font-size: 1rem; }
 
+/* TTS play button */
+.tts-play-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.4rem 0.85rem; margin: 0.6rem 0 0.25rem;
+  background: linear-gradient(135deg, var(--bg-raised), var(--bg-surface));
+  border: 1px solid var(--border-bright); border-radius: 100px;
+  color: var(--secondary); font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  font-family: var(--font);
+}
+.tts-play-btn:hover {
+  border-color: var(--primary); color: var(--primary);
+  transform: scale(1.03);
+  box-shadow: 0 0 12px rgba(0, 229, 160, 0.15);
+}
+.tts-play-btn:active { transform: scale(0.97); }
+.tts-play-btn .tts-icon { font-size: 1rem; }
+.tts-play-btn.tts-sm {
+  padding: 0.2rem 0.5rem; margin: 0; margin-left: auto;
+  font-size: 0.75rem;
+}
+.tts-play-btn.tts-sm .tts-icon { font-size: 0.85rem; }
+[data-theme="playful"] .tts-play-btn { border-radius: 100px; font-size: 0.9rem; }
+
 /* Rich media in lessons and challenges */
 .lesson-content img, .challenge-prompt img, .narrative-text img {
   max-width: 100%; height: auto; border-radius: var(--radius);

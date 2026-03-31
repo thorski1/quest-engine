@@ -267,26 +267,26 @@ var _ttsAudio = null;
 function playTTS(btn) {
   var text = btn.dataset.text;
   if (!text) return;
+  var iconEl = btn.querySelector('.tts-icon') || btn;
 
   // Stop any currently playing audio
   if (_ttsAudio) {
     _ttsAudio.pause();
     _ttsAudio.currentTime = 0;
     _ttsAudio = null;
-    // Reset all speaker buttons
-    document.querySelectorAll('.tts-btn').forEach(function(b) { b.textContent = '🔊'; });
+    document.querySelectorAll('.tts-play-btn .tts-icon').forEach(function(ic) { ic.textContent = '🔊'; });
   }
 
   // Strip Rich markup
   text = text.replace(/\[\/?\w+[^\]]*\]/g, '');
   var theme = document.documentElement.dataset.theme || '';
-  btn.textContent = '⏳';
+  iconEl.textContent = '⏳';
 
   var url = '/api/tts?text=' + encodeURIComponent(text.substring(0, 500)) + '&theme=' + theme;
   _ttsAudio = new Audio(url);
-  _ttsAudio.onended = function() { btn.textContent = '🔊'; _ttsAudio = null; };
-  _ttsAudio.onerror = function() { btn.textContent = '🔇'; setTimeout(function(){ btn.textContent = '🔊'; }, 2000); _ttsAudio = null; };
-  _ttsAudio.play().catch(function() { btn.textContent = '🔊'; _ttsAudio = null; });
+  _ttsAudio.onended = function() { iconEl.textContent = '🔊'; _ttsAudio = null; };
+  _ttsAudio.onerror = function() { iconEl.textContent = '🔇'; setTimeout(function(){ iconEl.textContent = '🔊'; }, 2000); _ttsAudio = null; };
+  _ttsAudio.play().catch(function() { iconEl.textContent = '🔊'; _ttsAudio = null; });
 }
 
 // ── Challenge timer ──────────────────────────────────────────────────────────

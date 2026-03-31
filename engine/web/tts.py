@@ -128,14 +128,16 @@ def synthesize(text: str, voice_id: str = "default") -> Optional[bytes]:
 
         config = VOICE_CONFIGS.get(voice_id, VOICE_CONFIGS["default"])
 
-        synthesis_input = texttospeech.SynthesisInput(text=clean_text)
+        # Use SSML for more expressive speech with pauses and emphasis
+        ssml = f'<speak><prosody rate="{config.get("rate", 1.0)}" pitch="{config.get("pitch", 0)}st">{clean_text}</prosody></speak>'
+        synthesis_input = texttospeech.SynthesisInput(ssml=ssml)
         voice = texttospeech.VoiceSelectionParams(
             language_code=config["language_code"],
             name=config.get("name", ""),
         )
         audio_config = texttospeech.AudioConfig(
             audio_encoding=texttospeech.AudioEncoding.MP3,
-            speaking_rate=config.get("rate", 1.0),
+            speaking_rate=1.0,  # rate handled in SSML prosody
             pitch=config.get("pitch", 0.0),
         )
 

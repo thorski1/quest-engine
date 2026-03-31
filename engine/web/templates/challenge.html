@@ -89,11 +89,14 @@
     </div>
     {% endif %}
 
-    <!-- Question -->
+    <!-- Question + Speaker -->
     <div class="challenge-prompt">
       {{ prompt_html | safe }}
-      <button class="tts-btn" onclick="playTTS(this)" data-text="{{ challenge.question | default(challenge.prompt, '') | e }}" title="Listen" style="background:none;border:1px solid var(--border);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:0.9rem;color:var(--text-dim);margin-left:0.5rem;vertical-align:middle;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">🔊</button>
     </div>
+    <button class="tts-play-btn" onclick="playTTS(this)" data-text="{{ challenge.question | default(challenge.prompt, '') | e }}" title="Listen to question">
+      <span class="tts-icon">🔊</span>
+      <span class="tts-label">Listen</span>
+    </button>
 
     <!-- ── Result feedback (shown after submission) ─────────────────── -->
     {% if result %}
@@ -219,7 +222,9 @@
     <details class="lesson-panel" {% if show_lesson %}open{% endif %}>
       <summary class="lesson-summary">
         <span class="lesson-toggle-icon">📖</span> Lesson
-        <button class="tts-btn" onclick="event.stopPropagation();playTTS(this)" data-text="{{ challenge.lesson | default(challenge.explanation, '') | e }}" title="Listen" style="background:none;border:1px solid var(--border);border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:0.75rem;color:var(--text-dim);margin-left:auto;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">🔊</button>
+        <button class="tts-play-btn tts-sm" onclick="event.stopPropagation();playTTS(this)" data-text="{{ challenge.lesson | default(challenge.explanation, '') | e }}" title="Listen to lesson">
+          <span class="tts-icon">🔊</span>
+        </button>
       </summary>
       <div class="lesson-content narrative-text">
         {{ lesson_html | safe }}
