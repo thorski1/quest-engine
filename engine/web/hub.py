@@ -104,11 +104,25 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             sum(len(z.get("challenges", [])) for z in p.zones.values())
             for p in skill_packs
         )
+        # Get user count if Postgres is available
+        total_users = 0
+        try:
+            from ..storage import get_store
+            store = get_store()
+            if hasattr(store, '_get_conn'):
+                conn = store._get_conn()
+                with conn.cursor() as cur:
+                    cur.execute("SELECT COUNT(*) FROM users WHERE is_active = TRUE")
+                    total_users = cur.fetchone()[0]
+        except Exception:
+            pass
+
         return templates.TemplateResponse(request, "hub.html", {
             "request": request,
             "packs": pack_cards,
             "theme": hub_theme,
             "total_challenges": total_challenges,
+            "total_users": total_users,
         })
 
     # ── Admin analytics (hub-level, cross-game) ────────────────────────────────
