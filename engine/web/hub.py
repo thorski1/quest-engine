@@ -206,21 +206,32 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
 
     @hub.get("/api/tts")
     async def tts_audio(request: Request, text: str = "", voice: str = "", theme: str = ""):
-        """Generate and serve TTS audio with character-aware voice selection."""
+        """Generate and serve TTS audio. Prefers ElevenLabs, falls back to Google."""
         if not text:
             return Response(status_code=204)
         try:
-            from .tts import synthesize, is_tts_available, get_character_voice
-            if not is_tts_available():
-                return Response(status_code=204)
-            # Auto-detect voice from text content + theme if not specified
+            # Auto-detect voice from text + theme
             if not voice:
+                from .tts import get_character_voice
                 voice = get_character_voice(text, theme)
-            audio = synthesize(text[:500], voice)
-            if not audio:
-                return Response(status_code=204)
-            return Response(content=audio, media_type="audio/mpeg",
-                           headers={"Cache-Control": "public, max-age=86400"})
+
+            # Try ElevenLabs first (much better quality)
+            from .tts_elevenlabs import synthesize as el_synth, is_available as el_available
+            if el_available():
+                audio = el_synth(text[:500], voice)
+                if audio:
+                    return Response(content=audio, media_type="audio/mpeg",
+                                   headers={"Cache-Control": "public, max-age=86400"})
+
+            # Fall back to Google TTS
+            from .tts import synthesize as g_synth, is_tts_available
+            if is_tts_available():
+                audio = g_synth(text[:500], voice)
+                if audio:
+                    return Response(content=audio, media_type="audio/mpeg",
+                                   headers={"Cache-Control": "public, max-age=86400"})
+
+            return Response(status_code=204)
         except Exception:
             return Response(status_code=204)
 
