@@ -169,6 +169,24 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         except Exception:
             pass
 
+        # Get current user for welcome banner
+        current_user = None
+        user_total_xp = 0
+        user_chapters_started = 0
+        try:
+            from .auth import AuthManager, SESSION_COOKIE
+            from ..storage import get_store
+            store = get_store()
+            if hasattr(store, 'create_user'):
+                session_id = request.cookies.get(SESSION_COOKIE, "")
+                if session_id:
+                    current_user = AuthManager(store).get_user_from_session(session_id)
+        except Exception:
+            pass
+        if current_user:
+            user_total_xp = sum(p.get("total_xp", 0) for p in pack_cards)
+            user_chapters_started = sum(1 for p in pack_cards if p.get("has_progress"))
+
         return templates.TemplateResponse(request, "hub.html", {
             "request": request,
             "packs": pack_cards,
@@ -176,6 +194,9 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "total_challenges": total_challenges,
             "total_users": total_users,
             "daily_teaser": daily_teaser,
+            "current_user": current_user,
+            "user_total_xp": user_total_xp,
+            "user_chapters_started": user_chapters_started,
         })
 
     # ── Admin analytics (hub-level, cross-game) ────────────────────────────────

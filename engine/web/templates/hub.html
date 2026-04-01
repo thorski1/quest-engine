@@ -30,6 +30,17 @@
 </header>
 <main class="site-main">
   <div class="hub-page">
+    {% if current_user %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;margin-bottom:1rem;background:linear-gradient(135deg,var(--bg-raised),var(--bg-surface));border:1px solid var(--border);border-radius:var(--radius-lg);">
+      <div>
+        <span style="font-size:1rem;font-weight:700;color:var(--text-bright);">Welcome back, {{ current_user.display_name }}!</span>
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.15rem;">
+          {{ user_chapters_started }} chapters started · {{ user_total_xp }} total XP
+        </div>
+      </div>
+      <a href="/{{ packs[0].id }}/settings" style="font-size:0.75rem;color:var(--text-dim);text-decoration:none;padding:0.3rem 0.6rem;border:1px solid var(--border);border-radius:var(--radius);">Settings</a>
+    </div>
+    {% endif %}
     <div class="hub-hero">
       <h1 class="hub-title">{% if theme == "playful" %}Choose Your Adventure{% elif theme == "neural" %}Choose Your Path{% else %}Choose Your Chapter{% endif %}</h1>
       <p class="hub-subtitle">{% if theme == "playful" %}Pick a chapter and Puck will guide you!{% elif theme == "neural" %}ARIA will guide you from AI basics to the frontier{% else %}Select a skill domain to begin your training{% endif %}</p>
