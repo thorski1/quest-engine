@@ -235,6 +235,39 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         except Exception:
             return Response(status_code=204)
 
+    # ── AI Tutor endpoint ──────────────────────────────────────────────────
+    @hub.get("/api/explain")
+    async def ai_explain(request: Request, question: str = "", answer: str = ""):
+        """Use Claude to explain why the correct answer is right."""
+        import os
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key or not question:
+            return Response(content=json.dumps({"explanation": "AI tutor not configured."}),
+                          media_type="application/json")
+        try:
+            import json as _json
+            from urllib.request import Request as Req, urlopen
+            payload = _json.dumps({
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 200,
+                "messages": [{
+                    "role": "user",
+                    "content": f"Explain simply in 2-3 sentences why the answer to this question is '{answer}': {question}"
+                }]
+            }).encode()
+            req = Req("https://api.anthropic.com/v1/messages", data=payload, method="POST")
+            req.add_header("x-api-key", api_key)
+            req.add_header("anthropic-version", "2023-06-01")
+            req.add_header("content-type", "application/json")
+            with urlopen(req, timeout=10) as resp:
+                data = _json.loads(resp.read())
+                text = data.get("content", [{}])[0].get("text", "")
+                return Response(content=_json.dumps({"explanation": text}),
+                              media_type="application/json")
+        except Exception:
+            return Response(content=json.dumps({"explanation": "Couldn't generate explanation right now."}),
+                          media_type="application/json")
+
     # ── 404 handler ──────────────────────────────────────────────────────────
     from starlette.exceptions import HTTPException as StarletteHTTPException
     from starlette.responses import HTMLResponse as StarletteHTML
@@ -695,6 +728,18 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             new_achievement=ach_name,
             next_zone_id=next_zone,
         ))
+
+    @hub.get(f"{prefix}/smart-review", response_class=HTMLResponse)
+    async def smart_review_page(request: Request, _pid: str = pack_id):
+        s = _session(request)
+        return templates.TemplateResponse(request, "spaced_review.html", _ctx(
+            request, **s.spaced_review_context(),
+        ))
+
+    @hub.post(f"{prefix}/review/rate", response_class=HTMLResponse)
+    async def rate_review(request: Request, challenge_id: str = Form(default=""), zone_id: str = Form(default=""), rating: str = Form(default="good"), _pid: str = pack_id):
+        # For now, redirect back — in future, update interval in DB
+        return RedirectResponse(f"{prefix}/smart-review", status_code=303)
 
     @hub.get(f"{prefix}/review", response_class=HTMLResponse)
     async def review_page(request: Request, _pid: str = pack_id):

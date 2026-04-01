@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .sr-page { max-width: 680px; margin: 0 auto; }
+  .sr-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .sr-title { font-size: 1.4rem; font-weight: 700; color: var(--text-bright); }
+  .sr-subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; line-height: 1.5; }
+
+  .sr-stats { display: flex; gap: 1.5rem; margin-bottom: 2rem; }
+  .sr-stat { text-align: center; }
+  .sr-stat-value { font-size: 1.5rem; font-weight: 800; }
+  .sr-stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+
+  .sr-card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1rem;
+    box-shadow: var(--card-shadow); animation: fade-in-up 0.3s ease both;
+  }
+  .sr-question { font-size: 1.05rem; color: var(--text-bright); line-height: 1.6; margin-bottom: 1rem; }
+  .sr-zone { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+
+  .sr-actions { display: flex; gap: 0.5rem; }
+  .sr-btn {
+    flex: 1; padding: 0.6rem; border-radius: var(--radius); font-weight: 700;
+    font-size: 0.85rem; cursor: pointer; border: 1px solid var(--border);
+    transition: all 0.15s; text-align: center; background: var(--bg-raised); color: var(--text);
+  }
+  .sr-btn:hover { transform: translateY(-1px); }
+  .sr-btn-easy { border-color: var(--primary); color: var(--primary); }
+  .sr-btn-easy:hover { background: var(--primary); color: var(--bg); }
+  .sr-btn-good { border-color: var(--secondary); color: var(--secondary); }
+  .sr-btn-good:hover { background: var(--secondary); color: var(--bg); }
+  .sr-btn-hard { border-color: var(--warn); color: var(--warn); }
+  .sr-btn-hard:hover { background: var(--warn); color: var(--bg); }
+  .sr-btn-again { border-color: var(--accent); color: var(--accent); }
+  .sr-btn-again:hover { background: var(--accent); color: #fff; }
+
+  .sr-lesson {
+    margin-top: 0.75rem; padding: 0.75rem; background: var(--lesson-bg);
+    border: 1px solid var(--lesson-border); border-radius: var(--radius);
+    font-size: 0.85rem; line-height: 1.6; display: none;
+  }
+  .sr-lesson.visible { display: block; animation: fade-in-up 0.2s ease; }
+  .sr-show-answer { color: var(--secondary); cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+
+  .sr-empty { text-align: center; padding: 3rem; color: var(--text-dim); }
+  .sr-empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+
+  @keyframes fade-in-up { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sr-page">
+
+  <div class="sr-header">
+    <h1 class="sr-title">🔄 Smart Review</h1>
+    <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Back</a>
+  </div>
+  <p class="sr-subtitle">
+    {% if theme == "playful" %}
+      Puck picked out the questions you found tricky! Review them now and watch your brain grow stronger.
+    {% else %}
+      Spaced repetition — review what you got wrong at the optimal time for long-term memory.
+    {% endif %}
+  </p>
+
+  <div class="sr-stats">
+    <div class="sr-stat">
+      <div class="sr-stat-value" style="color:var(--accent);">{{ due_count }}</div>
+      <div class="sr-stat-label">Due Now</div>
+    </div>
+    <div class="sr-stat">
+      <div class="sr-stat-value" style="color:var(--warn);">{{ total_review }}</div>
+      <div class="sr-stat-label">In Review</div>
+    </div>
+    <div class="sr-stat">
+      <div class="sr-stat-value" style="color:var(--primary);">{{ mastered }}</div>
+      <div class="sr-stat-label">Mastered</div>
+    </div>
+  </div>
+
+  {% if review_cards %}
+  {% for card in review_cards %}
+  <div class="sr-card" id="card-{{ loop.index }}">
+    <div class="sr-zone">{{ card.zone_name }}</div>
+    <div class="sr-question">{{ card.question }}</div>
+
+    <button class="tts-play-btn" onclick="playTTS(this)" data-text="{{ card.question | e }}">
+      <span class="tts-icon">🔊</span> <span class="tts-label">Listen</span>
+    </button>
+
+    <a class="sr-show-answer" onclick="document.getElementById('lesson-{{ loop.index }}').classList.toggle('visible')">
+      Show Answer & Lesson ▾
+    </a>
+    <div class="sr-lesson" id="lesson-{{ loop.index }}">
+      {{ card.lesson_html | safe }}
+    </div>
+
+    <div class="sr-actions" style="margin-top:0.75rem;">
+      <form method="POST" action="{{ pack_url_prefix }}/review/rate" style="display:contents;">
+        <input type="hidden" name="challenge_id" value="{{ card.challenge_id }}">
+        <input type="hidden" name="zone_id" value="{{ card.zone_id }}">
+        <button type="submit" name="rating" value="again" class="sr-btn sr-btn-again">Again</button>
+        <button type="submit" name="rating" value="hard" class="sr-btn sr-btn-hard">Hard</button>
+        <button type="submit" name="rating" value="good" class="sr-btn sr-btn-good">Good</button>
+        <button type="submit" name="rating" value="easy" class="sr-btn sr-btn-easy">Easy</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="sr-empty">
+    <div class="sr-empty-icon">🎉</div>
+    <p style="font-size:1.1rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;">All caught up!</p>
+    <p>{% if theme == "playful" %}No tricky questions to review right now. Keep playing!{% else %}No items due for review. Keep learning!{% endif %}</p>
+    <a href="{{ pack_url_prefix }}/" class="btn btn-primary" style="margin-top:1rem;">Continue Playing</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

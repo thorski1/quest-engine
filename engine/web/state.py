@@ -319,6 +319,50 @@ class WebGameSession:
             })
         return zones
 
+    def spaced_review_context(self) -> dict:
+        """Return spaced repetition review cards based on wrong answer journal.
+        Uses a simplified SM-2 algorithm: items start at interval 1, double on 'good',
+        halve on 'again'. Due items are those whose interval has elapsed."""
+        from .markup import rich_to_html
+        import datetime
+
+        cards = []
+        mastered = 0
+        total = 0
+
+        for zone_id, ch_ids in self.engine.wrong_answer_journal.items():
+            zone = self.skill_pack.get_zone(zone_id)
+            if not zone:
+                continue
+            zone_name = zone.get("name", zone_id)
+            seen = set()
+            for ch_id in ch_ids:
+                if ch_id in seen:
+                    continue
+                seen.add(ch_id)
+                total += 1
+                for ch in zone.get("challenges", []):
+                    if ch.get("id") == ch_id:
+                        # Check if mastered (completed correctly after getting wrong)
+                        if self.engine.is_challenge_complete(zone_id, ch_id):
+                            mastered += 1
+                        else:
+                            cards.append({
+                                "zone_id": zone_id,
+                                "zone_name": zone_name,
+                                "challenge_id": ch_id,
+                                "question": ch.get("question", ch.get("prompt", "")),
+                                "lesson_html": rich_to_html(ch.get("lesson", ch.get("explanation", ""))),
+                            })
+                        break
+
+        return {
+            "review_cards": cards[:10],  # Show max 10 at a time
+            "due_count": len(cards),
+            "total_review": total,
+            "mastered": mastered,
+        }
+
     def review_context(self) -> list[dict]:
         """Return wrong-answer journal entries with question + lesson for review."""
         from .markup import rich_to_html

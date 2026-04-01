@@ -118,6 +118,10 @@
         <div class="result-body">
           <strong>{{ result.message }}</strong>
           <span class="result-hint-nudge">Study the lesson below and try again.</span>
+          <button class="ai-explain-btn" onclick="aiExplain(this)" data-question="{{ challenge.question | default(challenge.prompt, '') | e }}" data-answer="{{ challenge.answer | default('') }}" data-options="{{ challenge.options | default([]) | tojson | e }}">
+            🤖 Explain why
+          </button>
+          <div class="ai-explanation" id="ai-explanation" style="display:none;"></div>
         </div>
       {% endif %}
     </div>

@@ -1236,6 +1236,23 @@ html, body {
 }
 [data-theme="playful"] .lesson-content { font-size: 1rem; }
 
+/* AI explain button */
+.ai-explain-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.3rem 0.7rem; margin-top: 0.5rem;
+  background: linear-gradient(135deg, var(--bg-raised), var(--bg-surface));
+  border: 1px solid var(--secondary); border-radius: 100px;
+  color: var(--secondary); font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; font-family: var(--font);
+}
+.ai-explain-btn:hover { background: var(--secondary); color: var(--bg); }
+.ai-explanation {
+  margin-top: 0.5rem; padding: 0.75rem; background: var(--lesson-bg);
+  border: 1px solid var(--lesson-border); border-radius: var(--radius);
+  font-size: 0.85rem; line-height: 1.6; color: var(--text);
+  animation: fade-in-up 0.3s ease;
+}
+
 /* TTS play button */
 .tts-play-btn {
   display: inline-flex; align-items: center; gap: 0.4rem;

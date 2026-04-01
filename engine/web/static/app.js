@@ -289,6 +289,31 @@ function playTTS(btn) {
   _ttsAudio.play().catch(function() { iconEl.textContent = '🔊'; _ttsAudio = null; });
 }
 
+// ── AI Tutor explain ─────────────────────────────────────────────────────────
+
+function aiExplain(btn) {
+  var question = btn.dataset.question || '';
+  var answer = btn.dataset.answer || '';
+  var el = document.getElementById('ai-explanation');
+  if (!el) return;
+  btn.textContent = '🤖 Thinking...';
+  btn.disabled = true;
+
+  fetch('/api/explain?question=' + encodeURIComponent(question) + '&answer=' + encodeURIComponent(answer))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      el.style.display = 'block';
+      el.innerHTML = '<strong>🤖 AI Tutor:</strong> ' + (data.explanation || 'No explanation available.');
+      btn.style.display = 'none';
+    })
+    .catch(function() {
+      el.style.display = 'block';
+      el.textContent = 'Could not load explanation.';
+      btn.textContent = '🤖 Explain why';
+      btn.disabled = false;
+    });
+}
+
 // ── Challenge timer ──────────────────────────────────────────────────────────
 
 function initTimer() {
