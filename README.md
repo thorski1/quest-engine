@@ -20,7 +20,7 @@
 
 | Game | Audience | Chapters | Challenges | What You Learn |
 |------|----------|----------|------------|----------------|
-| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 35 | 1,623 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment, Thinking, Time, Inventions, Oceans, Civics, Emotions, Measurement, Safety, Dinosaurs, Weather, Maps, Famous People, Religions, Planets, Logic, Shapes, Sports, Simple Machines |
+| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 35 | 1,664 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment, Thinking, Time, Inventions, Oceans, Civics, Emotions, Measurement, Safety, Dinosaurs, Weather, Maps, Famous People, Religions, Planets, Logic, Shapes, Sports, Simple Machines |
 | [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 29 | 1,638 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go, API Design, Rust, TypeScript, System Design, Data Engineering, Shell Scripting, Cloud Native, Web Dev, Python Advanced, DNS/HTTP, ML Engineering |
 | [AI Academy](https://github.com/thorski1/ai-academy) | Everyone | 8 | 328 | AI Fundamentals, Prompt Engineering, Chatbots, AI Tools, Ethics, AI at Work, AI Coding, Agents |
 | [Learn Chinese](https://github.com/thorski1/learn-chinese) | Language learners | 8 | 340 | Pinyin, Greetings, Numbers, Food & Drink, Family, Daily Life, Travel, Culture |
