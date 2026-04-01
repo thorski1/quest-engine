@@ -20,14 +20,14 @@
 
 | Game | Audience | Chapters | Challenges | What You Learn |
 |------|----------|----------|------------|----------------|
-| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 30 | 1,463 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment, Thinking, Time, Inventions, Oceans, Civics, Emotions, Measurement, Safety, Dinosaurs, Weather, Maps, Famous People, Religions |
+| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 35 | 1,623 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment, Thinking, Time, Inventions, Oceans, Civics, Emotions, Measurement, Safety, Dinosaurs, Weather, Maps, Famous People, Religions, Planets, Logic, Shapes, Sports, Simple Machines |
 | [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 29 | 1,638 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go, API Design, Rust, TypeScript, System Design, Data Engineering, Shell Scripting, Cloud Native, Web Dev, Python Advanced, DNS/HTTP, ML Engineering |
 | [AI Academy](https://github.com/thorski1/ai-academy) | Everyone | 8 | 328 | AI Fundamentals, Prompt Engineering, Chatbots, AI Tools, Ethics, AI at Work, AI Coding, Agents |
 | [Learn Chinese](https://github.com/thorski1/learn-chinese) | Language learners | 8 | 340 | Pinyin, Greetings, Numbers, Food & Drink, Family, Daily Life, Travel, Culture |
 | [Learn Spanish](https://github.com/thorski1/learn-spanish) | Language learners | 8 | 293 | Basics, Greetings, Numbers, Food, Family, Travel, Daily Life, Culture |
 | [Learn Japanese](https://github.com/thorski1/learn-japanese) | Language learners | 8 | 304 | Hiragana, Katakana, Greetings, Numbers, Food, Daily Life, Travel, Culture |
 
-**6 games. 91 chapters. 4,366 challenges. One engine.**
+**6 games. 96 chapters. 4,526 challenges. One engine.**
 
 ---
 
@@ -39,7 +39,7 @@
  ✅ Terminal TUI               🔨 Mario-style 2D world      📋 Multiplayer PvP challenges
  ✅ Web mode (FastAPI)          🔨 More game content         📋 AI-generated challenges (LLM)
  ✅ 8 visual themes             🔨 Social media automation   📋 Voice input for answers
- ✅ Phaser.js RPG overworld                                  📋 Spaced repetition engine
+ ✅ Anti-cheat (shuffle, freeze)                              📋 Unified platform mode
  ✅ PWA + offline                                            📋 Parent email reports
  ✅ Sound effects                                            📋 Classroom/teacher mode
  ✅ User accounts + auth                                     📋 Mobile app (React Native)
@@ -51,12 +51,12 @@
  ✅ Admin analytics                                          📋 LTI integration (LMS)
  ✅ Signup notifications                                     📋 Plugin marketplace
  ✅ SVG illustrations                                        📋 Real-time multiplayer
- ✅ 66 tests + CI pipeline                                   📋 3D world (Three.js)
+ ✅ 75 tests + CI pipeline                                   📋 3D world (Three.js)
  ✅ Streak tracking + combos
  ✅ OG meta / SEO
  ✅ Review/bookmarks pages
  ✅ Profile page
- ✅ 6 games, 91 chapters, 4,366 ch.
+ ✅ 6 games, 96 chapters, 4,526 ch.
  ✅ Google TTS + ElevenLabs voices
  ✅ Images on zone intros
  ✅ Rich media (code/img/video)
@@ -64,29 +64,13 @@
  ✅ Spaced repetition review
 ```
 
-### 2D Game World Roadmap (Phaser.js)
+### Anti-Cheat Features
 
-The overworld at `/{pack}/explore` is the foundation. Here's where it's going:
-
-```
- Phase 1 ✅ DONE          Phase 2 🔨 NEXT          Phase 3 📋 FUTURE
- ─────────────           ──────────────           ────────────────
- ✅ Top-down overworld    🔨 Side-scrolling        📋 Procedural worlds
- ✅ WASD movement            Mario-style levels    📋 Boss battle mini-games
- ✅ Zone buildings        🔨 Platforms + jumping   📋 NPC dialogue system
- ✅ Proximity detection   🔨 Collectible coins     📋 Inventory system
- ✅ Enter zone on key        (XP pickups)          📋 Weather effects
- ✅ Theme palettes (8)    🔨 Enemies (wrong        📋 Day/night cycle
- ✅ Ambient particles        answers = damage)     📋 Multiplayer rooms
- ✅ Completion markers    🔨 Power-ups (hints,     📋 Custom character skins
- ✅ Locked zone gates        streak shield)        📋 Level editor
-                          🔨 Animated sprites      📋 Leaderboard races
-                          🔨 Sound effects per     📋 Seasonal events
-                             action                📋 Achievement trophies
-                          🔨 Death + respawn           in trophy room
-                          🔨 Level progression
-                             (zone = level)
-```
+- **Option Shuffling** — Quiz options are randomized per user/challenge/day
+- **Streak Freeze** — Spend 50 XP to protect your streak (one-time shield)
+- **Lesson-First** — Lessons auto-open on the first challenge of each zone
+- **Hint XP Cost** — Visible cost on hint button (free on easy, -10 on normal, -15 on hard)
+- **Challenge ID Validation** — Server verifies the displayed question matches the submitted answer
 
 **The vision:** Each zone becomes a Mario-style level. Platforms contain quiz
 questions — answer correctly to progress, wrong answers cost a life. Coins
