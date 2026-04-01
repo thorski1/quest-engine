@@ -320,13 +320,21 @@ function initTimer() {
   var display = document.getElementById('timer-display');
   if (!display) return;
   var start = Date.now();
+  window._challengeStartTime = start;
   var interval = setInterval(function() {
     var elapsed = ((Date.now() - start) / 1000).toFixed(1);
     display.textContent = elapsed + 's';
+    // Color coding: green < 5s, yellow < 15s, red > 15s
+    if (elapsed < 5) display.style.color = 'var(--primary)';
+    else if (elapsed < 15) display.style.color = 'var(--warn)';
+    else display.style.color = 'var(--accent)';
   }, 100);
-  // Stop when an answer form is submitted
   document.querySelectorAll('.option-form, .text-answer-form').forEach(function(form) {
-    form.addEventListener('submit', function() { clearInterval(interval); });
+    form.addEventListener('submit', function() {
+      clearInterval(interval);
+      var elapsed = ((Date.now() - start) / 1000).toFixed(1);
+      display.textContent = elapsed + 's ✓';
+    });
   });
 }
 
