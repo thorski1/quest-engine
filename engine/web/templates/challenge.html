@@ -223,7 +223,7 @@
 
     <!-- ── Lesson panel ─────────────────────────────────────────────── -->
     {% if lesson_html %}
-    <details class="lesson-panel" {% if show_lesson %}open{% endif %}>
+    <details class="lesson-panel" {% if show_lesson or challenge_num == 1 %}open{% endif %}>
       <summary class="lesson-summary">
         <span class="lesson-toggle-icon">📖</span> Lesson
         <button class="tts-play-btn tts-sm" onclick="event.stopPropagation();playTTS(this)" data-text="{{ challenge.lesson | default(challenge.explanation, '') | e }}" title="Listen to lesson">
@@ -242,8 +242,8 @@
   {% if not (result and result.correct) %}
   <div class="action-bar">
     <form method="POST" action="{{ pack_url_prefix }}/hint">
-      <button type="submit" class="action-btn" title="Get a hint (-10 XP)">
-        💡 <span class="action-label">Hint</span>
+      <button type="submit" class="action-btn action-btn-warn" title="Hints cost XP!" style="border-color:var(--warn);">
+        💡 <span class="action-label">Hint <span style="font-size:0.7rem;opacity:0.7;">({% if difficulty == 'easy' %}free{% elif difficulty == 'hard' %}-15 XP{% else %}-10 XP{% endif %})</span></span>
       </button>
     </form>
 
