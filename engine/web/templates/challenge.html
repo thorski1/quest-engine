@@ -49,9 +49,16 @@
   <!-- ── Timer + streak ──────────────────────────────────────────── -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
     {% if streak > 0 %}
-    <div class="streak-display" style="font-size:0.8rem;font-weight:700;color:var(--warn);">
+    <div class="streak-display" style="font-size:0.8rem;font-weight:700;color:var(--warn);display:flex;align-items:center;gap:0.4rem;">
       🔥 {{ streak }} streak
-      {% if streak >= 10 %}<span style="font-size:0.7rem;color:var(--primary);margin-left:0.3rem;">COMBO!</span>{% endif %}
+      {% if streak >= 10 %}<span style="font-size:0.7rem;color:var(--primary);">COMBO!</span>{% endif %}
+      {% if streak_freeze %}
+        <span style="font-size:0.65rem;color:var(--secondary);border:1px solid var(--secondary);padding:0.1rem 0.3rem;border-radius:4px;">🛡️ Frozen</span>
+      {% elif streak >= 3 and total_xp >= 50 and not result %}
+        <form method="POST" action="{{ pack_url_prefix }}/streak-freeze" style="display:inline;">
+          <button type="submit" style="font-size:0.6rem;padding:0.1rem 0.35rem;border-radius:4px;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;" title="Protect your streak for 50 XP">🛡️ Freeze (50 XP)</button>
+        </form>
+      {% endif %}
     </div>
     {% else %}
     <div></div>
@@ -186,6 +193,7 @@
           <form method="POST" action="{{ pack_url_prefix }}/answer" class="option-form">
             <input type="hidden" name="answer" value="{{ letter }}">
             <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
+            {% if shuffle_map %}<input type="hidden" name="shuffle_map" value="{{ shuffle_map | e }}">{% endif %}
             <button
               type="submit"
               class="option-btn

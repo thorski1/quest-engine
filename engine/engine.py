@@ -105,6 +105,8 @@ class GameEngine:
         self.difficulty_mode: str = "normal"
         # Per-challenge speed records: {zone_id: {challenge_id: float}}
         self.challenge_records: dict = {}
+        # Streak freeze: protects streak on next wrong answer (costs 50 XP)
+        self.streak_freeze_active: bool = False
 
         # Session stats (reset each run, not persisted)
         self.session_start: float = time.time()
@@ -161,6 +163,7 @@ class GameEngine:
                 self.bookmarks = data.get("bookmarks", [])
                 self.difficulty_mode = data.get("difficulty_mode", "normal")
                 self.challenge_records = data.get("challenge_records", {})
+                self.streak_freeze_active = data.get("streak_freeze_active", False)
                 self._prev_level = self.level
             except (json.JSONDecodeError, KeyError):
                 pass
@@ -188,6 +191,7 @@ class GameEngine:
             "bookmarks": self.bookmarks,
             "difficulty_mode": self.difficulty_mode,
             "challenge_records": self.challenge_records,
+            "streak_freeze_active": self.streak_freeze_active,
         }
 
     def save(self):
@@ -289,9 +293,23 @@ class GameEngine:
         self.save()
 
     def record_incorrect(self):
-        self.streak = 0
+        if self.streak_freeze_active and self.streak > 0:
+            # Freeze protects the streak once, then deactivates
+            self.streak_freeze_active = False
+        else:
+            self.streak = 0
         self.session_wrong += 1
         self.save()
+
+    def buy_streak_freeze(self) -> bool:
+        """Buy a streak freeze for 50 XP. Returns True if purchased."""
+        cost = 50
+        if self.total_xp < cost or self.streak_freeze_active:
+            return False
+        self.deduct_xp(cost)
+        self.streak_freeze_active = True
+        self.save()
+        return True
 
     # ── Adaptive Difficulty ──────────────────────────────────────────────────
 

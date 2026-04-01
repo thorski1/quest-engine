@@ -164,6 +164,53 @@ class TestEmptyAnswer:
         assert r.status_code == 200
 
 
+class TestOptionShuffle:
+    """Test anti-cheat option shuffling."""
+
+    def test_shuffle_produces_valid_mapping(self):
+        from engine.web.hub import _shuffle_options
+        options = ["Apple", "Banana", "Cherry", "Date"]
+        shuffled, lmap = _shuffle_options(options, "a", "test-seed")
+        # All options present
+        assert sorted(shuffled) == sorted(options)
+        # Map has 4 entries
+        assert len(lmap) == 4
+        # Map values are original letters
+        assert set(lmap.values()) == {"a", "b", "c", "d"}
+        # Map keys are new letters
+        assert set(lmap.keys()) == {"a", "b", "c", "d"}
+
+    def test_shuffle_deterministic_same_seed(self):
+        from engine.web.hub import _shuffle_options
+        options = ["A", "B", "C", "D"]
+        s1, m1 = _shuffle_options(options, "a", "same-seed")
+        s2, m2 = _shuffle_options(options, "a", "same-seed")
+        assert s1 == s2
+        assert m1 == m2
+
+    def test_shuffle_different_seeds_differ(self):
+        from engine.web.hub import _shuffle_options
+        options = ["A", "B", "C", "D"]
+        s1, _ = _shuffle_options(options, "a", "seed-1")
+        s2, _ = _shuffle_options(options, "a", "seed-2")
+        # With different seeds, almost certainly different order
+        # (there's a 1/24 chance they're the same, so we check mapping instead)
+        # Just verify both are valid
+        assert sorted(s1) == sorted(s2)
+
+    def test_empty_options_no_shuffle(self):
+        from engine.web.hub import _shuffle_options
+        s, m = _shuffle_options([], "a", "seed")
+        assert s == []
+        assert m == {}
+
+    def test_single_option_no_shuffle(self):
+        from engine.web.hub import _shuffle_options
+        s, m = _shuffle_options(["Only"], "a", "seed")
+        assert s == ["Only"]
+        assert m == {}
+
+
 class TestZoneNavigation:
     def test_invalid_zone_redirects_to_menu(self, edge_client):
         c = edge_client

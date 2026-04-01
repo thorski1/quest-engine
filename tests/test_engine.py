@@ -86,6 +86,47 @@ class TestGameEngine:
         assert suggestion == "decrease"
 
 
+class TestStreakFreeze:
+    def test_buy_streak_freeze(self, engine):
+        engine.total_xp = 100
+        assert engine.buy_streak_freeze()
+        assert engine.streak_freeze_active
+        assert engine.total_xp == 50
+
+    def test_freeze_protects_streak(self, engine):
+        engine.total_xp = 100
+        engine.record_correct()
+        engine.record_correct()
+        engine.record_correct()
+        assert engine.streak == 3
+        engine.buy_streak_freeze()
+        engine.record_incorrect()
+        # Streak preserved, freeze consumed
+        assert engine.streak == 3
+        assert not engine.streak_freeze_active
+
+    def test_freeze_only_protects_once(self, engine):
+        engine.total_xp = 100
+        engine.record_correct()
+        engine.record_correct()
+        engine.buy_streak_freeze()
+        engine.record_incorrect()  # protected
+        assert engine.streak == 2
+        engine.record_incorrect()  # not protected
+        assert engine.streak == 0
+
+    def test_cant_buy_freeze_without_xp(self, engine):
+        engine.total_xp = 30
+        assert not engine.buy_streak_freeze()
+        assert not engine.streak_freeze_active
+
+    def test_cant_buy_freeze_twice(self, engine):
+        engine.total_xp = 200
+        assert engine.buy_streak_freeze()
+        assert not engine.buy_streak_freeze()  # already active
+        assert engine.total_xp == 150  # only charged once
+
+
 class TestStorage:
     def test_memory_store_save_load(self):
         from engine.storage import MemoryStore

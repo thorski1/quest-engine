@@ -286,6 +286,7 @@ class WebGameSession:
             "xp_this_level": engine.xp_this_level,
             "xp_for_next_level": engine.xp_for_next_level,
             "streak": engine.streak,
+            "streak_freeze": engine.streak_freeze_active,
             "difficulty": engine.difficulty_mode,
             "completed_zones": len(engine.completed_zones),
             "total_zones": len(self.skill_pack.zone_order),

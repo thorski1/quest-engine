@@ -11,7 +11,10 @@ Usage:
 
 from __future__ import annotations
 import datetime
+import hashlib
+import json
 import os
+import random
 from pathlib import Path
 from typing import Optional
 
@@ -33,6 +36,28 @@ _STATIC_DIR = _HERE / "static"
 
 # Session registry: pack_id -> WebGameSession
 _sessions: dict[str, WebGameSession] = {}
+
+
+def _shuffle_options(options: list, answer: str, seed: str) -> tuple[list, dict]:
+    """Shuffle quiz options deterministically.
+
+    Returns (shuffled_options, letter_map) where letter_map maps
+    shuffled letters back to original letters for answer checking.
+    e.g. if original answer was 'b' and it moved to position 'd',
+    letter_map['d'] = 'b'.
+    """
+    if not options or len(options) < 2:
+        return options, {}
+    letters = ["a", "b", "c", "d"][:len(options)]
+    indexed = list(enumerate(options))  # [(0, "opt A"), (1, "opt B"), ...]
+    rng = random.Random(seed)
+    rng.shuffle(indexed)
+    shuffled = [opt for _, opt in indexed]
+    # Map: new_letter -> original_letter
+    letter_map = {}
+    for new_idx, (orig_idx, _) in enumerate(indexed):
+        letter_map[letters[new_idx]] = letters[orig_idx]
+    return shuffled, letter_map
 
 
 def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
@@ -539,6 +564,15 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         if ctype == "live":
             ctype = "text"
 
+        # Shuffle options for anti-cheat (deterministic per user+challenge+date)
+        shuffle_map_json = ""
+        if options and ctype == "quiz":
+            user = _get_user(request) if _is_postgres() else None
+            uid = str(user["id"]) if user else "local"
+            seed = hashlib.md5(f"{challenge.get('id','')}-{uid}-{datetime.date.today()}".encode()).hexdigest()
+            options, letter_map = _shuffle_options(options, challenge.get("answer", "a"), seed)
+            shuffle_map_json = json.dumps(letter_map)
+
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge, challenge_num=num, challenge_total=total,
@@ -550,13 +584,23 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             url=challenge.get("url", ""),
             result=None, hint_text=None, show_lesson=False,
             difficulty_suggestion=s.engine.get_difficulty_suggestion(),
+            shuffle_map=shuffle_map_json,
         ))
 
     @hub.post(f"{prefix}/answer", response_class=HTMLResponse)
-    async def submit_answer(request: Request, answer: str = Form(default=""), challenge_id: str = Form(default=""), _pid: str = pack_id):
+    async def submit_answer(request: Request, answer: str = Form(default=""), challenge_id: str = Form(default=""), shuffle_map: str = Form(default=""), _pid: str = pack_id):
         if not answer.strip():
             return RedirectResponse(f"{prefix}/challenge", status_code=303)
         s = _session(request)
+
+        # Reverse-map shuffled answer back to original letter
+        actual_answer = answer.strip()
+        if shuffle_map:
+            try:
+                lmap = json.loads(shuffle_map)
+                actual_answer = lmap.get(actual_answer, actual_answer)
+            except (json.JSONDecodeError, TypeError):
+                pass
 
         # Get the specific challenge that was displayed, not the "current" one
         challenge = s.get_current_challenge()
@@ -571,7 +615,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         if s.engine.is_challenge_complete(zone_id, challenge.get("id", "")):
             return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
-        result = s.submit_answer(answer.strip(), challenge=challenge)
+        result = s.submit_answer(actual_answer, challenge=challenge)
 
         # Record attempt to Postgres for analytics
         try:
@@ -594,13 +638,24 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         ctype = challenge.get("type", "quiz")
         if ctype == "live":
             ctype = "text"
+
+        # Re-shuffle options for result display (same seed = same order)
+        result_options = challenge.get("options", [])
+        result_shuffle_map = ""
+        if result_options and ctype == "quiz":
+            user = _get_user(request) if _is_postgres() else None
+            uid = str(user["id"]) if user else "local"
+            seed = hashlib.md5(f"{challenge.get('id','')}-{uid}-{datetime.date.today()}".encode()).hexdigest()
+            result_options, rlmap = _shuffle_options(result_options, challenge.get("answer", "a"), seed)
+            result_shuffle_map = json.dumps(rlmap)
+
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge,
             challenge_num=num,
             challenge_total=total,
             zone=zone, zone_id=s.engine.current_zone,
-            ctype=ctype, options=challenge.get("options", []),
+            ctype=ctype, options=result_options,
             is_boss=challenge.get("is_boss", False), boss_intro="",
             prompt_html=rich_to_html(challenge.get("prompt", challenge.get("question", ""))),
             lesson_html=rich_to_html(challenge.get("lesson", "")),
@@ -609,6 +664,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             show_lesson=not result.correct,
             submitted_answer=answer.strip(),
             difficulty_suggestion=s.engine.get_difficulty_suggestion(),
+            shuffle_map=result_shuffle_map,
         ))
 
     @hub.post(f"{prefix}/hint", response_class=HTMLResponse)
@@ -621,17 +677,28 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         ctype = challenge.get("type", "quiz") if challenge else "quiz"
         if ctype == "live":
             ctype = "text"
+        # Shuffle options consistently for hint display
+        hint_options = challenge.get("options", []) if challenge else []
+        hint_shuffle_map = ""
+        if hint_options and ctype == "quiz" and challenge:
+            user = _get_user(request) if _is_postgres() else None
+            uid = str(user["id"]) if user else "local"
+            seed = hashlib.md5(f"{challenge.get('id','')}-{uid}-{datetime.date.today()}".encode()).hexdigest()
+            hint_options, hlmap = _shuffle_options(hint_options, challenge.get("answer", "a"), seed)
+            hint_shuffle_map = json.dumps(hlmap)
+
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge, challenge_num=num, challenge_total=total,
             zone=zone, zone_id=s.engine.current_zone,
             ctype=ctype,
-            options=challenge.get("options", []) if challenge else [],
+            options=hint_options,
             is_boss=challenge.get("is_boss", False) if challenge else False, boss_intro="",
             prompt_html=rich_to_html(challenge.get("prompt", challenge.get("question", ""))) if challenge else "",
             lesson_html=rich_to_html(challenge.get("lesson", "")) if challenge else "",
             url=challenge.get("url", "") if challenge else "",
             result=None, hint_text=hint_text, show_lesson=False,
+            shuffle_map=hint_shuffle_map,
         ))
 
     @hub.post(f"{prefix}/skip", response_class=HTMLResponse)
@@ -647,6 +714,12 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     @hub.post(f"{prefix}/difficulty", response_class=HTMLResponse)
     async def set_difficulty(request: Request, mode: str = Form(default="normal"), _pid: str = pack_id):
         _session(request).set_difficulty(mode)
+        return RedirectResponse(f"{prefix}/challenge", status_code=303)
+
+    @hub.post(f"{prefix}/streak-freeze", response_class=HTMLResponse)
+    async def buy_streak_freeze(request: Request, _pid: str = pack_id):
+        s = _session(request)
+        s.engine.buy_streak_freeze()
         return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
     @hub.get(f"{prefix}/stats", response_class=HTMLResponse)
