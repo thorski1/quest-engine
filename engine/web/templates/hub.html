@@ -69,6 +69,15 @@
       {% endfor %}
     </div>
 
+    <!-- ── Daily teaser ────────────────────────────────────────────── -->
+    {% if daily_teaser %}
+    <div style="margin-top:1.5rem;padding:1.25rem;background:linear-gradient(135deg,var(--bg-raised),var(--bg-surface));border:1px solid var(--warn);border-radius:var(--radius-lg);text-align:center;">
+      <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--warn);font-weight:700;margin-bottom:0.5rem;">⚡ Question of the Day</div>
+      <div style="font-size:1rem;color:var(--text-bright);font-weight:600;margin-bottom:0.75rem;line-height:1.5;">{{ daily_teaser.question }}</div>
+      <a href="/{{ daily_teaser.pack_id }}/" class="btn btn-primary" style="font-size:0.85rem;">Play {{ daily_teaser.pack_title }} →</a>
+    </div>
+    {% endif %}
+
     <!-- ── Quick stats banner ────────────────────────────────────────── -->
     {% if total_users is defined and total_users > 0 %}
     <div style="text-align:center;margin-top:2rem;padding:1rem;border-top:1px solid var(--border);color:var(--text-dim);font-size:0.8rem;">

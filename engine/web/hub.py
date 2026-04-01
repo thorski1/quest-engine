@@ -125,12 +125,32 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         except Exception:
             pass
 
+        # Daily teaser — pick a random challenge to show on the hub
+        import datetime as _dt, re as _re
+        daily_teaser = None
+        try:
+            day_hash = hash(str(_dt.date.today())) % len(skill_packs)
+            teaser_pack = skill_packs[day_hash]
+            all_chs = []
+            for z in teaser_pack.zones.values():
+                for ch in z.get("challenges", []):
+                    if ch.get("options"):  # only quiz with options
+                        all_chs.append(ch)
+            if all_chs:
+                ch_idx = hash(str(_dt.date.today()) + "ch") % len(all_chs)
+                ch = all_chs[ch_idx]
+                q = _re.sub(r'\[/?[^\]]+\]', '', ch.get("question", ch.get("prompt", "")))
+                daily_teaser = {"question": q[:150], "pack_id": teaser_pack.id, "pack_title": teaser_pack.title}
+        except Exception:
+            pass
+
         return templates.TemplateResponse(request, "hub.html", {
             "request": request,
             "packs": pack_cards,
             "theme": hub_theme,
             "total_challenges": total_challenges,
             "total_users": total_users,
+            "daily_teaser": daily_teaser,
         })
 
     # ── Admin analytics (hub-level, cross-game) ────────────────────────────────
