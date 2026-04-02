@@ -21,13 +21,13 @@
 | Game | Audience | Chapters | Challenges | What You Learn |
 |------|----------|----------|------------|----------------|
 | [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 35 | 1,664 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment, Thinking, Time, Inventions, Oceans, Civics, Emotions, Measurement, Safety, Dinosaurs, Weather, Maps, Famous People, Religions, Planets, Logic, Shapes, Sports, Simple Machines |
-| [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 29 | 1,638 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go, API Design, Rust, TypeScript, System Design, Data Engineering, Shell Scripting, Cloud Native, Web Dev, Python Advanced, DNS/HTTP, ML Engineering |
+| [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 33 | 1,802 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go, API Design, Rust, TypeScript, System Design, Data Engineering, Shell Scripting, Cloud Native, Web Dev, Python Advanced, DNS/HTTP, ML Engineering, Linux Internals, Redis, Testing, GraphQL |
 | [AI Academy](https://github.com/thorski1/ai-academy) | Everyone | 8 | 328 | AI Fundamentals, Prompt Engineering, Chatbots, AI Tools, Ethics, AI at Work, AI Coding, Agents |
 | [Learn Chinese](https://github.com/thorski1/learn-chinese) | Language learners | 8 | 340 | Pinyin, Greetings, Numbers, Food & Drink, Family, Daily Life, Travel, Culture |
 | [Learn Spanish](https://github.com/thorski1/learn-spanish) | Language learners | 8 | 293 | Basics, Greetings, Numbers, Food, Family, Travel, Daily Life, Culture |
 | [Learn Japanese](https://github.com/thorski1/learn-japanese) | Language learners | 8 | 304 | Hiragana, Katakana, Greetings, Numbers, Food, Daily Life, Travel, Culture |
 
-**6 games. 96 chapters. 4,526 challenges. One engine.**
+**6 games. 99 chapters. 4,731 challenges. One engine.**
 
 ---
 
@@ -51,12 +51,13 @@
  ✅ Admin analytics                                          📋 LTI integration (LMS)
  ✅ Signup notifications                                     📋 Plugin marketplace
  ✅ SVG illustrations                                        📋 Real-time multiplayer
- ✅ 75 tests + CI pipeline                                   📋 3D world (Three.js)
+ ✅ 79 tests + CI pipeline                                   📋 3D world (Three.js)
  ✅ Streak tracking + combos
  ✅ OG meta / SEO
  ✅ Review/bookmarks pages
  ✅ Profile page
- ✅ 6 games, 96 chapters, 4,526 ch.
+ ✅ 6 games, 99 chapters, 4,731 ch.
+ ✅ Speed bonus XP + share button
  ✅ Google TTS + ElevenLabs voices
  ✅ Images on zone intros
  ✅ Rich media (code/img/video)
