@@ -58,6 +58,10 @@ class SkillPack:
     # If None, auto-detected: kids_mode=True → "playful", else "cyberpunk".
     theme: Optional[str] = None
 
+    # Optional: category for unified platform grouping
+    # e.g. "kids", "devops", "ai", "language"
+    category: Optional[str] = None
+
     def get_zone(self, zone_id: str) -> dict:
         return self.zones.get(zone_id, {})
 
@@ -120,3 +124,29 @@ def load_skill_pack(name: str, *, packs_dir=None) -> SkillPack:
     if not isinstance(pack, SkillPack):
         raise TypeError(f"SKILL_PACK in '{name}' must be a SkillPack instance.")
     return pack
+
+
+def load_packs_from_dirs(pack_configs: list[dict]) -> list[SkillPack]:
+    """Load packs from multiple directories for the unified platform.
+
+    pack_configs: list of dicts with keys:
+      - packs_dir: str — path to skill-packs directory
+      - names: list[str] — pack names to load
+      - category: str — category label (e.g. "kids", "devops")
+
+    Returns a flat list of SkillPacks with category set.
+    """
+    all_packs = []
+    for cfg in pack_configs:
+        packs_dir = cfg["packs_dir"]
+        category = cfg.get("category", "")
+        for name in cfg["names"]:
+            try:
+                pack = load_skill_pack(name, packs_dir=packs_dir)
+                if category and not pack.category:
+                    pack.category = category
+                all_packs.append(pack)
+            except (ValueError, ImportError, TypeError) as e:
+                import sys
+                print(f"Warning: could not load pack '{name}' from {packs_dir}: {e}", file=sys.stderr)
+    return all_packs

@@ -124,6 +124,7 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
                 "title": pack.title,
                 "subtitle": pack.subtitle,
                 "theme": pack.theme or ("playful" if pack.kids_mode else "cyberpunk"),
+                "category": pack.category or "",
                 "image_url": pack_image,
                 "has_progress": session.has_progress(),
                 "completed_zones": len(session.engine.completed_zones),

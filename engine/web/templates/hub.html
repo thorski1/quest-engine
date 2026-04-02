@@ -61,7 +61,14 @@
     </div>
     {% endif %}
     <div class="hub-grid" id="hub-grid">
+      {% set ns = namespace(last_cat='') %}
       {% for pack in packs %}
+      {% if pack.category and pack.category != ns.last_cat %}
+        {% set ns.last_cat = pack.category %}
+        <div style="grid-column:1/-1;margin-top:{% if not loop.first %}1.5rem{% else %}0{% endif %};margin-bottom:0.25rem;">
+          <span style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);border-bottom:2px solid var(--border);padding-bottom:0.25rem;">{{ pack.category }}</span>
+        </div>
+      {% endif %}
       <a href="/{{ pack.id }}/" class="hub-card" data-theme="{{ pack.theme }}">
         {% if pack.image_url is defined and pack.image_url %}
         <div style="margin:-1.5rem -1.5rem 1rem;border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;height:100px;">
