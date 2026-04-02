@@ -139,6 +139,18 @@
         <span class="result-icon">✗</span>
         <div class="result-body">
           <strong>{{ result.message }}</strong>
+          {% if challenge.answer is defined and challenge.answer %}
+          <div style="margin-top:0.4rem;padding:0.4rem 0.6rem;background:rgba(0,229,160,0.08);border-left:3px solid var(--primary);border-radius:0 var(--radius) var(--radius) 0;font-size:0.8rem;">
+            <strong style="color:var(--primary);">Correct answer:</strong>
+            <span style="color:var(--text-bright);">
+              {% if challenge.options is defined and challenge.options and challenge.answer | length == 1 %}
+                {{ challenge.answer | upper }}) {{ challenge.options[{"a":0,"b":1,"c":2,"d":3}[challenge.answer] | default(0)] | default(challenge.answer) }}
+              {% else %}
+                {{ challenge.answer }}
+              {% endif %}
+            </span>
+          </div>
+          {% endif %}
           <span class="result-hint-nudge">Study the lesson below and try again.</span>
           <button class="ai-explain-btn" onclick="aiExplain(this)" data-question="{{ challenge.question | default(challenge.prompt, '') | e }}" data-answer="{{ challenge.answer | default('') }}" data-options="{{ challenge.options | default([]) | tojson | e }}">
             🤖 Explain why
