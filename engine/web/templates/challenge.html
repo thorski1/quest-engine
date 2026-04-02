@@ -284,6 +284,17 @@
     <a href="{{ pack_url_prefix }}/" class="action-btn action-btn-ghost" title="Return to menu">
       ☰ <span class="action-label">Menu</span>
     </a>
+
+    <button class="action-btn action-btn-ghost" onclick="document.getElementById('kb-help').style.display=document.getElementById('kb-help').style.display==='none'?'block':'none'" title="Keyboard shortcuts" style="opacity:0.5;">
+      ⌨ <span class="action-label">Keys</span>
+    </button>
+  </div>
+  <div id="kb-help" style="display:none;padding:0.5rem 1rem;margin-top:0.5rem;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius);font-size:0.7rem;color:var(--text-dim);">
+    <strong>Keyboard shortcuts:</strong>
+    <span style="margin-left:0.5rem;">A/B/C/D</span> answer ·
+    <span>H</span> hint ·
+    <span>S</span> skip ·
+    <span>Enter</span> next/focus
   </div>
   {% endif %}
 
