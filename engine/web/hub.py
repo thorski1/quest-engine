@@ -923,6 +923,7 @@ def serve_hub(
     port: int = 8080,
     open_browser: bool = True,
     packs_dir=None,
+    category: str = "",
 ):
     """Load multiple packs and start the hub web server."""
     try:
@@ -931,6 +932,10 @@ def serve_hub(
         raise ImportError("uvicorn is required. Install it with: pip install 'quest-engine[web]'")
 
     packs = [load_skill_pack(name, packs_dir=packs_dir) for name in pack_names]
+    if category:
+        for p in packs:
+            if not p.category:
+                p.category = category
     app = create_hub_app(packs)
 
     if open_browser:
