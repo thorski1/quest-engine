@@ -1,14 +1,14 @@
 # Quest Engine — Claude Code Context
 
 ## What This Is
-Quest Engine is a pluggable educational game engine. It powers 6 games with 101 chapters and 4,811+ challenges.
+Quest Engine is a pluggable educational game engine. It powers 6 games with 103 chapters and 4,891+ challenges.
 
 ## Architecture
 - **Engine**: `/Users/samuelthoyre/quest-engine/` — Python framework, FastAPI web mode
 - **Games**: primer, nexus-quest, ai-academy, learn-chinese, learn-spanish, learn-japanese
 - **Database**: Neon Postgres (shared across all games)
 - **Deploy**: All games on Vercel, quest-engine installed from GitHub
-- **Tests**: 79 tests in `tests/`, run with `python3 -m pytest tests/ -v`
+- **Tests**: 82 tests in `tests/`, run with `python3 -m pytest tests/ -v`
 - **CI**: GitHub Actions on Python 3.10/3.11/3.12
 
 ## Key Files

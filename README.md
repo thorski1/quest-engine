@@ -24,10 +24,10 @@
 | [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 33 | 1,802 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go, API Design, Rust, TypeScript, System Design, Data Engineering, Shell Scripting, Cloud Native, Web Dev, Python Advanced, DNS/HTTP, ML Engineering, Linux Internals, Redis, Testing, GraphQL |
 | [AI Academy](https://github.com/thorski1/ai-academy) | Everyone | 9 | 368 | AI Fundamentals, Prompt Engineering, Chatbots, AI Tools, Ethics, AI at Work, AI Coding, Agents, AI Safety |
 | [Learn Chinese](https://github.com/thorski1/learn-chinese) | Language learners | 9 | 380 | Pinyin, Greetings, Numbers, Food & Drink, Family, Daily Life, Travel, Culture, Colors & Shapes |
-| [Learn Spanish](https://github.com/thorski1/learn-spanish) | Language learners | 8 | 293 | Basics, Greetings, Numbers, Food, Family, Travel, Daily Life, Culture |
-| [Learn Japanese](https://github.com/thorski1/learn-japanese) | Language learners | 8 | 304 | Hiragana, Katakana, Greetings, Numbers, Food, Daily Life, Travel, Culture |
+| [Learn Spanish](https://github.com/thorski1/learn-spanish) | Language learners | 9 | 333 | Basics, Greetings, Numbers, Food, Family, Travel, Daily Life, Culture, Colors & Clothing |
+| [Learn Japanese](https://github.com/thorski1/learn-japanese) | Language learners | 9 | 344 | Hiragana, Katakana, Greetings, Numbers, Food, Daily Life, Travel, Culture, Colors & Nature |
 
-**6 games. 101 chapters. 4,811 challenges. One engine.**
+**6 games. 103 chapters. 4,891 challenges. One engine.**
 
 ---
 
@@ -51,14 +51,15 @@
  ✅ Admin analytics                                          📋 LTI integration (LMS)
  ✅ Signup notifications                                     📋 Plugin marketplace
  ✅ SVG illustrations                                        📋 Real-time multiplayer
- ✅ 79 tests + CI pipeline                                   📋 3D world (Three.js)
+ ✅ 82 tests + CI pipeline                                   📋 3D world (Three.js)
  ✅ Streak tracking + combos
  ✅ OG meta / SEO
  ✅ Review/bookmarks pages
  ✅ Profile page
- ✅ 6 games, 101 chapters, 4,811 ch.
+ ✅ 6 games, 103 chapters, 4,891 ch.
  ✅ Speed bonus XP + share button
  ✅ Keyboard shortcuts + XP indicators
+ ✅ Daily login bonus + correct answer reveal
  ✅ Google TTS + ElevenLabs voices
  ✅ Images on zone intros
  ✅ Rich media (code/img/video)
