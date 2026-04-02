@@ -42,8 +42,9 @@
   </div>
 
   <!-- ── Progress bar ────────────────────────────────────────────────── -->
-  <div class="zone-progress-bar">
+  <div class="zone-progress-bar" style="position:relative;">
     <div class="zone-progress-fill" style="width: {{ (challenge_num - 1) / challenge_total * 100 if challenge_total else 0 }}%"></div>
+    <span style="position:absolute;right:0.5rem;top:50%;transform:translateY(-50%);font-size:0.55rem;color:var(--text-dim);font-weight:600;">{{ ((challenge_num - 1) / challenge_total * 100) | int if challenge_total else 0 }}%</span>
   </div>
 
   <!-- ── Timer + streak ──────────────────────────────────────────── -->
@@ -97,6 +98,11 @@
     {% endif %}
 
     <!-- Question + Speaker -->
+    {% if not result %}
+    <div style="display:flex;justify-content:flex-end;margin-bottom:0.25rem;">
+      <span style="font-size:0.6rem;padding:0.15rem 0.4rem;border-radius:3px;background:rgba(0,229,160,0.1);color:var(--primary);font-weight:600;">{{ challenge.xp | default(25) }} XP</span>
+    </div>
+    {% endif %}
     <div class="challenge-prompt">
       {{ prompt_html | safe }}
     </div>
