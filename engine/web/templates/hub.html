@@ -38,7 +38,14 @@
           {{ user_chapters_started }} chapters started · {{ user_total_xp }} total XP
         </div>
       </div>
-      <a href="/{{ packs[0].id }}/settings" style="font-size:0.75rem;color:var(--text-dim);text-decoration:none;padding:0.3rem 0.6rem;border:1px solid var(--border);border-radius:var(--radius);">Settings</a>
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        {% for pack in packs if pack.has_progress and pack.completed_zones < pack.total_zones %}
+          {% if loop.first %}
+          <a href="/{{ pack.id }}/challenge" class="btn btn-primary" style="font-size:0.75rem;padding:0.35rem 0.7rem;">Continue {{ pack.title | truncate(20) }} →</a>
+          {% endif %}
+        {% endfor %}
+        <a href="/{{ packs[0].id }}/settings" style="font-size:0.75rem;color:var(--text-dim);text-decoration:none;padding:0.3rem 0.6rem;border:1px solid var(--border);border-radius:var(--radius);">Settings</a>
+      </div>
     </div>
     {% endif %}
     <div class="hub-hero">
