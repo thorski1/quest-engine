@@ -86,6 +86,34 @@ class TestGameEngine:
         assert suggestion == "decrease"
 
 
+class TestDailyLoginBonus:
+    def test_first_login_gives_bonus(self, engine):
+        engine.last_played_date = ""
+        engine.total_xp = 0
+        engine._update_daily_streak()
+        # First day: 10 base + 5 * 1 streak = 15 XP
+        assert engine._daily_login_bonus == 15
+        assert engine.total_xp == 15
+        assert engine.daily_streak == 1
+
+    def test_consecutive_login_increases_bonus(self, engine):
+        import datetime
+        yesterday = str(datetime.date.today() - datetime.timedelta(days=1))
+        engine.last_played_date = yesterday
+        engine.daily_streak = 5
+        engine.total_xp = 0
+        engine._update_daily_streak()
+        # Day 6: 10 base + 5 * 6 = 40 XP
+        assert engine._daily_login_bonus == 40
+        assert engine.daily_streak == 6
+
+    def test_same_day_no_double_bonus(self, engine):
+        engine.last_played_date = str(__import__('datetime').date.today())
+        engine.total_xp = 100
+        engine._update_daily_streak()
+        assert engine.total_xp == 100  # No change
+
+
 class TestSpeedBonus:
     def test_speed_bonus_under_5s(self, engine):
         actual, _ = engine.award_xp(100, elapsed_s=3.0)

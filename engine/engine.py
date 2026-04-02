@@ -109,6 +109,7 @@ class GameEngine:
         self.streak_freeze_active: bool = False
 
         # Session stats (reset each run, not persisted)
+        self._daily_login_bonus: int = 0  # Set by _update_daily_streak
         self.session_start: float = time.time()
         self.session_xp: int = 0
         self.session_correct: int = 0
@@ -592,6 +593,10 @@ class GameEngine:
         else:
             self.daily_streak = 1  # Streak broken
         self.last_played_date = today
+        # Daily login bonus: 10 XP base + 5 per streak day (max 50 bonus)
+        bonus = 10 + min(self.daily_streak, 10) * 5
+        self.total_xp += bonus
+        self._daily_login_bonus = bonus
         if self.daily_streak >= 7:
             self.unlock_achievement("week_streak")
         if self.daily_streak >= 30:

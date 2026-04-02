@@ -29,6 +29,15 @@
 
 <div class="challenge-page">
 
+  <!-- ── Daily login bonus ──────────────────────────────────────────── -->
+  {% if daily_login_bonus and daily_login_bonus > 0 %}
+  <div id="daily-bonus" style="padding:0.5rem 0.75rem;margin-bottom:0.5rem;background:linear-gradient(90deg,rgba(0,229,160,0.1),rgba(0,180,216,0.1));border:1px solid var(--primary);border-radius:var(--radius);font-size:0.75rem;color:var(--primary);font-weight:600;display:flex;justify-content:space-between;align-items:center;animation:fade-in-up 0.4s ease;">
+    <span>🌟 Daily Login Bonus: +{{ daily_login_bonus }} XP</span>
+    <span style="font-size:0.65rem;color:var(--text-dim);">Day {{ daily_streak }} streak</span>
+  </div>
+  <script>setTimeout(function(){ var el=document.getElementById('daily-bonus'); if(el) el.style.display='none'; }, 5000);</script>
+  {% endif %}
+
   <!-- ── Breadcrumb ──────────────────────────────────────────────────── -->
   <div class="challenge-breadcrumb">
     <a href="{{ pack_url_prefix }}/" class="breadcrumb-link">{{ pack.title }}</a>
