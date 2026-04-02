@@ -22,6 +22,12 @@
   }
   .share-btn:hover { opacity: 0.85; color: #fff; }
   [data-theme="playful"] .share-btn { border-radius: 100px; }
+  .toast { position: fixed; top: 1rem; right: 1rem; z-index: 9999; padding: 0.75rem 1.25rem;
+    background: var(--bg-raised); border: 1px solid var(--primary); border-radius: var(--radius-lg);
+    color: var(--text-bright); font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: toast-in 0.4s ease, toast-out 0.4s ease 3.5s forwards; pointer-events: none; }
+  @keyframes toast-in { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes toast-out { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
 </style>
 {% endblock %}
 
@@ -354,6 +360,18 @@
   setTimeout(function(){ container.remove(); }, 4000);
 })();
 </script>
+{% endif %}
+
+{% if result and result.correct %}
+  {% if result.level_up %}
+  <div class="toast" style="border-color:var(--warn);">🎉 Level {{ result.level }}! {{ result.level_title }}</div>
+  {% endif %}
+  {% for ach_id in result.new_achievements %}
+  <div class="toast" style="top:{{ 1 + loop.index0 * 4 }}rem;border-color:#a855f7;animation-delay:{{ loop.index0 * 0.3 }}s;">🏆 Achievement Unlocked!</div>
+  {% endfor %}
+  {% if result.speed_bonus %}
+  <div class="toast" style="top:{% if result.level_up %}5{% else %}1{% endif %}rem;border-color:var(--secondary);">⚡ Speed Bonus!</div>
+  {% endif %}
 {% endif %}
 
 {% endblock %}
