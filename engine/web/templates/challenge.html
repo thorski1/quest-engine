@@ -112,7 +112,7 @@
         <span class="result-icon">✓</span>
         <div class="result-body">
           <strong>{{ result.message }}</strong>
-          <span class="xp-gained">+{{ result.actual_xp }} XP</span>
+          <span class="xp-gained">+{{ result.actual_xp }} XP{% if result.speed_bonus %} <span style="font-size:0.7rem;color:var(--secondary);">⚡ Speed Bonus!</span>{% endif %}</span>
           {% if result.level_up %}
             <span class="level-up-badge">🎉 Level Up! {{ result.level }} — {{ result.level_title }}</span>
           {% endif %}
@@ -194,6 +194,7 @@
             <input type="hidden" name="answer" value="{{ letter }}">
             <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
             {% if shuffle_map %}<input type="hidden" name="shuffle_map" value="{{ shuffle_map | e }}">{% endif %}
+            <input type="hidden" name="elapsed" value="0" class="elapsed-field">
             <button
               type="submit"
               class="option-btn
@@ -213,6 +214,7 @@
       <!-- Free-text answer -->
       <form method="POST" action="{{ pack_url_prefix }}/answer" class="text-answer-form" id="answer-form">
         <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
+        <input type="hidden" name="elapsed" value="0" class="elapsed-field">
         <div class="text-input-row">
           <input
             type="text"

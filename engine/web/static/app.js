@@ -334,6 +334,9 @@ function initTimer() {
       clearInterval(interval);
       var elapsed = ((Date.now() - start) / 1000).toFixed(1);
       display.textContent = elapsed + 's ✓';
+      // Set elapsed time in hidden field for speed bonus XP
+      var elField = form.querySelector('.elapsed-field');
+      if (elField) elField.value = elapsed;
     });
   });
 }

@@ -30,11 +30,13 @@ class AnswerResult:
         zone_complete: bool = False,
         pack_complete: bool = False,
         next_zone_id: str | None = None,
+        speed_bonus: bool = False,
     ):
         self.correct = correct
         self.message = message
         self.xp = xp
         self.actual_xp = actual_xp
+        self.speed_bonus = speed_bonus
         self.level_up = level_up
         self.level = level
         self.level_title = level_title
@@ -140,7 +142,7 @@ class WebGameSession:
 
     # ── Challenge interaction ─────────────────────────────────────────────────
 
-    def submit_answer(self, user_input: str, challenge: dict | None = None) -> AnswerResult:
+    def submit_answer(self, user_input: str, challenge: dict | None = None, elapsed_s: float = 0.0) -> AnswerResult:
         if challenge is None:
             challenge = self.get_current_challenge()
         if not challenge:
@@ -156,7 +158,8 @@ class WebGameSession:
             self.engine.record_correct()
             self.engine.check_speed_achievement()
             base_xp = challenge.get("xp", 50)
-            actual_xp, did_level_up = self.engine.award_xp(base_xp)
+            actual_xp, did_level_up = self.engine.award_xp(base_xp, elapsed_s=elapsed_s)
+            got_speed_bonus = elapsed_s > 0 and elapsed_s < 10
             self.engine.mark_challenge_complete(zone_id, challenge["id"])
             self.engine.record_zone_attempt(zone_id, challenge["id"], correct=True, used_hint=self._hint_index > 0)
             self._hint_index = 0  # reset hint for next challenge
@@ -192,6 +195,7 @@ class WebGameSession:
                 zone_complete=zone_complete,
                 pack_complete=pack_complete,
                 next_zone_id=next_zone_id,
+                speed_bonus=got_speed_bonus,
             )
         else:
             self.engine.record_incorrect()

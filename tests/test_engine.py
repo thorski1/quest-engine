@@ -86,6 +86,26 @@ class TestGameEngine:
         assert suggestion == "decrease"
 
 
+class TestSpeedBonus:
+    def test_speed_bonus_under_5s(self, engine):
+        actual, _ = engine.award_xp(100, elapsed_s=3.0)
+        # 100 base + 25% speed bonus = 125
+        assert actual == 125
+
+    def test_speed_bonus_under_10s(self, engine):
+        actual, _ = engine.award_xp(100, elapsed_s=8.0)
+        # 100 base + 10% speed bonus = 110
+        assert actual == 110
+
+    def test_no_speed_bonus_over_10s(self, engine):
+        actual, _ = engine.award_xp(100, elapsed_s=15.0)
+        assert actual == 100
+
+    def test_no_speed_bonus_zero_elapsed(self, engine):
+        actual, _ = engine.award_xp(100, elapsed_s=0.0)
+        assert actual == 100
+
+
 class TestStreakFreeze:
     def test_buy_streak_freeze(self, engine):
         engine.total_xp = 100

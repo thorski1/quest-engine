@@ -609,7 +609,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         ))
 
     @hub.post(f"{prefix}/answer", response_class=HTMLResponse)
-    async def submit_answer(request: Request, answer: str = Form(default=""), challenge_id: str = Form(default=""), shuffle_map: str = Form(default=""), _pid: str = pack_id):
+    async def submit_answer(request: Request, answer: str = Form(default=""), challenge_id: str = Form(default=""), shuffle_map: str = Form(default=""), elapsed: str = Form(default="0"), _pid: str = pack_id):
         if not answer.strip():
             return RedirectResponse(f"{prefix}/challenge", status_code=303)
         s = _session(request)
@@ -636,7 +636,11 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         if s.engine.is_challenge_complete(zone_id, challenge.get("id", "")):
             return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
-        result = s.submit_answer(actual_answer, challenge=challenge)
+        try:
+            elapsed_s = float(elapsed)
+        except (ValueError, TypeError):
+            elapsed_s = 0.0
+        result = s.submit_answer(actual_answer, challenge=challenge, elapsed_s=elapsed_s)
 
         # Record attempt to Postgres for analytics
         try:

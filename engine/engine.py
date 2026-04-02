@@ -264,13 +264,21 @@ class GameEngine:
             multiplier = 1.25
         return int(base_xp * multiplier)
 
-    def award_xp(self, base_xp: int) -> tuple:
+    def award_xp(self, base_xp: int, elapsed_s: float = 0.0) -> tuple:
         prev_level = self.level
         actual_xp = self.calculate_xp_gain(base_xp)
         if self.difficulty_mode == "hard":
             actual_xp = int(actual_xp * 1.5)
         elif self.difficulty_mode == "easy":
             actual_xp = int(actual_xp * 0.75)
+        # Speed bonus: +25% for answers under 5s, +10% for under 10s
+        speed_bonus = 0
+        if elapsed_s > 0:
+            if elapsed_s < 5:
+                speed_bonus = int(actual_xp * 0.25)
+            elif elapsed_s < 10:
+                speed_bonus = int(actual_xp * 0.10)
+        actual_xp += speed_bonus
         self.total_xp += actual_xp
         self.session_xp += actual_xp
         leveled_up = self.level > prev_level
