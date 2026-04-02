@@ -82,6 +82,11 @@
     {% endif %}
   </div>
 
+  <!-- ── Motivation ──────────────────────────────────────────────────── -->
+  {% if motivation and not result %}
+  <div style="text-align:center;font-size:0.75rem;font-weight:600;color:var(--primary);margin-bottom:0.5rem;opacity:0.85;">{{ motivation }}</div>
+  {% endif %}
+
   <!-- ── Boss intro ──────────────────────────────────────────────────── -->
   {% if is_boss and boss_intro %}
   <div class="boss-intro narrative-text">

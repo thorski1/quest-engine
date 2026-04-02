@@ -586,6 +586,19 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         if ctype == "live":
             ctype = "text"
 
+        # Motivational message based on performance
+        motivation = ""
+        if s.engine.streak >= 10:
+            motivation = "🔥 UNSTOPPABLE! 10+ streak — double XP!"
+        elif s.engine.streak >= 5:
+            motivation = "⚡ On fire! 5+ streak — 1.5x XP bonus!"
+        elif s.engine.streak >= 3:
+            motivation = "💪 Nice streak! Keep it going for bonus XP!"
+        elif num == total:
+            motivation = "🏁 Last question in this zone!"
+        elif num == 1:
+            motivation = "🚀 First question — let's go!"
+
         # Shuffle options for anti-cheat (deterministic per user+challenge+date)
         shuffle_map_json = ""
         if options and ctype == "quiz":
@@ -607,6 +620,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             result=None, hint_text=None, show_lesson=False,
             difficulty_suggestion=s.engine.get_difficulty_suggestion(),
             shuffle_map=shuffle_map_json,
+            motivation=motivation,
         ))
 
     @hub.post(f"{prefix}/answer", response_class=HTMLResponse)
