@@ -20,14 +20,14 @@
 
 | Game | Audience | Chapters | Challenges | What You Learn |
 |------|----------|----------|------------|----------------|
-| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 42 | 1,944 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment, Thinking, Time, Inventions, Oceans, Civics, Emotions, Measurement, Safety, Dinosaurs, Weather, Maps, Famous People, Religions, Planets, Logic, Shapes, Sports, Simple Machines, Reading, Writing, World Cultures, Health, Basic Math, Electricity |
-| [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 39 | 2,042 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go, API Design, Rust, TypeScript, System Design, Data Engineering, Shell Scripting, Cloud Native, Web Dev, Python Advanced, DNS/HTTP, ML Engineering, Linux Internals, Redis, Testing, GraphQL, Microservices, Message Queues, Git Advanced, Auth, Monitoring |
+| [The Primer](https://github.com/thorski1/primer) | Children (5-12) | 44 | 2,024 | Letters, Numbers, Science, Kindness, Geography, Math, History, Art, Coding, Space, Music, Animals, Words, Cooking, Body, Money, Environment, Thinking, Time, Inventions, Oceans, Civics, Emotions, Measurement, Safety, Dinosaurs, Weather, Maps, Famous People, Religions, Planets, Logic, Shapes, Sports, Simple Machines, Reading, Writing, World Cultures, Health, Basic Math, Electricity |
+| [NEXUS Quest](https://github.com/thorski1/nexus-quest) | Developers | 41 | 2,122 | Bash, SSH, Vim, Git, Docker, Postgres, Python, Regex, Linux, K8s, AWS, Terraform, Networking, Security, CI/CD, Observability, Databases, Go, API Design, Rust, TypeScript, System Design, Data Engineering, Shell Scripting, Cloud Native, Web Dev, Python Advanced, DNS/HTTP, ML Engineering, Linux Internals, Redis, Testing, GraphQL, Microservices, Message Queues, Git Advanced, Auth, Monitoring |
 | [AI Academy](https://github.com/thorski1/ai-academy) | Everyone | 12 | 488 | AI Basics, Prompt Engineering, Chatbots, AI Tools, Ethics, AI at Work, AI Coding, Agents, Safety, RAG, Fine-Tuning |
 | [Learn Chinese](https://github.com/thorski1/learn-chinese) | Language learners | 11 | 460 | Pinyin, Greetings, Numbers, Food, Family, Daily Life, Travel, Culture, Colors, Weather & Time |
 | [Learn Spanish](https://github.com/thorski1/learn-spanish) | Language learners | 11 | 413 | Basics, Greetings, Numbers, Food, Family, Travel, Daily Life, Culture, Colors & Clothing, Weather |
-| [Learn Japanese](https://github.com/thorski1/learn-japanese) | Language learners | 10 | 384 | Hiragana, Katakana, Greetings, Numbers, Food, Daily Life, Travel, Culture, Colors, Shopping |
+| [Learn Japanese](https://github.com/thorski1/learn-japanese) | Language learners | 11 | 424 | Hiragana, Katakana, Greetings, Numbers, Food, Daily Life, Travel, Culture, Colors, Shopping |
 
-**6 games. 125 chapters. 5,731 challenges. One engine.**
+**6 games. 130 chapters. 5,931 challenges. One engine.**
 
 ---
 
@@ -56,7 +56,7 @@
  ✅ OG meta / SEO
  ✅ Review/bookmarks pages
  ✅ Profile page
- ✅ 6 games, 125 chapters, 5,731 ch.
+ ✅ 6 games, 130 chapters. 5,931 ch.
  ✅ Speed bonus XP + share button
  ✅ Keyboard shortcuts + XP indicators
  ✅ Daily login bonus + correct answer reveal
