@@ -1,7 +1,7 @@
 # Quest Engine — Claude Code Context
 
 ## What This Is
-Quest Engine is a pluggable educational game engine. It powers 6 games with 136 chapters and 6,251+ challenges.
+Quest Engine is a pluggable educational game engine. It powers 6 games with 140 chapters and 6,411+ challenges.
 
 ## Architecture
 - **Engine**: `/Users/samuelthoyre/quest-engine/` — Python framework, FastAPI web mode
