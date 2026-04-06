@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .cc-page { max-width: 600px; margin: 0 auto; }
+  .cc-step { display: none; animation: fade-in-up 0.4s ease both; }
+  .cc-step.active { display: block; }
+  .cc-title { font-size: 1.5rem; font-weight: 800; color: var(--text-bright); text-align: center; margin-bottom: 0.5rem; }
+  .cc-subtitle { color: var(--text-dim); text-align: center; font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+  .class-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .class-card {
+    padding: 1.25rem; background: var(--bg-surface); border: 2px solid var(--border);
+    border-radius: var(--radius-lg); cursor: pointer; text-align: center;
+    transition: border-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  }
+  .class-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+  .class-card.selected { border-color: var(--primary); box-shadow: 0 0 20px rgba(0,229,160,0.2); background: rgba(0,229,160,0.05); }
+  .class-icon { font-size: 2.5rem; margin-bottom: 0.4rem; }
+  .class-name { font-weight: 700; color: var(--text-bright); font-size: 1rem; }
+  .class-desc { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem; }
+  .class-bonus { font-size: 0.65rem; color: var(--primary); margin-top: 0.3rem; font-weight: 600; }
+
+  .avatar-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1rem 0; }
+  .avatar-option {
+    font-size: 2.2rem; padding: 0.4rem; border: 3px solid transparent;
+    border-radius: var(--radius-lg); cursor: pointer; transition: all 0.15s;
+    background: var(--bg-raised);
+  }
+  .avatar-option:hover { transform: scale(1.15); }
+  .avatar-option.selected { border-color: var(--primary); box-shadow: 0 0 12px rgba(0,229,160,0.3); }
+
+  .stat-preview {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+    margin: 1rem 0; padding: 1rem; background: var(--bg-surface);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+  }
+  .stat-item { text-align: center; }
+  .stat-name { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-bar { height: 6px; background: var(--bg-raised); border-radius: 3px; margin: 0.3rem 0; overflow: hidden; }
+  .stat-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .stat-val { font-size: 0.75rem; font-weight: 700; color: var(--text-bright); }
+
+  .cc-nav { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; }
+  .cc-dots { display: flex; gap: 0.4rem; justify-content: center; margin-top: 1rem; }
+  .cc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .cc-dot.active { background: var(--primary); }
+
+  .char-preview {
+    text-align: center; padding: 1.5rem; background: linear-gradient(135deg, var(--bg-surface), var(--bg-raised));
+    border: 2px solid var(--primary); border-radius: var(--radius-lg); margin: 1rem 0;
+  }
+  .char-avatar { font-size: 4rem; }
+  .char-name { font-size: 1.3rem; font-weight: 800; color: var(--text-bright); margin-top: 0.3rem; }
+  .char-class { font-size: 0.85rem; color: var(--primary); font-weight: 600; }
+
+  @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cc-page">
+
+  <!-- Step 1: Choose your class -->
+  <div class="cc-step active" id="cc-step-0">
+    <h1 class="cc-title">Choose Your Class</h1>
+    <p class="cc-subtitle">Your class determines your starting bonuses and play style</p>
+
+    <div class="class-grid">
+      <div class="class-card" onclick="selectClass(this, 'scholar')" data-class="scholar">
+        <div class="class-icon">📚</div>
+        <div class="class-name">Scholar</div>
+        <div class="class-desc">Lover of knowledge and deep learning</div>
+        <div class="class-bonus">+20% XP from lessons</div>
+      </div>
+      <div class="class-card" onclick="selectClass(this, 'speedrunner')" data-class="speedrunner">
+        <div class="class-icon">⚡</div>
+        <div class="class-name">Speedrunner</div>
+        <div class="class-desc">Fast answers, fast progress</div>
+        <div class="class-bonus">+50% speed bonus</div>
+      </div>
+      <div class="class-card" onclick="selectClass(this, 'explorer')" data-class="explorer">
+        <div class="class-icon">🗺️</div>
+        <div class="class-name">Explorer</div>
+        <div class="class-desc">Tries everything, misses nothing</div>
+        <div class="class-bonus">No hint XP penalty</div>
+      </div>
+      <div class="class-card" onclick="selectClass(this, 'champion')" data-class="champion">
+        <div class="class-icon">🏆</div>
+        <div class="class-name">Champion</div>
+        <div class="class-desc">Streak master, combo builder</div>
+        <div class="class-bonus">2x streak multiplier</div>
+      </div>
+    </div>
+
+    <div class="cc-nav">
+      <button class="btn btn-primary btn-lg" onclick="ccNext()" id="btn-class" disabled style="opacity:0.5;">Choose Class →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Customize avatar -->
+  <div class="cc-step" id="cc-step-1">
+    <h1 class="cc-title">Your Avatar</h1>
+    <p class="cc-subtitle">Pick a character that represents you</p>
+
+    <div class="avatar-grid" id="avatar-grid">
+      {% for emoji in ["🧙","🧙‍♀️","🦊","🐱","🐶","🦁","🐼","🦄","🐲","🤖","👾","🥷","🧑‍🚀","🧑‍💻","🧝","🧝‍♀️","🧛","🧞","🦸","🦸‍♀️","🎭","🌟","🔮","💎","🗡️","🛡️","⚔️","🏹"] %}
+      <button type="button" class="avatar-option" onclick="selectAvatar(this, '{{ emoji }}')"
+        {% if loop.first %}style="border-color:var(--primary);" class="avatar-option selected"{% endif %}>{{ emoji }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="cc-nav">
+      <button class="btn btn-ghost" onclick="ccPrev()">← Back</button>
+      <button class="btn btn-primary btn-lg" onclick="ccNext()">Next →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Name + Preview -->
+  <div class="cc-step" id="cc-step-2">
+    <h1 class="cc-title">Your Character</h1>
+
+    <div class="char-preview" id="char-preview">
+      <div class="char-avatar" id="preview-avatar">🧙</div>
+      <div class="char-name" id="preview-name">Adventurer</div>
+      <div class="char-class" id="preview-class">Scholar</div>
+    </div>
+
+    {% if not current_user %}
+    <div style="text-align:center;margin:1rem 0;">
+      <input type="text" id="char-name-input" placeholder="Enter your name..."
+        oninput="document.getElementById('preview-name').textContent=this.value||'Adventurer'"
+        style="width:100%;max-width:300px;padding:0.7rem 1rem;border:2px solid var(--border-bright);
+        border-radius:var(--radius-lg);background:var(--bg-raised);color:var(--text-bright);
+        font-size:1.1rem;text-align:center;outline:none;font-family:var(--font);">
+    </div>
+    {% endif %}
+
+    <div class="stat-preview" id="stat-preview">
+      <div class="stat-item">
+        <div class="stat-name">Intelligence</div>
+        <div class="stat-bar"><div class="stat-fill" id="stat-int" style="width:60%;background:var(--primary);"></div></div>
+        <div class="stat-val" id="stat-int-val">6</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-name">Wisdom</div>
+        <div class="stat-bar"><div class="stat-fill" id="stat-wis" style="width:50%;background:var(--secondary);"></div></div>
+        <div class="stat-val" id="stat-wis-val">5</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-name">Speed</div>
+        <div class="stat-bar"><div class="stat-fill" id="stat-spd" style="width:40%;background:var(--warn);"></div></div>
+        <div class="stat-val" id="stat-spd-val">4</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-name">Endurance</div>
+        <div class="stat-bar"><div class="stat-fill" id="stat-end" style="width:50%;background:#ff6b6b;"></div></div>
+        <div class="stat-val" id="stat-end-val">5</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-name">Charisma</div>
+        <div class="stat-bar"><div class="stat-fill" id="stat-cha" style="width:50%;background:#a855f7;"></div></div>
+        <div class="stat-val" id="stat-cha-val">5</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-name">Luck</div>
+        <div class="stat-bar"><div class="stat-fill" id="stat-lck" style="width:50%;background:#ffd93d;"></div></div>
+        <div class="stat-val" id="stat-lck-val">5</div>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ pack_url_prefix }}/new-game" style="text-align:center;">
+      <input type="hidden" name="player_name" id="form-name" value="{{ current_user.display_name if current_user else '' }}">
+      <input type="hidden" name="player_class" id="form-class" value="scholar">
+      <input type="hidden" name="player_avatar" id="form-avatar" value="🧙">
+      <button type="submit" class="btn btn-primary btn-lg" style="width:100%;max-width:400px;font-size:1.1rem;padding:0.8rem 2rem;">
+        Begin Your Quest! →
+      </button>
+    </form>
+
+    <div class="cc-nav">
+      <button class="btn btn-ghost" onclick="ccPrev()">← Back</button>
+    </div>
+  </div>
+
+  <div class="cc-dots">
+    <div class="cc-dot active" id="cc-dot-0"></div>
+    <div class="cc-dot" id="cc-dot-1"></div>
+    <div class="cc-dot" id="cc-dot-2"></div>
+  </div>
+
+</div>
+
+<script>
+var ccStep = 0;
+var charClass = '', charAvatar = '🧙';
+
+var classStats = {
+  scholar:     {int:8, wis:7, spd:4, end:5, cha:5, lck:4},
+  speedrunner: {int:5, wis:4, spd:9, end:5, cha:4, lck:6},
+  explorer:    {int:6, wis:6, spd:5, end:7, cha:5, lck:5},
+  champion:    {int:5, wis:5, spd:6, end:6, cha:7, lck:5},
+};
+
+function selectClass(el, cls) {
+  document.querySelectorAll('.class-card').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  charClass = cls;
+  document.getElementById('form-class').value = cls;
+  document.getElementById('preview-class').textContent = el.querySelector('.class-name').textContent;
+  document.getElementById('btn-class').disabled = false;
+  document.getElementById('btn-class').style.opacity = '1';
+  updateStats(cls);
+}
+
+function selectAvatar(el, emoji) {
+  document.querySelectorAll('.avatar-option').forEach(function(a) {
+    a.classList.remove('selected'); a.style.borderColor = 'transparent';
+  });
+  el.classList.add('selected');
+  el.style.borderColor = 'var(--primary)';
+  charAvatar = emoji;
+  document.getElementById('form-avatar').value = emoji;
+  document.getElementById('preview-avatar').textContent = emoji;
+}
+
+function updateStats(cls) {
+  var s = classStats[cls] || classStats.scholar;
+  var fields = ['int','wis','spd','end','cha','lck'];
+  fields.forEach(function(f) {
+    var el = document.getElementById('stat-' + f);
+    var val = document.getElementById('stat-' + f + '-val');
+    if (el) el.style.width = (s[f] * 10) + '%';
+    if (val) val.textContent = s[f];
+  });
+}
+
+function ccShow(n) {
+  document.querySelectorAll('.cc-step').forEach(function(s) { s.classList.remove('active'); });
+  document.querySelectorAll('.cc-dot').forEach(function(d) { d.classList.remove('active'); });
+  document.getElementById('cc-step-' + n).classList.add('active');
+  document.getElementById('cc-dot-' + n).classList.add('active');
+  ccStep = n;
+  if (n === 2) {
+    var nameInput = document.getElementById('char-name-input');
+    if (nameInput) {
+      document.getElementById('form-name').value = nameInput.value || 'Adventurer';
+      document.getElementById('preview-name').textContent = nameInput.value || 'Adventurer';
+    }
+  }
+}
+function ccNext() { if (ccStep < 2) ccShow(ccStep + 1); }
+function ccPrev() { if (ccStep > 0) ccShow(ccStep - 1); }
+
+// Set name on form submit
+document.querySelector('form[action$="/new-game"]').addEventListener('submit', function() {
+  var nameInput = document.getElementById('char-name-input');
+  if (nameInput) document.getElementById('form-name').value = nameInput.value || 'Adventurer';
+});
+</script>
+{% endblock %}

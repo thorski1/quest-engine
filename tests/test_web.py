@@ -80,10 +80,10 @@ class TestHubRoutes:
         assert r.status_code == 200
         assert "Test" in r.text
 
-    def test_pack_menu_shows_onboarding_for_new_player(self, client):
+    def test_pack_menu_shows_character_create_for_new_player(self, client):
         r = client.get("/test/")
         assert r.status_code == 200
-        assert "onboard" in r.text.lower() or "welcome" in r.text.lower()
+        assert "class" in r.text.lower() or "character" in r.text.lower() or "welcome" in r.text.lower()
 
     def test_new_game_redirects_to_zone_intro(self, client):
         r = client.post("/test/new-game", data={"player_name": "Tester"}, follow_redirects=False)

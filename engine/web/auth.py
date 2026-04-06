@@ -118,6 +118,23 @@ class AuthManager:
 
         return {"ok": True, "user_id": user["id"], "session_id": session_id, "display_name": user.get("display_name", username)}
 
+    def create_session(self, user_id: int) -> str:
+        """Create a session for a user (used by OAuth). Returns session_id."""
+        session_id = create_session_id()
+        try:
+            conn = self.store._get_conn()
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO sessions (id, user_id, expires_at)
+                       VALUES (%s, %s, NOW() + make_interval(secs => %s))""",
+                    (session_id, user_id, SESSION_MAX_AGE),
+                )
+                cur.execute("UPDATE users SET last_login_at = NOW() WHERE id = %s", (user_id,))
+            conn.commit()
+        except Exception:
+            pass
+        return session_id
+
     def get_user_from_session(self, session_id: str) -> dict | None:
         """Look up user from session cookie. Returns user dict or None."""
         if not session_id:

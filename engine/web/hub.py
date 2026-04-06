@@ -261,10 +261,49 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
 
         return templates.TemplateResponse(request, "admin_analytics.html", ctx)
 
-    # ── Per-pack routes ────────────────────────────────────────────────────────
-    # All routes are duplicated from server.py but with /{pack_id} prefix.
-    # We import and call create_app to create per-pack sub-apps, then add the hub routes inline.
+    # ── Google OAuth routes (hub-level) ─────────────────────────────────────
+    @hub.get("/auth/google/login")
+    async def google_login(request: Request, redirect: str = "/"):
+        from .google_auth import is_available, get_login_url
+        if not is_available():
+            return RedirectResponse("/", status_code=303)
+        url, state = get_login_url()
+        response = RedirectResponse(url, status_code=303)
+        response.set_cookie("oauth_state", state, max_age=600, httponly=True, samesite="lax", path="/")
+        response.set_cookie("oauth_redirect", redirect, max_age=600, httponly=True, samesite="lax", path="/")
+        return response
 
+    @hub.get("/auth/google/callback")
+    async def google_callback(request: Request, code: str = "", state: str = ""):
+        from .google_auth import exchange_code, find_or_create_user
+        from .auth import AuthManager
+        from ..storage import get_store
+
+        store = get_store()
+        redirect_to = request.cookies.get("oauth_redirect", "/")
+
+        try:
+            user_info = exchange_code(code)
+            if not user_info.get("ok"):
+                return RedirectResponse(f"/{skill_packs[0].id}/auth/login", status_code=303)
+
+            user = find_or_create_user(store, user_info)
+            if not user.get("id"):
+                return RedirectResponse(f"/{skill_packs[0].id}/auth/login", status_code=303)
+
+            # Create session
+            auth = AuthManager(store)
+            session_id = auth.create_session(user["id"])
+
+            response = RedirectResponse(redirect_to, status_code=303)
+            response.set_cookie("quest_session", session_id, max_age=60*60*24*90, httponly=True, samesite="lax", path="/")
+            response.delete_cookie("oauth_state")
+            response.delete_cookie("oauth_redirect")
+            return response
+        except Exception:
+            return RedirectResponse(f"/{skill_packs[0].id}/auth/login", status_code=303)
+
+    # ── Per-pack routes ────────────────────────────────────────────────────────
     for pack in skill_packs:
         _register_pack_routes(hub, pack, templates)
 
@@ -420,9 +459,11 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/auth/login", response_class=HTMLResponse)
     async def login_page(request: Request, _pid: str = pack_id):
+        from .google_auth import is_available as google_available
         return templates.TemplateResponse(request, "auth.html", {
             "request": request, "theme": theme, "mode": "login",
             "prefix": prefix, "error": None, "form_username": "",
+            "google_auth": google_available(),
         })
 
     @hub.get(f"{prefix}/auth/register", response_class=HTMLResponse)
@@ -504,9 +545,9 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     @hub.get(f"{prefix}/", response_class=HTMLResponse)
     async def menu(request: Request, _pid: str = pack_id):
         s = _session(request)
-        # Redirect new players to onboarding
+        # Redirect new players to character creation
         if not s.has_progress():
-            return templates.TemplateResponse(request, "onboarding.html", _ctx(request))
+            return templates.TemplateResponse(request, "character_create.html", _ctx(request))
         zones = s.all_zones_context()
         return templates.TemplateResponse(request, "menu.html", _ctx(
             request, zones=zones,
