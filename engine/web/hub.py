@@ -464,7 +464,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
         if login_result.get("ok"):
             response = RedirectResponse(f"{prefix}/", status_code=303)
-            response.set_cookie("quest_session", login_result["session_id"], max_age=60*60*24*90, httponly=True, samesite="lax")
+            response.set_cookie("quest_session", login_result["session_id"], max_age=60*60*24*90, httponly=True, samesite="lax", path="/")
             return response
         return RedirectResponse(f"{prefix}/auth/login", status_code=303)
 
@@ -483,7 +483,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
                 "prefix": prefix, "error": result["error"], "form_username": username,
             })
         response = RedirectResponse(f"{prefix}/", status_code=303)
-        response.set_cookie("quest_session", result["session_id"], max_age=60*60*24*90, httponly=True, samesite="lax")
+        response.set_cookie("quest_session", result["session_id"], max_age=60*60*24*90, httponly=True, samesite="lax", path="/")
         return response
 
     @hub.get(f"{prefix}/auth/logout")
