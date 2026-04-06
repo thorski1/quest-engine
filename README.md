@@ -27,7 +27,7 @@
 | [Learn Spanish](https://github.com/thorski1/learn-spanish) | Language learners | 11 | 413 | Basics, Greetings, Numbers, Food, Family, Travel, Daily Life, Culture, Colors & Clothing, Weather |
 | [Learn Japanese](https://github.com/thorski1/learn-japanese) | Language learners | 11 | 424 | Hiragana, Katakana, Greetings, Numbers, Food, Daily Life, Travel, Culture, Colors, Shopping |
 
-**6 games. 130 chapters. 5,931 challenges. One engine.**
+**6 games. 132 chapters, 6,091 challenges. One engine.**
 
 ---
 
@@ -56,13 +56,17 @@
  ✅ OG meta / SEO
  ✅ Review/bookmarks pages
  ✅ Profile page
- ✅ 6 games, 130 chapters. 5,931 ch.
+ ✅ 6 games, 132 chapters, 6,091 ch.
  ✅ Speed bonus XP + share button
  ✅ Keyboard shortcuts + XP indicators
  ✅ Daily login bonus + correct answer reveal
  ✅ Toast notifications + motivational msgs
  ✅ Unified platform foundation (categories)
  ✅ Social media content generator
+ ✅ RPG character system (class+alignment+tone)
+ ✅ 19-item gear system with 5 rarities
+ ✅ Google OAuth one-click sign-in
+ ✅ Landing page + realm-based navigation
  ✅ Google TTS + ElevenLabs voices
  ✅ Images on zone intros
  ✅ Rich media (code/img/video)
