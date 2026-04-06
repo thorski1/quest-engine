@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberpunk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quest Platform — Learn Anything Through Games</title>
+<meta name="description" content="The open-source educational gaming platform. 132 courses, 6,000+ challenges across kids education, DevOps, AI, and 3 languages.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/themes.css">
+<style>
+  body { min-height: 100vh; overflow-x: hidden; }
+  .landing { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 4rem 0 2.5rem; position: relative; }
+  .hero::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,229,160,0.08) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .hero-logo { font-size: 4rem; position: relative; z-index: 1; }
+  .hero h1 { font-size: 2.5rem; font-weight: 800; color: var(--text-bright); line-height: 1.2; position: relative; z-index: 1; }
+  .hero h1 span { background: linear-gradient(135deg, #00e5a0, #00b4d8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero-sub { color: var(--text-dim); font-size: 1.05rem; margin-top: 0.5rem; max-width: 500px; margin-left: auto; margin-right: auto; position: relative; z-index: 1; }
+  .hero-cta { margin-top: 1.5rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+  .hero-cta .btn-primary { font-size: 1.1rem; padding: 0.8rem 2rem; }
+  .hero-cta .btn-ghost { font-size: 0.9rem; padding: 0.6rem 1.5rem; }
+
+  /* Stats */
+  .stats-row { display: flex; justify-content: center; gap: 2.5rem; margin: 2rem 0 3rem; flex-wrap: wrap; position: relative; z-index: 1; }
+  .stat { text-align: center; }
+  .stat-val { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+  .stat-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* Realms */
+  .realms { margin-bottom: 3rem; }
+  .realms-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 1rem; text-align: center; }
+  .realm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.85rem; }
+  .realm-card {
+    padding: 1.5rem; border-radius: 16px; text-decoration: none; color: #fff;
+    transition: transform 0.15s, box-shadow 0.15s; position: relative; overflow: hidden;
+  }
+  .realm-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); color: #fff; }
+  .realm-card-icon { font-size: 2rem; }
+  .realm-card-name { font-size: 1.15rem; font-weight: 800; margin-top: 0.3rem; }
+  .realm-card-desc { font-size: 0.8rem; opacity: 0.85; margin-top: 0.2rem; }
+  .realm-card-meta { font-size: 0.7rem; opacity: 0.6; margin-top: 0.5rem; font-family: 'JetBrains Mono', monospace; }
+
+  .rc-kids { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
+  .rc-devops { background: linear-gradient(135deg, #00b894, #00cec9); }
+  .rc-ai { background: linear-gradient(135deg, #a855f7, #ec4899); }
+  .rc-chinese { background: linear-gradient(135deg, #e17055, #fdcb6e); }
+  .rc-spanish { background: linear-gradient(135deg, #f39c12, #e74c3c); }
+  .rc-japanese { background: linear-gradient(135deg, #0984e3, #6c5ce7); }
+
+  /* Features */
+  .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin: 2rem 0; }
+  .feature { padding: 1rem; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; text-align: center; }
+  .feature-icon { font-size: 1.5rem; }
+  .feature-name { font-weight: 700; color: var(--text-bright); font-size: 0.85rem; margin-top: 0.3rem; }
+  .feature-desc { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.15rem; }
+
+  .footer { text-align: center; padding: 2rem 0; color: var(--text-dim); font-size: 0.75rem; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="landing">
+
+  <div class="hero">
+    <div class="hero-logo">🎮</div>
+    <h1>Learn Anything<br>Through <span>Games</span></h1>
+    <p class="hero-sub">{{ total_challenges }} challenges across {{ realm_count }} worlds. XP, levels, achievements, AI tutor. Free forever.</p>
+
+    <div class="hero-cta">
+      {% if current_user %}
+        <a href="/{{ first_pack_id }}/" class="btn btn-primary">Continue Playing →</a>
+        <a href="/browse" class="btn btn-ghost">Browse All Courses</a>
+      {% else %}
+        <a href="/{{ first_pack_id }}/auth/register" class="btn btn-primary">Create Your Character →</a>
+        <a href="/{{ first_pack_id }}/auth/login" class="btn btn-ghost">Sign In</a>
+      {% endif %}
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val" style="color:#00e5a0">{{ total_packs }}</div><div class="stat-label">Courses</div></div>
+      <div class="stat"><div class="stat-val" style="color:#ffa500">{{ total_challenges }}</div><div class="stat-label">Challenges</div></div>
+      <div class="stat"><div class="stat-val" style="color:#00b4d8">{{ realm_count }}</div><div class="stat-label">Worlds</div></div>
+      <div class="stat"><div class="stat-val" style="color:#ff3c78">Free</div><div class="stat-label">Forever</div></div>
+    </div>
+  </div>
+
+  <div class="realms">
+    <div class="realms-title">Choose Your World</div>
+    <div class="realm-cards">
+      <a href="/{{ kids_first }}/" class="realm-card rc-kids">
+        <div class="realm-card-icon">✨</div>
+        <div class="realm-card-name">The Primer</div>
+        <div class="realm-card-desc">A magical adventure for kids ages 5-12. Guided by Puck.</div>
+        <div class="realm-card-meta">{{ kids_count }} courses · {{ kids_challenges }} challenges</div>
+      </a>
+      <a href="/{{ devops_first }}/" class="realm-card rc-devops">
+        <div class="realm-card-icon">⚡</div>
+        <div class="realm-card-name">NEXUS Quest</div>
+        <div class="realm-card-desc">Master DevOps through a cyberpunk RPG. Guided by CIPHER.</div>
+        <div class="realm-card-meta">{{ devops_count }} courses · {{ devops_challenges }} challenges</div>
+      </a>
+      <a href="/{{ ai_first }}/" class="realm-card rc-ai">
+        <div class="realm-card-icon">🧠</div>
+        <div class="realm-card-name">AI Academy</div>
+        <div class="realm-card-desc">Learn AI from basics to building agents. Guided by ARIA.</div>
+        <div class="realm-card-meta">{{ ai_count }} courses · {{ ai_challenges }} challenges</div>
+      </a>
+      <a href="/{{ chinese_first }}/" class="realm-card rc-chinese">
+        <div class="realm-card-icon">🐉</div>
+        <div class="realm-card-name">Learn Chinese</div>
+        <div class="realm-card-desc">Mandarin from pinyin to conversation. Guided by 龙龙.</div>
+        <div class="realm-card-meta">{{ chinese_count }} courses</div>
+      </a>
+      <a href="/{{ spanish_first }}/" class="realm-card rc-spanish">
+        <div class="realm-card-icon">🌅</div>
+        <div class="realm-card-name">Learn Spanish</div>
+        <div class="realm-card-desc">Spanish from basics to restaurants. Guided by Sofia.</div>
+        <div class="realm-card-meta">{{ spanish_count }} courses</div>
+      </a>
+      <a href="/{{ japanese_first }}/" class="realm-card rc-japanese">
+        <div class="realm-card-icon">🌊</div>
+        <div class="realm-card-name">Learn Japanese</div>
+        <div class="realm-card-desc">Japanese from hiragana to shopping. Guided by Umi.</div>
+        <div class="realm-card-meta">{{ japanese_count }} courses</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature"><div class="feature-icon">🏆</div><div class="feature-name">XP & Levels</div><div class="feature-desc">Earn XP, level up, unlock achievements</div></div>
+    <div class="feature"><div class="feature-icon">🤖</div><div class="feature-name">AI Tutor</div><div class="feature-desc">Claude explains wrong answers</div></div>
+    <div class="feature"><div class="feature-icon">🔥</div><div class="feature-name">Streaks</div><div class="feature-desc">Combo multipliers for fast answers</div></div>
+    <div class="feature"><div class="feature-icon">🛡️</div><div class="feature-name">Anti-Cheat</div><div class="feature-desc">Shuffled options, speed bonuses</div></div>
+    <div class="feature"><div class="feature-icon">🎨</div><div class="feature-name">8 Themes</div><div class="feature-desc">Cyberpunk to unicorn</div></div>
+    <div class="feature"><div class="feature-icon">📱</div><div class="feature-name">Works Everywhere</div><div class="feature-desc">PWA, mobile-friendly, offline</div></div>
+  </div>
+
+  <div class="footer">
+    <a href="https://github.com/thorski1/quest-engine" style="color:var(--primary);">Quest Engine</a> · Open Source · MIT License
+  </div>
+
+</div>
+<script>
+var t = localStorage.getItem('quest-theme-override');
+if (t) document.documentElement.dataset.theme = t;
+</script>
+</body>
+</html>

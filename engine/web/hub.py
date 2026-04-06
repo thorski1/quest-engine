@@ -188,6 +188,48 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             user_total_xp = sum(p.get("total_xp", 0) for p in pack_cards)
             user_chapters_started = sum(1 for p in pack_cards if p.get("has_progress"))
 
+        is_platform = len(skill_packs) > 20
+
+        # Platform mode: show landing page with realm cards
+        if is_platform:
+            # Count packs per category
+            cat_counts = {}
+            cat_challenges = {}
+            cat_first = {}
+            for p in skill_packs:
+                cat = p.category or "Other"
+                cat_counts[cat] = cat_counts.get(cat, 0) + 1
+                cat_challenges[cat] = cat_challenges.get(cat, 0) + sum(
+                    len(z.get("challenges", [])) for z in p.zones.values()
+                )
+                if cat not in cat_first:
+                    cat_first[cat] = p.id
+
+            return templates.TemplateResponse(request, "landing.html", {
+                "request": request,
+                "total_packs": len(skill_packs),
+                "total_challenges": total_challenges,
+                "realm_count": len(set(p.category or "Other" for p in skill_packs)),
+                "current_user": current_user,
+                "first_pack_id": skill_packs[0].id,
+                "kids_first": cat_first.get("Kids (Ages 5-12)", "letters"),
+                "kids_count": cat_counts.get("Kids (Ages 5-12)", 0),
+                "kids_challenges": cat_challenges.get("Kids (Ages 5-12)", 0),
+                "devops_first": cat_first.get("DevOps & Engineering", "bash"),
+                "devops_count": cat_counts.get("DevOps & Engineering", 0),
+                "devops_challenges": cat_challenges.get("DevOps & Engineering", 0),
+                "ai_first": cat_first.get("AI & Machine Learning", "ai_basics"),
+                "ai_count": cat_counts.get("AI & Machine Learning", 0),
+                "ai_challenges": cat_challenges.get("AI & Machine Learning", 0),
+                "chinese_first": cat_first.get("Learn Chinese", "pinyin"),
+                "chinese_count": cat_counts.get("Learn Chinese", 0),
+                "spanish_first": cat_first.get("Learn Spanish", "basics"),
+                "spanish_count": cat_counts.get("Learn Spanish", 0),
+                "japanese_first": cat_first.get("Learn Japanese", "hiragana"),
+                "japanese_count": cat_counts.get("Learn Japanese", 0),
+            })
+
+        # Single-game mode: show hub grid
         return templates.TemplateResponse(request, "hub.html", {
             "request": request,
             "packs": pack_cards,
@@ -198,6 +240,35 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "current_user": current_user,
             "user_total_xp": user_total_xp,
             "user_chapters_started": user_chapters_started,
+        })
+
+    # ── Browse all courses (platform mode) ─────────────────────────────────
+    @hub.get("/browse", response_class=HTMLResponse)
+    async def browse_courses(request: Request):
+        """Full course catalog with realm grouping."""
+        pack_cards = []
+        for pack in skill_packs:
+            session = _sessions[pack.id]
+            pack_cards.append({
+                "id": pack.id, "title": pack.title, "subtitle": pack.subtitle,
+                "theme": pack.theme or ("playful" if pack.kids_mode else "cyberpunk"),
+                "category": pack.category or "",
+                "has_progress": session.has_progress(),
+                "completed_zones": len(session.engine.completed_zones),
+                "total_zones": len(pack.zone_order),
+                "total_xp": session.engine.total_xp,
+            })
+        themes = [p.theme or ("playful" if p.kids_mode else "cyberpunk") for p in skill_packs]
+        hub_theme = max(set(themes), key=themes.count)
+        total_challenges = sum(
+            sum(len(z.get("challenges", [])) for z in p.zones.values())
+            for p in skill_packs
+        )
+        return templates.TemplateResponse(request, "hub.html", {
+            "request": request, "packs": pack_cards, "theme": hub_theme,
+            "total_challenges": total_challenges, "total_users": 0,
+            "daily_teaser": None, "current_user": None,
+            "user_total_xp": 0, "user_chapters_started": 0,
         })
 
     # ── Admin analytics (hub-level, cross-game) ────────────────────────────────
