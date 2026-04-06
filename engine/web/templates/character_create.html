@@ -116,8 +116,78 @@
     </div>
   </div>
 
-  <!-- Step 3: Name + Preview -->
+  <!-- Step 3: Choose Alignment -->
   <div class="cc-step" id="cc-step-2">
+    <h1 class="cc-title">Choose Your Path</h1>
+    <p class="cc-subtitle">Your alignment shapes how the world sees you</p>
+
+    <div class="class-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="class-card" onclick="selectAlignment(this,'hero')">
+        <div class="class-icon">⚔️</div>
+        <div class="class-name">Hero</div>
+        <div class="class-desc">Fight for knowledge and truth</div>
+        <div class="class-bonus" style="color:#00e5a0;">+2 Wisdom, +2 Charisma</div>
+      </div>
+      <div class="class-card" onclick="selectAlignment(this,'shadow')">
+        <div class="class-icon">🌑</div>
+        <div class="class-name">Shadow</div>
+        <div class="class-desc">Seek forbidden power through knowledge</div>
+        <div class="class-bonus" style="color:#a855f7;">+3 Intelligence, +1 Speed</div>
+      </div>
+      <div class="class-card" onclick="selectAlignment(this,'trickster')">
+        <div class="class-icon">🃏</div>
+        <div class="class-name">Trickster</div>
+        <div class="class-desc">Bend rules, find shortcuts, embrace chaos</div>
+        <div class="class-bonus" style="color:#ffa500;">+3 Luck, +1 Speed</div>
+      </div>
+    </div>
+
+    <div class="cc-nav">
+      <button class="btn btn-ghost" onclick="ccPrev()">← Back</button>
+      <button class="btn btn-primary btn-lg" onclick="ccNext()" id="btn-align" disabled style="opacity:0.5;">Choose Path →</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Choose Narrative Tone -->
+  <div class="cc-step" id="cc-step-3">
+    <h1 class="cc-title">How Should Your Story Sound?</h1>
+    <p class="cc-subtitle">This changes ALL the narration in your game</p>
+
+    <div class="class-grid">
+      <div class="class-card" onclick="selectTone(this,'epic')">
+        <div class="class-icon">🏰</div>
+        <div class="class-name">Epic Fantasy</div>
+        <div class="class-desc">Grand quests, ancient prophecies</div>
+        <div class="class-bonus" style="color:var(--secondary);">"The ancient tome reveals its secrets..."</div>
+      </div>
+      <div class="class-card" onclick="selectTone(this,'dark')">
+        <div class="class-icon">💀</div>
+        <div class="class-name">Dark & Gritty</div>
+        <div class="class-desc">Harsh world, knowledge is power</div>
+        <div class="class-bonus" style="color:var(--secondary);">"Trust nothing. The data bleeds..."</div>
+      </div>
+      <div class="class-card" onclick="selectTone(this,'funny')">
+        <div class="class-icon">😂</div>
+        <div class="class-name">Comedy</div>
+        <div class="class-desc">Everything's a joke. Learning is fun.</div>
+        <div class="class-bonus" style="color:var(--secondary);">"Plot twist: the answer was 42!"</div>
+      </div>
+      <div class="class-card" onclick="selectTone(this,'chill')">
+        <div class="class-icon">🌿</div>
+        <div class="class-name">Cozy & Chill</div>
+        <div class="class-desc">No pressure. Take your time.</div>
+        <div class="class-bonus" style="color:var(--secondary);">"Take a deep breath. You've got this."</div>
+      </div>
+    </div>
+
+    <div class="cc-nav">
+      <button class="btn btn-ghost" onclick="ccPrev()">← Back</button>
+      <button class="btn btn-primary btn-lg" onclick="ccNext()" id="btn-tone" disabled style="opacity:0.5;">Choose Tone →</button>
+    </div>
+  </div>
+
+  <!-- Step 5: Name + Preview -->
+  <div class="cc-step" id="cc-step-4">
     <h1 class="cc-title">Your Character</h1>
 
     <div class="char-preview" id="char-preview">
@@ -173,6 +243,8 @@
       <input type="hidden" name="player_name" id="form-name" value="{{ current_user.display_name if current_user else '' }}">
       <input type="hidden" name="player_class" id="form-class" value="scholar">
       <input type="hidden" name="player_avatar" id="form-avatar" value="🧙">
+      <input type="hidden" name="player_alignment" id="form-alignment" value="hero">
+      <input type="hidden" name="player_tone" id="form-tone" value="epic">
       <button type="submit" class="btn btn-primary btn-lg" style="width:100%;max-width:400px;font-size:1.1rem;padding:0.8rem 2rem;">
         Begin Your Quest! →
       </button>
@@ -187,19 +259,26 @@
     <div class="cc-dot active" id="cc-dot-0"></div>
     <div class="cc-dot" id="cc-dot-1"></div>
     <div class="cc-dot" id="cc-dot-2"></div>
+    <div class="cc-dot" id="cc-dot-3"></div>
+    <div class="cc-dot" id="cc-dot-4"></div>
   </div>
 
 </div>
 
 <script>
-var ccStep = 0;
-var charClass = '', charAvatar = '🧙';
+var ccStep = 0, maxStep = 4;
+var charClass = '', charAvatar = '🧙', charAlignment = '', charTone = '';
 
 var classStats = {
   scholar:     {int:8, wis:7, spd:4, end:5, cha:5, lck:4},
   speedrunner: {int:5, wis:4, spd:9, end:5, cha:4, lck:6},
   explorer:    {int:6, wis:6, spd:5, end:7, cha:5, lck:5},
   champion:    {int:5, wis:5, spd:6, end:6, cha:7, lck:5},
+};
+var alignBonus = {
+  hero:      {wis:2, cha:2},
+  shadow:    {int:3, spd:1},
+  trickster: {lck:3, spd:1},
 };
 
 function selectClass(el, cls) {
@@ -225,14 +304,36 @@ function selectAvatar(el, emoji) {
 }
 
 function updateStats(cls) {
-  var s = classStats[cls] || classStats.scholar;
+  var base = classStats[cls] || classStats.scholar;
+  var bonus = alignBonus[charAlignment] || {};
   var fields = ['int','wis','spd','end','cha','lck'];
   fields.forEach(function(f) {
+    var val = (base[f] || 5) + (bonus[f] || 0);
     var el = document.getElementById('stat-' + f);
-    var val = document.getElementById('stat-' + f + '-val');
-    if (el) el.style.width = (s[f] * 10) + '%';
-    if (val) val.textContent = s[f];
+    var valEl = document.getElementById('stat-' + f + '-val');
+    if (el) el.style.width = Math.min(val * 10, 100) + '%';
+    if (valEl) valEl.textContent = val;
   });
+}
+
+function selectAlignment(el, align) {
+  el.parentElement.querySelectorAll('.class-card').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  charAlignment = align;
+  document.getElementById('form-alignment').value = align;
+  document.getElementById('btn-align').disabled = false;
+  document.getElementById('btn-align').style.opacity = '1';
+  // Apply alignment bonus to stats
+  if (charClass) updateStats(charClass);
+}
+
+function selectTone(el, tone) {
+  el.parentElement.querySelectorAll('.class-card').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  charTone = tone;
+  document.getElementById('form-tone').value = tone;
+  document.getElementById('btn-tone').disabled = false;
+  document.getElementById('btn-tone').style.opacity = '1';
 }
 
 function ccShow(n) {
@@ -241,15 +342,21 @@ function ccShow(n) {
   document.getElementById('cc-step-' + n).classList.add('active');
   document.getElementById('cc-dot-' + n).classList.add('active');
   ccStep = n;
-  if (n === 2) {
+  if (n === 4) {
     var nameInput = document.getElementById('char-name-input');
     if (nameInput) {
       document.getElementById('form-name').value = nameInput.value || 'Adventurer';
       document.getElementById('preview-name').textContent = nameInput.value || 'Adventurer';
     }
+    // Update preview with alignment
+    var alignNames = {hero:'Hero',shadow:'Shadow',trickster:'Trickster'};
+    var toneNames = {epic:'Epic',dark:'Dark',funny:'Comedy',chill:'Chill'};
+    var cls = document.getElementById('preview-class');
+    if (cls) cls.textContent = (charClass ? charClass.charAt(0).toUpperCase()+charClass.slice(1) : 'Scholar')
+      + ' · ' + (alignNames[charAlignment]||'Hero') + ' · ' + (toneNames[charTone]||'Epic');
   }
 }
-function ccNext() { if (ccStep < 2) ccShow(ccStep + 1); }
+function ccNext() { if (ccStep < maxStep) ccShow(ccStep + 1); }
 function ccPrev() { if (ccStep > 0) ccShow(ccStep - 1); }
 
 // Set name on form submit
