@@ -1017,8 +1017,40 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     @hub.get(f"{prefix}/profile", response_class=HTMLResponse)
     async def profile_page(request: Request, _pid: str = pack_id):
         s = _session(request)
-        return templates.TemplateResponse(request, "profile.html", _ctx(
-            request, **s.detailed_stats_context(),
+        from .gear import GEAR_CATALOG, RARITY_COLORS, get_new_gear_drops
+
+        # Character data (defaults for now — will be stored per-user later)
+        char_stats = {"int": 6, "wis": 5, "spd": 5, "end": 5, "cha": 5, "lck": 5}
+        player_avatar = "🧙"
+        player_class = "Scholar"
+
+        # Determine gear from zone completion count
+        zone_count = len(s.engine.completed_zones)
+        owned_gear = []
+        equipped = {}
+        drops = get_new_gear_drops(zone_count, [])
+        for d in drops:
+            owned_gear.append(d["id"])
+            slot = d.get("slot", "")
+            if slot and slot not in equipped:
+                equipped[slot] = d["id"]
+
+        # Merge all achievements (engine + pack)
+        from ..engine import BASE_ACHIEVEMENTS
+        all_achs = {**BASE_ACHIEVEMENTS, **skill_pack.achievements}
+
+        return templates.TemplateResponse(request, "character_sheet.html", _ctx(
+            request,
+            char_stats=char_stats,
+            player_avatar=player_avatar,
+            player_class=player_class,
+            equipped=equipped,
+            inventory=owned_gear,
+            gear_catalog=GEAR_CATALOG,
+            rarity_colors=RARITY_COLORS,
+            all_achievements=all_achs,
+            earned_achievements=s.engine.achievements,
+            **s.detailed_stats_context(),
         ))
 
     @hub.get(f"{prefix}/settings", response_class=HTMLResponse)

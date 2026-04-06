@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .cs-page { max-width: 700px; margin: 0 auto; }
+
+  /* Character header */
+  .cs-header {
+    display: flex; align-items: center; gap: 1.25rem; padding: 1.5rem;
+    background: linear-gradient(135deg, var(--bg-surface), var(--bg-raised));
+    border: 1px solid var(--border); border-radius: 16px; margin-bottom: 1.5rem;
+    position: relative; overflow: hidden;
+  }
+  .cs-header::before {
+    content: ''; position: absolute; top: 0; right: 0; width: 200px; height: 100%;
+    background: radial-gradient(circle at 80% 50%, rgba(0,229,160,0.06) 0%, transparent 70%);
+  }
+  .cs-avatar { font-size: 4rem; flex-shrink: 0; position: relative; z-index: 1; }
+  .cs-info { flex: 1; position: relative; z-index: 1; }
+  .cs-name { font-size: 1.4rem; font-weight: 800; color: var(--text-bright); }
+  .cs-class { font-size: 0.85rem; color: var(--primary); font-weight: 600; }
+  .cs-level { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.15rem; }
+  .cs-xp-bar { height: 6px; background: var(--bg-raised); border-radius: 3px; margin-top: 0.4rem; overflow: hidden; }
+  .cs-xp-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 3px; }
+
+  /* Stats */
+  .cs-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+  .cs-stat {
+    padding: 0.75rem; background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 12px; text-align: center;
+  }
+  .cs-stat-icon { font-size: 1.2rem; }
+  .cs-stat-name { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.15rem; }
+  .cs-stat-val { font-size: 1.3rem; font-weight: 800; color: var(--text-bright); }
+  .cs-stat-bar { height: 4px; background: var(--bg-raised); border-radius: 2px; margin-top: 0.3rem; overflow: hidden; }
+  .cs-stat-fill { height: 100%; border-radius: 2px; }
+
+  /* Gear */
+  .cs-section { margin-bottom: 1.5rem; }
+  .cs-section-title {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .gear-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.6rem; }
+  .gear-slot {
+    padding: 0.75rem; background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 10px; text-align: center; position: relative;
+    transition: border-color 0.15s;
+  }
+  .gear-slot:hover { border-color: var(--primary); }
+  .gear-slot.empty { opacity: 0.4; border-style: dashed; }
+  .gear-icon { font-size: 1.8rem; }
+  .gear-name { font-size: 0.75rem; font-weight: 700; color: var(--text-bright); margin-top: 0.2rem; }
+  .gear-rarity { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .gear-bonus { font-size: 0.6rem; color: var(--primary); margin-top: 0.15rem; }
+  .gear-slot-label { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* Inventory */
+  .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 0.4rem; }
+  .inv-item {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .inv-item:hover { transform: scale(1.1); border-color: var(--primary); }
+  .inv-item .inv-rarity { position: absolute; bottom: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; }
+
+  /* Achievement showcase */
+  .ach-grid { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .ach-badge {
+    padding: 0.3rem 0.6rem; background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 100px; font-size: 0.7rem; color: var(--text-dim);
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .ach-badge.earned { border-color: var(--warn); color: var(--warn); }
+
+  /* Combat stats */
+  .combat-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .combat-card {
+    flex: 1; min-width: 100px; padding: 0.6rem 0.75rem; background: var(--bg-surface);
+    border: 1px solid var(--border); border-radius: 10px; text-align: center;
+  }
+  .combat-val { font-size: 1.1rem; font-weight: 800; color: var(--text-bright); }
+  .combat-label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cs-page">
+
+  <!-- Character Header -->
+  <div class="cs-header">
+    <div class="cs-avatar">{{ player_avatar | default('🧙') }}</div>
+    <div class="cs-info">
+      <div class="cs-name">{{ player_name }}</div>
+      <div class="cs-class">{{ player_class | default('Scholar') | title }} · Level {{ level }} {{ level_title }}</div>
+      <div class="cs-level">{{ total_xp }} XP · {{ xp_this_level }}/{{ xp_for_next_level }} to next level</div>
+      <div class="cs-xp-bar"><div class="cs-xp-fill" style="width:{{ level_progress_pct }}%"></div></div>
+    </div>
+  </div>
+
+  <!-- Combat Stats -->
+  <div class="combat-row">
+    <div class="combat-card">
+      <div class="combat-val" style="color:var(--primary)">{{ total_xp }}</div>
+      <div class="combat-label">Total XP</div>
+    </div>
+    <div class="combat-card">
+      <div class="combat-val" style="color:var(--warn)">{{ max_streak | default(0) }}</div>
+      <div class="combat-label">Best Streak</div>
+    </div>
+    <div class="combat-card">
+      <div class="combat-val" style="color:var(--secondary)">{{ completed_zones }}/{{ total_zones }}</div>
+      <div class="combat-label">Zones Done</div>
+    </div>
+    <div class="combat-card">
+      <div class="combat-val" style="color:#a855f7">{{ daily_streak | default(0) }}</div>
+      <div class="combat-label">Day Streak</div>
+    </div>
+  </div>
+
+  <!-- Character Stats -->
+  <div class="cs-section">
+    <div class="cs-section-title">⚔️ Character Stats</div>
+    <div class="cs-stats">
+      <div class="cs-stat">
+        <div class="cs-stat-icon">🧠</div>
+        <div class="cs-stat-name">Intelligence</div>
+        <div class="cs-stat-val">{{ char_stats.int | default(5) }}</div>
+        <div class="cs-stat-bar"><div class="cs-stat-fill" style="width:{{ char_stats.int | default(5) * 10 }}%;background:var(--primary);"></div></div>
+      </div>
+      <div class="cs-stat">
+        <div class="cs-stat-icon">📖</div>
+        <div class="cs-stat-name">Wisdom</div>
+        <div class="cs-stat-val">{{ char_stats.wis | default(5) }}</div>
+        <div class="cs-stat-bar"><div class="cs-stat-fill" style="width:{{ char_stats.wis | default(5) * 10 }}%;background:var(--secondary);"></div></div>
+      </div>
+      <div class="cs-stat">
+        <div class="cs-stat-icon">⚡</div>
+        <div class="cs-stat-name">Speed</div>
+        <div class="cs-stat-val">{{ char_stats.spd | default(5) }}</div>
+        <div class="cs-stat-bar"><div class="cs-stat-fill" style="width:{{ char_stats.spd | default(5) * 10 }}%;background:var(--warn);"></div></div>
+      </div>
+      <div class="cs-stat">
+        <div class="cs-stat-icon">❤️</div>
+        <div class="cs-stat-name">Endurance</div>
+        <div class="cs-stat-val">{{ char_stats.end | default(5) }}</div>
+        <div class="cs-stat-bar"><div class="cs-stat-fill" style="width:{{ char_stats.end | default(5) * 10 }}%;background:#ff6b6b;"></div></div>
+      </div>
+      <div class="cs-stat">
+        <div class="cs-stat-icon">✨</div>
+        <div class="cs-stat-name">Charisma</div>
+        <div class="cs-stat-val">{{ char_stats.cha | default(5) }}</div>
+        <div class="cs-stat-bar"><div class="cs-stat-fill" style="width:{{ char_stats.cha | default(5) * 10 }}%;background:#a855f7;"></div></div>
+      </div>
+      <div class="cs-stat">
+        <div class="cs-stat-icon">🍀</div>
+        <div class="cs-stat-name">Luck</div>
+        <div class="cs-stat-val">{{ char_stats.lck | default(5) }}</div>
+        <div class="cs-stat-bar"><div class="cs-stat-fill" style="width:{{ char_stats.lck | default(5) * 10 }}%;background:#ffd93d;"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Equipped Gear -->
+  <div class="cs-section">
+    <div class="cs-section-title">🗡️ Equipped Gear</div>
+    <div class="gear-grid">
+      {% for slot in ['weapon', 'shield', 'helmet', 'armor', 'accessory'] %}
+      <div class="gear-slot {% if not equipped.get(slot) %}empty{% endif %}">
+        {% if equipped.get(slot) and gear_catalog.get(equipped[slot]) %}
+          {% set g = gear_catalog[equipped[slot]] %}
+          <div class="gear-icon">{{ g.icon }}</div>
+          <div class="gear-name">{{ g.name }}</div>
+          <div class="gear-rarity" style="color:{{ rarity_colors.get(g.rarity, '#9ca3af') }}">{{ g.rarity }}</div>
+          <div class="gear-bonus">{{ g.desc | truncate(40) }}</div>
+        {% else %}
+          <div class="gear-icon" style="opacity:0.3;">{% if slot == 'weapon' %}🗡️{% elif slot == 'shield' %}🛡️{% elif slot == 'helmet' %}🎩{% elif slot == 'armor' %}👘{% else %}💍{% endif %}</div>
+          <div class="gear-slot-label">{{ slot }}</div>
+          <div class="gear-name" style="color:var(--text-dim);">Empty</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Inventory -->
+  {% if inventory %}
+  <div class="cs-section">
+    <div class="cs-section-title">🎒 Inventory ({{ inventory | length }} items)</div>
+    <div class="inv-grid">
+      {% for item_id in inventory %}
+        {% if gear_catalog.get(item_id) %}
+        {% set g = gear_catalog[item_id] %}
+        <div class="inv-item" title="{{ g.name }} ({{ g.rarity }}) — {{ g.desc }}">
+          {{ g.icon }}
+          <div class="inv-rarity" style="background:{{ rarity_colors.get(g.rarity, '#9ca3af') }};"></div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Achievements -->
+  <div class="cs-section">
+    <div class="cs-section-title">🏆 Achievements</div>
+    <div class="ach-grid">
+      {% for ach_id, (ach_name, ach_desc) in all_achievements.items() %}
+      <div class="ach-badge {% if ach_id in earned_achievements %}earned{% endif %}" title="{{ ach_desc }}">
+        {% if ach_id in earned_achievements %}🏆{% else %}🔒{% endif %} {{ ach_name }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1.5rem;">
+    <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">← Back to Zones</a>
+    <a href="{{ pack_url_prefix }}/stats" class="btn btn-ghost">📊 Full Stats</a>
+  </div>
+
+</div>
+{% endblock %}
