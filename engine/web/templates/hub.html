@@ -1,29 +1,208 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ theme }}">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  {% set is_platform = packs | length > 20 %}
-  <title>{% if is_platform %}Quest Platform — {{ packs | length }} Courses{% elif theme == "playful" %}The Primer — Choose Your Chapter{% else %}Quest Engine — Choose Your Chapter{% endif %}</title>
-  <meta name="description" content="{% if is_platform %}The gold standard educational gaming platform. {{ packs | length }} courses, {{ total_challenges }} challenges across kids education, DevOps, AI, and languages. Free and open-source.{% elif theme == 'playful' %}An interactive educational adventure for young learners. Choose a chapter and begin!{% elif theme == 'neural' %}Learn AI from zero to mastery. 8 chapters covering fundamentals, prompting, tools, ethics, and agents.{% else %}A terminal RPG for learning DevOps. Choose a chapter and sharpen your skills.{% endif %}">
-  <meta property="og:title" content="{% if is_platform %}Quest Platform — Learn Anything Through Games{% elif theme == 'playful' %}The Primer — Choose Your Adventure{% elif theme == 'neural' %}AI Academy — Learn AI by Playing{% else %}Quest Engine — Choose Your Chapter{% endif %}">
-  <meta property="og:description" content="{{ packs | length }} chapters · {{ total_challenges }} challenges · Free, open-source educational RPG">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="{% if theme == 'playful' %}The Primer{% elif theme == 'neural' %}AI Academy{% else %}Quest Engine{% endif %}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <meta name="theme-color" content="{% if theme == 'playful' %}#6c5ce7{% else %}#00e5a0{% endif %}">
-  <link rel="manifest" href="/static/manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
-  <link rel="apple-touch-icon" href="/static/icon-192.png">
-  <link rel="stylesheet" href="/static/themes.css">
-  <script src="/static/illustrations.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% set is_platform = packs | length > 20 %}
+<title>{% if is_platform %}Quest Platform — {{ packs | length }} Courses{% elif theme == "playful" %}The Primer — Choose Your Chapter{% else %}Quest Engine — Choose Your Chapter{% endif %}</title>
+<meta name="description" content="{% if is_platform %}The gold standard educational gaming platform. {{ packs | length }} courses, {{ total_challenges }} challenges. Free and open-source.{% elif theme == 'playful' %}An interactive educational adventure for young learners.{% elif theme == 'neural' %}Learn AI from zero to mastery.{% else %}A terminal RPG for learning DevOps.{% endif %}">
+<meta property="og:title" content="{% if is_platform %}Quest Platform — Learn Anything Through Games{% elif theme == 'playful' %}The Primer{% elif theme == 'neural' %}AI Academy{% else %}Quest Engine{% endif %}">
+<meta property="og:description" content="{{ packs | length }} chapters · {{ total_challenges }} challenges · Free, open-source educational RPG">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="{% if theme == 'playful' %}#6c5ce7{% else %}#00e5a0{% endif %}">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<link rel="stylesheet" href="/static/themes.css">
+<script src="/static/illustrations.js" defer></script>
+<style>
+{% if is_platform %}
+  .realm { margin-bottom: 2.5rem; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
+  .realm-header {
+    padding: 1.5rem 1.5rem 1rem; position: relative; overflow: hidden;
+    display: flex; align-items: center; gap: 1rem; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .realm-header:hover { filter: brightness(1.1); }
+  .realm-icon { font-size: 2.5rem; flex-shrink: 0; }
+  .realm-info { flex: 1; }
+  .realm-name { font-size: 1.3rem; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .realm-desc { font-size: 0.8rem; color: rgba(255,255,255,0.8); margin-top: 0.2rem; }
+  .realm-stats { font-size: 0.7rem; color: rgba(255,255,255,0.6); margin-top: 0.3rem; font-family: 'JetBrains Mono', monospace; }
+  .realm-arrow { font-size: 1.5rem; color: rgba(255,255,255,0.7); transition: transform 0.3s; }
+  .realm.open .realm-arrow { transform: rotate(90deg); }
+  .realm-body { display: none; padding: 0.75rem; background: var(--bg-surface); }
+  .realm.open .realm-body { display: block; }
+  .realm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.6rem; }
+  .realm-card {
+    padding: 0.75rem; background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 10px; text-decoration: none; color: var(--text);
+    transition: transform 0.1s, border-color 0.15s;
+  }
+  .realm-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+  .realm-card-title { font-weight: 700; font-size: 0.85rem; color: var(--text-bright); }
+  .realm-card-sub { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.15rem; }
+  .realm-card-cta { font-size: 0.65rem; color: var(--primary); margin-top: 0.3rem; display: block; }
+
+  /* Realm gradients */
+  .realm-kids .realm-header { background: linear-gradient(135deg, #6c5ce7, #a29bfe, #fd79a8); }
+  .realm-devops .realm-header { background: linear-gradient(135deg, #00e5a0, #00b4d8, #0984e3); }
+  .realm-ai .realm-header { background: linear-gradient(135deg, #7c6cf0, #a855f7, #ec4899); }
+  .realm-chinese .realm-header { background: linear-gradient(135deg, #e17055, #d63031, #fdcb6e); }
+  .realm-spanish .realm-header { background: linear-gradient(135deg, #f39c12, #e74c3c, #fd79a8); }
+  .realm-japanese .realm-header { background: linear-gradient(135deg, #0984e3, #00b4d8, #6c5ce7); }
+
+  .platform-hero {
+    text-align: center; padding: 2.5rem 1rem 2rem;
+    background: linear-gradient(180deg, rgba(0,229,160,0.05) 0%, transparent 100%);
+  }
+  .platform-logo { font-size: 3rem; margin-bottom: 0.5rem; }
+  .platform-title { font-size: 2rem; font-weight: 800; color: var(--text-bright); }
+  .platform-title span { color: var(--primary); }
+  .platform-sub { color: var(--text-dim); font-size: 0.95rem; margin-top: 0.3rem; }
+  .platform-stats {
+    display: flex; justify-content: center; gap: 2rem; margin: 1.5rem 0; flex-wrap: wrap;
+  }
+  .ps-item { text-align: center; }
+  .ps-val { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+  .ps-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+{% endif %}
+</style>
 </head>
 <body>
+{% if is_platform %}
+{# ═══════════════════ PLATFORM MODE ═══════════════════ #}
+<div style="max-width:900px;margin:0 auto;padding:1rem 1.5rem;">
+
+  <div class="platform-hero">
+    <div class="platform-logo">🎮</div>
+    <h1 class="platform-title">Quest <span>Platform</span></h1>
+    <p class="platform-sub">Learn anything through RPG adventures — {{ packs | length }} courses, {{ total_challenges }} challenges, all free</p>
+
+    <div class="platform-stats">
+      <div class="ps-item"><div class="ps-val" style="color:var(--primary)">{{ packs | length }}</div><div class="ps-label">Courses</div></div>
+      <div class="ps-item"><div class="ps-val" style="color:#ffa500">{{ total_challenges }}</div><div class="ps-label">Challenges</div></div>
+      <div class="ps-item"><div class="ps-val" style="color:#00b4d8">6</div><div class="ps-label">Realms</div></div>
+      <div class="ps-item"><div class="ps-val" style="color:#ff3c78">8</div><div class="ps-label">Themes</div></div>
+    </div>
+
+    {% if current_user %}
+    <div style="padding:0.6rem 1rem;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius-lg);display:inline-flex;align-items:center;gap:0.75rem;">
+      <span style="font-weight:700;color:var(--text-bright);">{{ current_user.display_name }}</span>
+      <span style="font-size:0.75rem;color:var(--text-dim);">{{ user_chapters_started }} started · {{ user_total_xp }} XP</span>
+      {% for pack in packs if pack.has_progress and pack.completed_zones < pack.total_zones %}
+        {% if loop.first %}
+        <a href="/{{ pack.id }}/challenge" class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.6rem;">Continue →</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div style="margin-top:1rem;">
+      <input type="text" id="hub-search" placeholder="🔍 Search courses..." oninput="filterRealms(this.value)"
+        style="width:100%;max-width:400px;padding:0.5rem 1rem;border:1px solid var(--border);border-radius:100px;
+        background:var(--bg-raised);color:var(--text-bright);font-size:0.85rem;outline:none;font-family:var(--font);">
+    </div>
+  </div>
+
+  {# ── Group packs by category into realms ── #}
+  {% set realm_data = {
+    "Kids (Ages 5-12)": {"icon": "✨", "css": "kids", "guide": "Puck", "desc": "A magical learning adventure for young explorers ages 5-12"},
+    "DevOps & Engineering": {"icon": "⚡", "css": "devops", "guide": "CIPHER", "desc": "Master the tools of the digital world — Bash to Kubernetes"},
+    "AI & Machine Learning": {"icon": "🧠", "css": "ai", "guide": "ARIA", "desc": "Learn AI from basics to building autonomous agents"},
+    "Learn Chinese": {"icon": "🐉", "css": "chinese", "guide": "龙龙", "desc": "Mandarin Chinese from pinyin to conversation"},
+    "Learn Spanish": {"icon": "🌅", "css": "spanish", "guide": "Sofia", "desc": "Spanish from basics to ordering at restaurants"},
+    "Learn Japanese": {"icon": "🌊", "css": "japanese", "guide": "Umi", "desc": "Japanese from hiragana to navigating Tokyo"}
+  } %}
+
+  {% set ns = namespace(last_cat='', idx=0) %}
+  {% for pack in packs %}
+    {% if pack.category and pack.category != ns.last_cat %}
+      {% if ns.last_cat %}
+          </div></div></div>
+      {% endif %}
+      {% set ns.last_cat = pack.category %}
+      {% set ns.idx = ns.idx + 1 %}
+      {% set rd = realm_data.get(pack.category, {"icon": "📚", "css": "kids", "guide": "Guide", "desc": ""}) %}
+      {% set cat_packs = packs | selectattr("category", "equalto", pack.category) | list %}
+      <div class="realm realm-{{ rd.css }}{% if ns.idx <= 2 %} open{% endif %}" id="realm-{{ ns.idx }}">
+        <div class="realm-header" onclick="toggleRealm({{ ns.idx }})">
+          <div class="realm-icon">{{ rd.icon }}</div>
+          <div class="realm-info">
+            <div class="realm-name">{{ pack.category }}</div>
+            <div class="realm-desc">{{ rd.desc }} · Guided by {{ rd.guide }}</div>
+            <div class="realm-stats">{{ cat_packs | length }} courses · {{ cat_packs | sum(attribute='total_zones') }} zones</div>
+          </div>
+          <div class="realm-arrow">›</div>
+        </div>
+        <div class="realm-body"><div class="realm-grid">
+    {% endif %}
+    <a href="/{{ pack.id }}/" class="realm-card">
+      <div class="realm-card-title">{{ pack.title }}</div>
+      <div class="realm-card-sub">{{ pack.subtitle | replace("◈", "") | trim | truncate(60) }}</div>
+      {% if pack.has_progress %}
+        <div class="realm-card-cta">{{ pack.completed_zones }}/{{ pack.total_zones }} zones · {{ pack.total_xp }} XP</div>
+      {% else %}
+        <div class="realm-card-cta">Begin →</div>
+      {% endif %}
+    </a>
+  {% endfor %}
+  {% if ns.last_cat %}
+    </div></div></div>
+  {% endif %}
+
+  <!-- Daily teaser -->
+  {% if daily_teaser %}
+  <div style="margin-top:1.5rem;padding:1.25rem;background:linear-gradient(135deg,var(--bg-raised),var(--bg-surface));border:1px solid var(--warn);border-radius:16px;text-align:center;">
+    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--warn);font-weight:700;margin-bottom:0.5rem;">⚡ Question of the Day</div>
+    <div style="font-size:1rem;color:var(--text-bright);font-weight:600;margin-bottom:0.75rem;">{{ daily_teaser.question }}</div>
+    <a href="/{{ daily_teaser.pack_id }}/" class="btn btn-primary" style="font-size:0.85rem;">Play {{ daily_teaser.pack_title }} →</a>
+  </div>
+  {% endif %}
+
+  {% if total_users is defined and total_users > 0 %}
+  <div style="text-align:center;margin-top:2rem;padding:1rem;border-top:1px solid var(--border);color:var(--text-dim);font-size:0.8rem;">
+    <span style="font-weight:700;color:var(--primary);">{{ total_users }}</span> players ·
+    <span style="font-weight:700;color:var(--warn);">{{ total_challenges }}</span> challenges ·
+    <span style="font-weight:700;color:var(--secondary);">{{ packs | length }}</span> courses
+  </div>
+  {% endif %}
+
+  <footer style="text-align:center;padding:2rem 0 1rem;color:var(--text-dim);font-size:0.75rem;">
+    Quest Platform · Powered by <a href="https://github.com/thorski1/quest-engine" target="_blank" style="color:var(--primary);">Quest Engine</a> · Open Source
+  </footer>
+</div>
+
+<script>
+function toggleRealm(id) {
+  document.getElementById('realm-' + id).classList.toggle('open');
+}
+function filterRealms(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.realm-card').forEach(function(c) {
+    var t = c.querySelector('.realm-card-title');
+    c.style.display = (t && t.textContent.toLowerCase().includes(q)) || !q ? '' : 'none';
+  });
+  // Auto-open realms with matches
+  if (q) {
+    document.querySelectorAll('.realm').forEach(function(r) {
+      var visible = r.querySelectorAll('.realm-card:not([style*="display: none"])').length;
+      if (visible > 0) r.classList.add('open');
+    });
+  }
+}
+var t = localStorage.getItem('quest-theme-override');
+if (t) document.documentElement.dataset.theme = t;
+</script>
+
+{% else %}
+{# ═══════════════════ SINGLE GAME MODE ═══════════════════ #}
 <header class="site-header">
-  <span class="site-logo">{% if is_platform %}🎮 Quest Platform{% elif theme == "playful" %}✨ The Primer{% elif theme == "neural" %}🧠 AI Academy{% elif theme == "medieval" %}🐉 Learn Chinese{% elif theme == "unicorn" %}🦄 Quest Engine{% elif theme == "alien" %}👽 Quest Engine{% elif theme == "ocean" %}🌊 Quest Engine{% elif theme == "sunset" %}🌅 Quest Engine{% else %}Quest Engine{% endif %}</span>
+  <span class="site-logo">{% if theme == "playful" %}✨ The Primer{% elif theme == "neural" %}🧠 AI Academy{% elif theme == "medieval" %}🐉 Learn Chinese{% elif theme == "unicorn" %}🦄 Quest Engine{% elif theme == "alien" %}👽 Quest Engine{% elif theme == "ocean" %}🌊 Quest Engine{% elif theme == "sunset" %}🌅 Quest Engine{% else %}Quest Engine{% endif %}</span>
   <nav class="header-nav"></nav>
   <div class="header-stats">
     <span class="hub-total-stats">{{ packs | length }} chapters · {{ total_challenges }} challenges</span>
@@ -35,9 +214,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;margin-bottom:1rem;background:linear-gradient(135deg,var(--bg-raised),var(--bg-surface));border:1px solid var(--border);border-radius:var(--radius-lg);">
       <div>
         <span style="font-size:1rem;font-weight:700;color:var(--text-bright);">Welcome back, {{ current_user.display_name }}!</span>
-        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.15rem;">
-          {{ user_chapters_started }} chapters started · {{ user_total_xp }} total XP
-        </div>
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.15rem;">{{ user_chapters_started }} chapters started · {{ user_total_xp }} total XP</div>
       </div>
       <div style="display:flex;gap:0.5rem;align-items:center;">
         {% for pack in packs if pack.has_progress and pack.completed_zones < pack.total_zones %}
@@ -50,8 +227,8 @@
     </div>
     {% endif %}
     <div class="hub-hero">
-      <h1 class="hub-title">{% if is_platform %}Choose Your Course{% elif theme == "playful" %}Choose Your Adventure{% elif theme == "neural" %}Choose Your Path{% else %}Choose Your Chapter{% endif %}</h1>
-      <p class="hub-subtitle">{% if is_platform %}{{ packs | length }} courses across kids education, DevOps, AI, and 3 languages — all free{% elif theme == "playful" %}Pick a chapter and Puck will guide you!{% elif theme == "neural" %}ARIA will guide you from AI basics to the frontier{% else %}Select a skill domain to begin your training{% endif %}</p>
+      <h1 class="hub-title">{% if theme == "playful" %}Choose Your Adventure{% elif theme == "neural" %}Choose Your Path{% else %}Choose Your Chapter{% endif %}</h1>
+      <p class="hub-subtitle">{% if theme == "playful" %}Pick a chapter and Puck will guide you!{% elif theme == "neural" %}ARIA will guide you from AI basics to the frontier{% else %}Select a skill domain to begin your training{% endif %}</p>
     </div>
     {% if packs | length > 8 %}
     <div style="margin-bottom:1rem;">
@@ -62,14 +239,7 @@
     </div>
     {% endif %}
     <div class="hub-grid" id="hub-grid">
-      {% set ns = namespace(last_cat='') %}
       {% for pack in packs %}
-      {% if pack.category and pack.category != ns.last_cat %}
-        {% set ns.last_cat = pack.category %}
-        <div style="grid-column:1/-1;margin-top:{% if not loop.first %}1.5rem{% else %}0{% endif %};margin-bottom:0.25rem;">
-          <span style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);border-bottom:2px solid var(--border);padding-bottom:0.25rem;">{{ pack.category }}</span>
-        </div>
-      {% endif %}
       <a href="/{{ pack.id }}/" class="hub-card" data-theme="{{ pack.theme }}">
         {% if pack.image_url is defined and pack.image_url %}
         <div style="margin:-1.5rem -1.5rem 1rem;border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;height:100px;">
@@ -94,17 +264,13 @@
       </a>
       {% endfor %}
     </div>
-
-    <!-- ── Daily teaser ────────────────────────────────────────────── -->
     {% if daily_teaser %}
     <div style="margin-top:1.5rem;padding:1.25rem;background:linear-gradient(135deg,var(--bg-raised),var(--bg-surface));border:1px solid var(--warn);border-radius:var(--radius-lg);text-align:center;">
       <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--warn);font-weight:700;margin-bottom:0.5rem;">⚡ Question of the Day</div>
-      <div style="font-size:1rem;color:var(--text-bright);font-weight:600;margin-bottom:0.75rem;line-height:1.5;">{{ daily_teaser.question }}</div>
+      <div style="font-size:1rem;color:var(--text-bright);font-weight:600;margin-bottom:0.75rem;">{{ daily_teaser.question }}</div>
       <a href="/{{ daily_teaser.pack_id }}/" class="btn btn-primary" style="font-size:0.85rem;">Play {{ daily_teaser.pack_title }} →</a>
     </div>
     {% endif %}
-
-    <!-- ── Quick stats banner ────────────────────────────────────────── -->
     {% if total_users is defined and total_users > 0 %}
     <div style="text-align:center;margin-top:2rem;padding:1rem;border-top:1px solid var(--border);color:var(--text-dim);font-size:0.8rem;">
       <span style="font-weight:700;color:var(--primary);">{{ total_users }}</span> players ·
@@ -129,11 +295,11 @@ function filterHubCards(query) {
     card.style.display = text.toLowerCase().includes(q) ? '' : 'none';
   });
 }
-// Apply saved theme override
 var t = localStorage.getItem('quest-theme-override');
 if (t) document.documentElement.dataset.theme = t;
 var fs = localStorage.getItem('quest-font-size');
 if (fs) document.documentElement.style.fontSize = fs + '%';
 </script>
+{% endif %}
 </body>
 </html>
