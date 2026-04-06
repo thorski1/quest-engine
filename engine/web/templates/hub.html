@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% if theme == "playful" %}The Primer — Choose Your Chapter{% else %}Quest Engine — Choose Your Chapter{% endif %}</title>
-  <meta name="description" content="{% if theme == 'playful' %}An interactive educational adventure for young learners. Choose a chapter and begin!{% elif theme == 'neural' %}Learn AI from zero to mastery. 8 chapters covering fundamentals, prompting, tools, ethics, and agents.{% else %}A terminal RPG for learning DevOps. Choose a chapter and sharpen your skills.{% endif %}">
-  <meta property="og:title" content="{% if theme == 'playful' %}The Primer — Choose Your Adventure{% elif theme == 'neural' %}AI Academy — Learn AI by Playing{% else %}Quest Engine — Choose Your Chapter{% endif %}">
+  {% set is_platform = packs | length > 20 %}
+  <title>{% if is_platform %}Quest Platform — {{ packs | length }} Courses{% elif theme == "playful" %}The Primer — Choose Your Chapter{% else %}Quest Engine — Choose Your Chapter{% endif %}</title>
+  <meta name="description" content="{% if is_platform %}The gold standard educational gaming platform. {{ packs | length }} courses, {{ total_challenges }} challenges across kids education, DevOps, AI, and languages. Free and open-source.{% elif theme == 'playful' %}An interactive educational adventure for young learners. Choose a chapter and begin!{% elif theme == 'neural' %}Learn AI from zero to mastery. 8 chapters covering fundamentals, prompting, tools, ethics, and agents.{% else %}A terminal RPG for learning DevOps. Choose a chapter and sharpen your skills.{% endif %}">
+  <meta property="og:title" content="{% if is_platform %}Quest Platform — Learn Anything Through Games{% elif theme == 'playful' %}The Primer — Choose Your Adventure{% elif theme == 'neural' %}AI Academy — Learn AI by Playing{% else %}Quest Engine — Choose Your Chapter{% endif %}">
   <meta property="og:description" content="{{ packs | length }} chapters · {{ total_challenges }} challenges · Free, open-source educational RPG">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
@@ -22,7 +23,7 @@
 </head>
 <body>
 <header class="site-header">
-  <span class="site-logo">{% if theme == "playful" %}✨ The Primer{% elif theme == "neural" %}🧠 AI Academy{% elif theme == "medieval" %}🐉 Learn Chinese{% elif theme == "unicorn" %}🦄 Quest Engine{% elif theme == "alien" %}👽 Quest Engine{% elif theme == "ocean" %}🌊 Quest Engine{% elif theme == "sunset" %}🌅 Quest Engine{% else %}Quest Engine{% endif %}</span>
+  <span class="site-logo">{% if is_platform %}🎮 Quest Platform{% elif theme == "playful" %}✨ The Primer{% elif theme == "neural" %}🧠 AI Academy{% elif theme == "medieval" %}🐉 Learn Chinese{% elif theme == "unicorn" %}🦄 Quest Engine{% elif theme == "alien" %}👽 Quest Engine{% elif theme == "ocean" %}🌊 Quest Engine{% elif theme == "sunset" %}🌅 Quest Engine{% else %}Quest Engine{% endif %}</span>
   <nav class="header-nav"></nav>
   <div class="header-stats">
     <span class="hub-total-stats">{{ packs | length }} chapters · {{ total_challenges }} challenges</span>
@@ -49,8 +50,8 @@
     </div>
     {% endif %}
     <div class="hub-hero">
-      <h1 class="hub-title">{% if theme == "playful" %}Choose Your Adventure{% elif theme == "neural" %}Choose Your Path{% else %}Choose Your Chapter{% endif %}</h1>
-      <p class="hub-subtitle">{% if theme == "playful" %}Pick a chapter and Puck will guide you!{% elif theme == "neural" %}ARIA will guide you from AI basics to the frontier{% else %}Select a skill domain to begin your training{% endif %}</p>
+      <h1 class="hub-title">{% if is_platform %}Choose Your Course{% elif theme == "playful" %}Choose Your Adventure{% elif theme == "neural" %}Choose Your Path{% else %}Choose Your Chapter{% endif %}</h1>
+      <p class="hub-subtitle">{% if is_platform %}{{ packs | length }} courses across kids education, DevOps, AI, and 3 languages — all free{% elif theme == "playful" %}Pick a chapter and Puck will guide you!{% elif theme == "neural" %}ARIA will guide you from AI basics to the frontier{% else %}Select a skill domain to begin your training{% endif %}</p>
     </div>
     {% if packs | length > 8 %}
     <div style="margin-bottom:1rem;">
