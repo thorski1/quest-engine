@@ -1053,6 +1053,76 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             **s.detailed_stats_context(),
         ))
 
+    @hub.get(f"{prefix}/quest-log", response_class=HTMLResponse)
+    async def quest_log_page(request: Request, _pid: str = pack_id):
+        s = _session(request)
+        engine = s.engine
+
+        # Build log entries from game state
+        log_entries = []
+
+        # Zone completions
+        for zone_id in engine.completed_zones:
+            zone = skill_pack.get_zone(zone_id)
+            name = zone.get("name", zone_id) if zone else zone_id
+            log_entries.append({
+                "type": "zone_complete", "icon": "🏁",
+                "title": f"Zone Complete: {name}",
+                "desc": f"Conquered all challenges in {name}",
+                "xp": sum(c.get("xp", 25) for c in zone.get("challenges", [])) if zone else 0,
+                "time": "completed", "sort": 2,
+            })
+
+        # Achievements
+        from ..engine import BASE_ACHIEVEMENTS
+        all_achs = {**BASE_ACHIEVEMENTS, **skill_pack.achievements}
+        for ach_id in engine.achievements:
+            ach = all_achs.get(ach_id, ("Unknown", ""))
+            log_entries.append({
+                "type": "achievement", "icon": "🏆",
+                "title": f"Achievement: {ach[0]}",
+                "desc": ach[1] if len(ach) > 1 else "",
+                "xp": None, "time": "earned", "sort": 3,
+            })
+
+        # Level milestones
+        level = engine.level
+        if level >= 5:
+            for milestone in [5, 10, 15, 20, 25, 30]:
+                if level >= milestone:
+                    log_entries.append({
+                        "type": "level_up", "icon": "⬆️",
+                        "title": f"Reached Level {milestone}",
+                        "desc": f"Earned enough XP to reach level {milestone}",
+                        "xp": None, "time": f"level {milestone}", "sort": 1,
+                    })
+
+        # Current streak
+        if engine.streak >= 3:
+            log_entries.append({
+                "type": "streak", "icon": "🔥",
+                "title": f"{engine.streak}-Answer Streak!",
+                "desc": "Consecutive correct answers",
+                "xp": None, "time": "active", "sort": 4,
+            })
+
+        # Daily streak
+        if engine.daily_streak >= 3:
+            log_entries.append({
+                "type": "daily", "icon": "📅",
+                "title": f"{engine.daily_streak}-Day Login Streak",
+                "desc": "Consecutive days of playing",
+                "xp": None, "time": "active", "sort": 4,
+            })
+
+        # Sort: most recent/important first
+        log_entries.sort(key=lambda x: x.get("sort", 0), reverse=True)
+
+        return templates.TemplateResponse(request, "quest_log.html", _ctx(
+            request, log_entries=log_entries,
+            achievements=engine.achievements,
+        ))
+
     @hub.get(f"{prefix}/settings", response_class=HTMLResponse)
     async def settings_page(request: Request, _pid: str = pack_id):
         return templates.TemplateResponse(request, "settings.html", _ctx(request))

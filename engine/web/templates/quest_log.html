@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .ql-page { max-width: 650px; margin: 0 auto; }
+  .ql-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .ql-title { font-size: 1.4rem; font-weight: 800; color: var(--text-bright); }
+
+  .ql-stats {
+    display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+  }
+  .ql-stat {
+    flex: 1; min-width: 80px; padding: 0.6rem; background: var(--bg-surface);
+    border: 1px solid var(--border); border-radius: 10px; text-align: center;
+  }
+  .ql-stat-val { font-size: 1.2rem; font-weight: 800; color: var(--text-bright); }
+  .ql-stat-label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; }
+
+  .ql-timeline { position: relative; padding-left: 2rem; }
+  .ql-timeline::before {
+    content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .ql-entry {
+    position: relative; margin-bottom: 1.25rem;
+    padding: 0.75rem 1rem; background: var(--bg-surface);
+    border: 1px solid var(--border); border-radius: 10px;
+    animation: fade-in-up 0.3s ease both;
+  }
+  .ql-entry:nth-child(1) { animation-delay: 0s; }
+  .ql-entry:nth-child(2) { animation-delay: 0.05s; }
+  .ql-entry:nth-child(3) { animation-delay: 0.1s; }
+  .ql-entry:nth-child(4) { animation-delay: 0.15s; }
+  .ql-entry:nth-child(5) { animation-delay: 0.2s; }
+  .ql-dot {
+    position: absolute; left: -2rem; top: 50%; transform: translateY(-50%);
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--primary); background: var(--bg);
+  }
+  .ql-dot-gold { border-color: var(--warn); background: var(--warn); }
+  .ql-dot-purple { border-color: #a855f7; background: #a855f7; }
+  .ql-dot-green { border-color: var(--primary); background: var(--primary); }
+
+  .ql-entry-header { display: flex; align-items: center; gap: 0.5rem; }
+  .ql-entry-icon { font-size: 1.2rem; }
+  .ql-entry-title { font-weight: 700; font-size: 0.85rem; color: var(--text-bright); }
+  .ql-entry-time { font-size: 0.6rem; color: var(--text-dim); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+  .ql-entry-desc { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.25rem; }
+  .ql-entry-xp { font-size: 0.7rem; color: var(--primary); font-weight: 600; margin-top: 0.2rem; }
+
+  .ql-empty { text-align: center; padding: 3rem; color: var(--text-dim); }
+
+  @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ql-page">
+
+  <div class="ql-header">
+    <h1 class="ql-title">📜 Quest Log</h1>
+    <a href="{{ pack_url_prefix }}/" class="btn btn-ghost">Back to Zones</a>
+  </div>
+
+  <div class="ql-stats">
+    <div class="ql-stat">
+      <div class="ql-stat-val" style="color:var(--primary);">{{ total_xp }}</div>
+      <div class="ql-stat-label">Total XP</div>
+    </div>
+    <div class="ql-stat">
+      <div class="ql-stat-val" style="color:var(--warn);">{{ completed_zones }}/{{ total_zones }}</div>
+      <div class="ql-stat-label">Zones</div>
+    </div>
+    <div class="ql-stat">
+      <div class="ql-stat-val" style="color:var(--secondary);">{{ streak }}</div>
+      <div class="ql-stat-label">Streak</div>
+    </div>
+    <div class="ql-stat">
+      <div class="ql-stat-val" style="color:#a855f7;">{{ achievements | length if achievements else 0 }}</div>
+      <div class="ql-stat-label">Badges</div>
+    </div>
+  </div>
+
+  <div class="ql-timeline">
+    {% if log_entries %}
+      {% for entry in log_entries %}
+      <div class="ql-entry">
+        <div class="ql-dot {% if entry.type == 'achievement' %}ql-dot-gold{% elif entry.type == 'zone_complete' %}ql-dot-purple{% elif entry.type == 'level_up' %}ql-dot-green{% endif %}"></div>
+        <div class="ql-entry-header">
+          <span class="ql-entry-icon">{{ entry.icon }}</span>
+          <span class="ql-entry-title">{{ entry.title }}</span>
+          <span class="ql-entry-time">{{ entry.time }}</span>
+        </div>
+        <div class="ql-entry-desc">{{ entry.desc }}</div>
+        {% if entry.xp %}<div class="ql-entry-xp">+{{ entry.xp }} XP</div>{% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="ql-empty">
+        <div style="font-size:3rem;margin-bottom:0.5rem;">📜</div>
+        <p>Your quest log is empty. Start answering challenges to fill it!</p>
+        <a href="{{ pack_url_prefix }}/challenge" class="btn btn-primary" style="margin-top:1rem;">Start Playing →</a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
