@@ -698,18 +698,25 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         if ctype == "live":
             ctype = "text"
 
-        # Motivational message based on performance
-        motivation = ""
-        if s.engine.streak >= 10:
-            motivation = "🔥 UNSTOPPABLE! 10+ streak — double XP!"
-        elif s.engine.streak >= 5:
-            motivation = "⚡ On fire! 5+ streak — 1.5x XP bonus!"
-        elif s.engine.streak >= 3:
-            motivation = "💪 Nice streak! Keep it going for bonus XP!"
-        elif num == total:
-            motivation = "🏁 Last question in this zone!"
-        elif num == 1:
-            motivation = "🚀 First question — let's go!"
+        # Motivational message — uses narrative system if available
+        from .narrative import get_motivation
+        # TODO: load alignment+tone from user profile (defaults for now)
+        _align = "hero"
+        _tone = "epic" if not skill_pack.kids_mode else "funny"
+        motivation = get_motivation(
+            alignment=_align, tone=_tone,
+            streak=s.engine.streak,
+            is_first=(num == 1),
+            is_last=(num == total),
+        )
+        if not motivation:
+            # Fallback
+            if s.engine.streak >= 10:
+                motivation = "🔥 UNSTOPPABLE! 10+ streak — double XP!"
+            elif s.engine.streak >= 5:
+                motivation = "⚡ On fire! 5+ streak — 1.5x XP bonus!"
+            elif s.engine.streak >= 3:
+                motivation = "💪 Nice streak! Keep it going for bonus XP!"
 
         # Shuffle options for anti-cheat (deterministic per user+challenge+date)
         shuffle_map_json = ""
@@ -768,6 +775,15 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         except (ValueError, TypeError):
             elapsed_s = 0.0
         result = s.submit_answer(actual_answer, challenge=challenge, elapsed_s=elapsed_s)
+
+        # Override result message with narrative-aware text
+        from .narrative import get_correct_message, get_wrong_message
+        _align = "hero"
+        _tone = "epic" if not skill_pack.kids_mode else "funny"
+        if result.correct:
+            result.message = get_correct_message(_align, _tone)
+        else:
+            result.message = get_wrong_message(_align, _tone)
 
         # Record attempt to Postgres for analytics
         try:
