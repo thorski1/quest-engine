@@ -4,152 +4,388 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quest Platform — Learn Anything Through Games</title>
-<meta name="description" content="The open-source educational gaming platform. 132 courses, 6,000+ challenges across kids education, DevOps, AI, and 3 languages.">
+<meta name="description" content="The educational gaming platform. {{ total_packs }} courses, {{ total_challenges }} challenges. Free forever.">
+<meta property="og:title" content="Quest Platform">
+<meta property="og:description" content="{{ total_packs }} courses, {{ total_challenges }} challenges across 6 worlds. Free.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/themes.css">
 <style>
-  body { min-height: 100vh; overflow-x: hidden; }
-  .landing { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0e1a; color: #c8d8e8; font-family: 'Nunito', system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
+  a { color: #00e5a0; text-decoration: none; }
 
-  /* Hero */
-  .hero { text-align: center; padding: 4rem 0 2.5rem; position: relative; }
-  .hero::before {
-    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,229,160,0.08) 0%, transparent 70%);
-    pointer-events: none; z-index: 0;
+  /* ── SPLASH SCREEN ─────────────────────────────────────────── */
+  #splash {
+    position: fixed; inset: 0; z-index: 100; background: #0a0e1a;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 0.8s ease, visibility 0.8s;
   }
-  .hero-logo { font-size: 4rem; position: relative; z-index: 1; }
-  .hero h1 { font-size: 2.5rem; font-weight: 800; color: var(--text-bright); line-height: 1.2; position: relative; z-index: 1; }
-  .hero h1 span { background: linear-gradient(135deg, #00e5a0, #00b4d8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .hero-sub { color: var(--text-dim); font-size: 1.05rem; margin-top: 0.5rem; max-width: 500px; margin-left: auto; margin-right: auto; position: relative; z-index: 1; }
-  .hero-cta { margin-top: 1.5rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
-  .hero-cta .btn-primary { font-size: 1.1rem; padding: 0.8rem 2rem; }
-  .hero-cta .btn-ghost { font-size: 0.9rem; padding: 0.6rem 1.5rem; }
+  #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
-  /* Stats */
-  .stats-row { display: flex; justify-content: center; gap: 2.5rem; margin: 2rem 0 3rem; flex-wrap: wrap; position: relative; z-index: 1; }
-  .stat { text-align: center; }
-  .stat-val { font-size: 2rem; font-weight: 800; line-height: 1.1; }
-  .stat-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
-
-  /* Realms */
-  .realms { margin-bottom: 3rem; }
-  .realms-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 1rem; text-align: center; }
-  .realm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.85rem; }
-  .realm-card {
-    padding: 1.5rem; border-radius: 16px; text-decoration: none; color: #fff;
-    transition: transform 0.15s, box-shadow 0.15s; position: relative; overflow: hidden;
+  .splash-logo {
+    font-size: 5rem; animation: splash-pulse 2s ease-in-out infinite;
   }
-  .realm-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); color: #fff; }
-  .realm-card-icon { font-size: 2rem; }
-  .realm-card-name { font-size: 1.15rem; font-weight: 800; margin-top: 0.3rem; }
-  .realm-card-desc { font-size: 0.8rem; opacity: 0.85; margin-top: 0.2rem; }
-  .realm-card-meta { font-size: 0.7rem; opacity: 0.6; margin-top: 0.5rem; font-family: 'JetBrains Mono', monospace; }
+  .splash-title {
+    font-size: 2.5rem; font-weight: 800; margin-top: 0.5rem;
+    background: linear-gradient(135deg, #00e5a0, #00b4d8, #a855f7);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; letter-spacing: -0.02em;
+  }
+  .splash-sub {
+    color: rgba(200,216,232,0.4); font-size: 0.85rem; margin-top: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .splash-bar {
+    width: 200px; height: 3px; background: rgba(255,255,255,0.1);
+    border-radius: 2px; margin-top: 2rem; overflow: hidden;
+  }
+  .splash-fill {
+    height: 100%; width: 0%; background: linear-gradient(90deg, #00e5a0, #00b4d8);
+    border-radius: 2px; animation: splash-load 2.5s ease forwards;
+  }
+  @keyframes splash-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  @keyframes splash-load { 0% { width: 0%; } 100% { width: 100%; } }
 
-  .rc-kids { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
-  .rc-devops { background: linear-gradient(135deg, #00b894, #00cec9); }
-  .rc-ai { background: linear-gradient(135deg, #a855f7, #ec4899); }
-  .rc-chinese { background: linear-gradient(135deg, #e17055, #fdcb6e); }
-  .rc-spanish { background: linear-gradient(135deg, #f39c12, #e74c3c); }
-  .rc-japanese { background: linear-gradient(135deg, #0984e3, #6c5ce7); }
+  /* ── PARTICLES ─────────────────────────────────────────────── */
+  .particles {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .particle {
+    position: absolute; width: 2px; height: 2px; background: rgba(0,229,160,0.3);
+    border-radius: 50%; animation: float-up linear infinite;
+  }
+  @keyframes float-up {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+  }
 
-  /* Features */
-  .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin: 2rem 0; }
-  .feature { padding: 1rem; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; text-align: center; }
-  .feature-icon { font-size: 1.5rem; }
-  .feature-name { font-weight: 700; color: var(--text-bright); font-size: 0.85rem; margin-top: 0.3rem; }
-  .feature-desc { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.15rem; }
+  /* ── INTRO SCREEN ──────────────────────────────────────────── */
+  #intro {
+    position: relative; z-index: 1; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 2rem; text-align: center; opacity: 0;
+    animation: fade-in 1s ease 3s forwards;
+  }
+  .intro-text {
+    max-width: 600px; font-size: 1.1rem; line-height: 2;
+    color: rgba(200,216,232,0.7); font-family: 'JetBrains Mono', monospace;
+    min-height: 120px;
+  }
+  .intro-cursor { display: inline-block; width: 2px; height: 1.1em; background: #00e5a0; animation: blink 0.8s infinite; vertical-align: text-bottom; margin-left: 2px; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+  @keyframes fade-in { to { opacity: 1; } }
 
-  .footer { text-align: center; padding: 2rem 0; color: var(--text-dim); font-size: 0.75rem; border-top: 1px solid var(--border); }
+  .enter-btn {
+    display: inline-block; margin-top: 2rem; padding: 0.9rem 2.5rem;
+    font-size: 1.1rem; font-weight: 700; color: #0a0e1a;
+    background: linear-gradient(135deg, #00e5a0, #00b4d8);
+    border: none; border-radius: 12px; cursor: pointer;
+    font-family: 'Nunito', sans-serif; letter-spacing: 0.02em;
+    transition: transform 0.15s, box-shadow 0.15s;
+    opacity: 0; animation: fade-in 0.6s ease 7s forwards;
+  }
+  .enter-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,229,160,0.3); }
+
+  .skip-intro {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 50;
+    font-size: 0.75rem; color: rgba(200,216,232,0.3); cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; border: none; background: none;
+    transition: color 0.2s;
+  }
+  .skip-intro:hover { color: rgba(200,216,232,0.6); }
+
+  /* ── MAIN CONTENT ──────────────────────────────────────────── */
+  #main-content {
+    display: none; position: relative; z-index: 1;
+    max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem;
+  }
+  #main-content.visible { display: block; animation: fade-in 0.6s ease; }
+
+  .mc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .mc-logo { font-size: 1.2rem; font-weight: 800; }
+  .mc-logo span { color: #00e5a0; }
+  .mc-nav { display: flex; gap: 1rem; align-items: center; }
+  .mc-nav a { font-size: 0.8rem; color: rgba(200,216,232,0.5); transition: color 0.15s; }
+  .mc-nav a:hover { color: #00e5a0; }
+
+  .mc-hero { text-align: center; padding: 2rem 0 2.5rem; }
+  .mc-hero h1 { font-size: 2rem; font-weight: 800; color: #e8f4ff; }
+  .mc-hero h1 span { color: #00e5a0; }
+  .mc-hero p { color: rgba(200,216,232,0.5); margin-top: 0.3rem; }
+
+  .mc-stats {
+    display: flex; justify-content: center; gap: 2.5rem; margin: 1.5rem 0 2.5rem; flex-wrap: wrap;
+  }
+  .mc-stat { text-align: center; }
+  .mc-stat-val { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+  .mc-stat-label { font-size: 0.6rem; color: rgba(200,216,232,0.4); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* ── REALM CARDS ───────────────────────────────────────────── */
+  .realms { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+  .realm {
+    position: relative; padding: 1.5rem; border-radius: 16px; overflow: hidden;
+    text-decoration: none; color: #fff; transition: transform 0.2s, box-shadow 0.2s;
+    min-height: 160px; display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .realm:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+  .realm::before {
+    content: ''; position: absolute; inset: 0; background: inherit;
+    filter: brightness(0.7); z-index: 0;
+  }
+  .realm > * { position: relative; z-index: 1; }
+  .realm-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+  .realm-name { font-size: 1.2rem; font-weight: 800; }
+  .realm-desc { font-size: 0.78rem; opacity: 0.85; margin-top: 0.15rem; }
+  .realm-meta { font-size: 0.65rem; opacity: 0.5; margin-top: 0.5rem; font-family: 'JetBrains Mono', monospace; }
+
+  .r-kids { background: linear-gradient(135deg, #6c5ce7, #a29bfe, #fd79a8); }
+  .r-devops { background: linear-gradient(135deg, #00b894, #00cec9, #0984e3); }
+  .r-ai { background: linear-gradient(135deg, #a855f7, #ec4899, #f472b6); }
+  .r-chinese { background: linear-gradient(135deg, #e17055, #d63031, #fdcb6e); }
+  .r-spanish { background: linear-gradient(135deg, #f39c12, #e74c3c, #fd79a8); }
+  .r-japanese { background: linear-gradient(135deg, #0984e3, #00b4d8, #6c5ce7); }
+
+  /* ── FEATURES ──────────────────────────────────────────────── */
+  .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; margin: 2rem 0; }
+  .feat {
+    padding: 0.75rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; text-align: center;
+  }
+  .feat-icon { font-size: 1.3rem; }
+  .feat-name { font-weight: 700; font-size: 0.75rem; color: #e8f4ff; margin-top: 0.2rem; }
+  .feat-desc { font-size: 0.6rem; color: rgba(200,216,232,0.4); margin-top: 0.1rem; }
+
+  .mc-footer {
+    text-align: center; padding: 2rem 0; color: rgba(200,216,232,0.3); font-size: 0.7rem;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+
+  {% if current_user %}.logged-in-bar {
+    display: flex; align-items: center; justify-content: center; gap: 1rem;
+    padding: 0.6rem 1.2rem; background: rgba(0,229,160,0.06); border: 1px solid rgba(0,229,160,0.15);
+    border-radius: 12px; margin-bottom: 1.5rem;
+  }
+  .logged-in-bar span { font-weight: 700; color: #e8f4ff; }
+  .logged-in-bar .btn { font-size: 0.75rem; padding: 0.3rem 0.8rem; }{% endif %}
 </style>
 </head>
 <body>
-<div class="landing">
 
-  <div class="hero">
-    <div class="hero-logo">🎮</div>
-    <h1>Learn Anything<br>Through <span>Games</span></h1>
-    <p class="hero-sub">{{ total_challenges }} challenges across {{ realm_count }} worlds. XP, levels, achievements, AI tutor. Free forever.</p>
+<!-- ═══ SPLASH SCREEN ═══════════════════════════════════════════════ -->
+<div id="splash">
+  <div class="splash-logo">🎮</div>
+  <div class="splash-title">Quest Platform</div>
+  <div class="splash-sub">initializing {{ total_packs }} courses...</div>
+  <div class="splash-bar"><div class="splash-fill"></div></div>
+</div>
 
-    <div class="hero-cta">
+<!-- ═══ PARTICLES ═══════════════════════════════════════════════════ -->
+<div class="particles" id="particles"></div>
+
+<!-- ═══ SKIP BUTTON ═════════════════════════════════════════════════ -->
+<button class="skip-intro" onclick="skipToMain()">skip intro ›</button>
+
+<!-- ═══ INTRO / TYPEWRITER ══════════════════════════════════════════ -->
+<div id="intro">
+  <div class="intro-text" id="intro-text"></div>
+  <button class="enter-btn" onclick="showMain()">Enter the Platform →</button>
+</div>
+
+<!-- ═══ MAIN CONTENT ════════════════════════════════════════════════ -->
+<div id="main-content">
+
+  <div class="mc-header">
+    <div class="mc-logo">🎮 Quest <span>Platform</span></div>
+    <nav class="mc-nav">
       {% if current_user %}
-        <a href="/{{ first_pack_id }}/" class="btn btn-primary">Continue Playing →</a>
-        <a href="/browse" class="btn btn-ghost">Browse All Courses</a>
+      <span style="color:rgba(200,216,232,0.6);font-size:0.75rem;">{{ current_user.display_name }}</span>
       {% else %}
-        <a href="/{{ first_pack_id }}/auth/register" class="btn btn-primary">Create Your Character →</a>
-        <a href="/{{ first_pack_id }}/auth/login" class="btn btn-ghost">Sign In</a>
+      <a href="/{{ first_pack_id }}/auth/login">Sign In</a>
+      <a href="/{{ first_pack_id }}/auth/register" style="color:#00e5a0;font-weight:700;">Create Account</a>
       {% endif %}
-    </div>
+    </nav>
+  </div>
 
-    <div class="stats-row">
-      <div class="stat"><div class="stat-val" style="color:#00e5a0">{{ total_packs }}</div><div class="stat-label">Courses</div></div>
-      <div class="stat"><div class="stat-val" style="color:#ffa500">{{ total_challenges }}</div><div class="stat-label">Challenges</div></div>
-      <div class="stat"><div class="stat-val" style="color:#00b4d8">{{ realm_count }}</div><div class="stat-label">Worlds</div></div>
-      <div class="stat"><div class="stat-val" style="color:#ff3c78">Free</div><div class="stat-label">Forever</div></div>
-    </div>
+  {% if current_user %}
+  <div class="logged-in-bar">
+    <span>Welcome back, {{ current_user.display_name }}!</span>
+    <span style="font-size:0.75rem;color:rgba(200,216,232,0.5);">{{ user_chapters_started }} courses started · {{ user_total_xp }} XP</span>
+    {% for pack in packs if pack.has_progress and pack.completed_zones < pack.total_zones %}
+      {% if loop.first %}
+      <a href="/{{ pack.id }}/challenge" class="btn" style="background:#00e5a0;color:#0a0e1a;border-radius:8px;font-weight:700;">Continue Playing →</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="mc-hero">
+    <h1>Choose Your <span>World</span></h1>
+    <p>{{ total_packs }} courses · {{ total_challenges }} challenges · 6 worlds · Free forever</p>
+  </div>
+
+  <div class="mc-stats">
+    <div class="mc-stat"><div class="mc-stat-val" style="color:#00e5a0">{{ total_packs }}</div><div class="mc-stat-label">Courses</div></div>
+    <div class="mc-stat"><div class="mc-stat-val" style="color:#ffa500">{{ total_challenges }}</div><div class="mc-stat-label">Challenges</div></div>
+    <div class="mc-stat"><div class="mc-stat-val" style="color:#00b4d8">6</div><div class="mc-stat-label">Worlds</div></div>
+    <div class="mc-stat"><div class="mc-stat-val" style="color:#a855f7">Free</div><div class="mc-stat-label">Forever</div></div>
   </div>
 
   <div class="realms">
-    <div class="realms-title">Choose Your World</div>
-    <div class="realm-cards">
-      <a href="/{{ kids_first }}/" class="realm-card rc-kids">
-        <div class="realm-card-icon">✨</div>
-        <div class="realm-card-name">The Primer</div>
-        <div class="realm-card-desc">A magical adventure for kids ages 5-12. Guided by Puck.</div>
-        <div class="realm-card-meta">{{ kids_count }} courses · {{ kids_challenges }} challenges</div>
-      </a>
-      <a href="/{{ devops_first }}/" class="realm-card rc-devops">
-        <div class="realm-card-icon">⚡</div>
-        <div class="realm-card-name">NEXUS Quest</div>
-        <div class="realm-card-desc">Master DevOps through a cyberpunk RPG. Guided by CIPHER.</div>
-        <div class="realm-card-meta">{{ devops_count }} courses · {{ devops_challenges }} challenges</div>
-      </a>
-      <a href="/{{ ai_first }}/" class="realm-card rc-ai">
-        <div class="realm-card-icon">🧠</div>
-        <div class="realm-card-name">AI Academy</div>
-        <div class="realm-card-desc">Learn AI from basics to building agents. Guided by ARIA.</div>
-        <div class="realm-card-meta">{{ ai_count }} courses · {{ ai_challenges }} challenges</div>
-      </a>
-      <a href="/{{ chinese_first }}/" class="realm-card rc-chinese">
-        <div class="realm-card-icon">🐉</div>
-        <div class="realm-card-name">Learn Chinese</div>
-        <div class="realm-card-desc">Mandarin from pinyin to conversation. Guided by 龙龙.</div>
-        <div class="realm-card-meta">{{ chinese_count }} courses</div>
-      </a>
-      <a href="/{{ spanish_first }}/" class="realm-card rc-spanish">
-        <div class="realm-card-icon">🌅</div>
-        <div class="realm-card-name">Learn Spanish</div>
-        <div class="realm-card-desc">Spanish from basics to restaurants. Guided by Sofia.</div>
-        <div class="realm-card-meta">{{ spanish_count }} courses</div>
-      </a>
-      <a href="/{{ japanese_first }}/" class="realm-card rc-japanese">
-        <div class="realm-card-icon">🌊</div>
-        <div class="realm-card-name">Learn Japanese</div>
-        <div class="realm-card-desc">Japanese from hiragana to shopping. Guided by Umi.</div>
-        <div class="realm-card-meta">{{ japanese_count }} courses</div>
-      </a>
-    </div>
+    <a href="/{{ kids_first }}/" class="realm r-kids">
+      <div class="realm-icon">✨</div>
+      <div class="realm-name">The Primer</div>
+      <div class="realm-desc">A magical adventure for kids ages 5-12</div>
+      <div class="realm-meta">{{ kids_count }} courses · Guided by Puck</div>
+    </a>
+    <a href="/{{ devops_first }}/" class="realm r-devops">
+      <div class="realm-icon">⚡</div>
+      <div class="realm-name">NEXUS Quest</div>
+      <div class="realm-desc">Master DevOps through a cyberpunk RPG</div>
+      <div class="realm-meta">{{ devops_count }} courses · Guided by CIPHER</div>
+    </a>
+    <a href="/{{ ai_first }}/" class="realm r-ai">
+      <div class="realm-icon">🧠</div>
+      <div class="realm-name">AI Academy</div>
+      <div class="realm-desc">Learn AI from basics to building agents</div>
+      <div class="realm-meta">{{ ai_count }} courses · Guided by ARIA</div>
+    </a>
+    <a href="/{{ chinese_first }}/" class="realm r-chinese">
+      <div class="realm-icon">🐉</div>
+      <div class="realm-name">Learn Chinese</div>
+      <div class="realm-desc">Mandarin from pinyin to conversation</div>
+      <div class="realm-meta">{{ chinese_count }} courses · Guided by 龙龙</div>
+    </a>
+    <a href="/{{ spanish_first }}/" class="realm r-spanish">
+      <div class="realm-icon">🌅</div>
+      <div class="realm-name">Learn Spanish</div>
+      <div class="realm-desc">Spanish from basics to fluency</div>
+      <div class="realm-meta">{{ spanish_count }} courses · Guided by Sofia</div>
+    </a>
+    <a href="/{{ japanese_first }}/" class="realm r-japanese">
+      <div class="realm-icon">🌊</div>
+      <div class="realm-name">Learn Japanese</div>
+      <div class="realm-desc">Japanese from hiragana to conversation</div>
+      <div class="realm-meta">{{ japanese_count }} courses · Guided by Umi</div>
+    </a>
   </div>
 
   <div class="features">
-    <div class="feature"><div class="feature-icon">🏆</div><div class="feature-name">XP & Levels</div><div class="feature-desc">Earn XP, level up, unlock achievements</div></div>
-    <div class="feature"><div class="feature-icon">🤖</div><div class="feature-name">AI Tutor</div><div class="feature-desc">Claude explains wrong answers</div></div>
-    <div class="feature"><div class="feature-icon">🔥</div><div class="feature-name">Streaks</div><div class="feature-desc">Combo multipliers for fast answers</div></div>
-    <div class="feature"><div class="feature-icon">🛡️</div><div class="feature-name">Anti-Cheat</div><div class="feature-desc">Shuffled options, speed bonuses</div></div>
-    <div class="feature"><div class="feature-icon">🎨</div><div class="feature-name">8 Themes</div><div class="feature-desc">Cyberpunk to unicorn</div></div>
-    <div class="feature"><div class="feature-icon">📱</div><div class="feature-name">Works Everywhere</div><div class="feature-desc">PWA, mobile-friendly, offline</div></div>
+    <div class="feat"><div class="feat-icon">⚔️</div><div class="feat-name">RPG System</div><div class="feat-desc">Classes, alignment, gear</div></div>
+    <div class="feat"><div class="feat-icon">🤖</div><div class="feat-name">AI Tutor</div><div class="feat-desc">Claude explains answers</div></div>
+    <div class="feat"><div class="feat-icon">🔥</div><div class="feat-name">Streaks</div><div class="feat-desc">Combo XP multipliers</div></div>
+    <div class="feat"><div class="feat-icon">🛡️</div><div class="feat-name">Anti-Cheat</div><div class="feat-desc">Shuffled options</div></div>
+    <div class="feat"><div class="feat-icon">🎨</div><div class="feat-name">8 Themes</div><div class="feat-desc">Cyberpunk to Unicorn</div></div>
+    <div class="feat"><div class="feat-icon">📱</div><div class="feat-name">PWA</div><div class="feat-desc">Install on any device</div></div>
   </div>
 
-  <div class="footer">
-    <a href="https://github.com/thorski1/quest-engine" style="color:var(--primary);">Quest Engine</a> · Open Source · MIT License
+  <div class="mc-footer">
+    <a href="https://github.com/thorski1/quest-engine">Quest Engine</a> · Open Source · MIT License
   </div>
-
 </div>
+
 <script>
-var t = localStorage.getItem('quest-theme-override');
-if (t) document.documentElement.dataset.theme = t;
+// ── Particles ──────────────────────────────────────────────────
+(function() {
+  var pc = document.getElementById('particles');
+  for (var i = 0; i < 40; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (4 + Math.random() * 8) + 's';
+    p.style.animationDelay = Math.random() * 5 + 's';
+    p.style.width = p.style.height = (1 + Math.random() * 3) + 'px';
+    p.style.background = ['rgba(0,229,160,0.3)','rgba(0,180,216,0.3)','rgba(168,85,247,0.2)'][Math.floor(Math.random()*3)];
+    pc.appendChild(p);
+  }
+})();
+
+// ── Splash → Intro transition ──────────────────────────────────
+var splashDone = false;
+setTimeout(function() {
+  document.getElementById('splash').classList.add('hidden');
+  splashDone = true;
+  startTypewriter();
+}, 2800);
+
+// ── Typewriter intro ───────────────────────────────────────────
+var introLines = [
+  "Welcome, traveler.",
+  "",
+  "Six worlds await you.",
+  "Each one a journey of knowledge.",
+  "Each challenge a step forward.",
+  "",
+  "Choose your class. Pick your path.",
+  "Hero, Shadow, or Trickster — the choice is yours.",
+  "",
+  "{{ total_challenges }} challenges. {{ total_packs }} courses. Zero cost.",
+  "",
+  "Your quest begins now."
+];
+
+function startTypewriter() {
+  var el = document.getElementById('intro-text');
+  var lineIdx = 0, charIdx = 0;
+  var cursor = '<span class="intro-cursor"></span>';
+
+  function type() {
+    if (lineIdx >= introLines.length) {
+      el.innerHTML = el.innerHTML.replace(cursor, '') + cursor;
+      return;
+    }
+    var line = introLines[lineIdx];
+    if (line === '') {
+      el.innerHTML = el.innerHTML.replace(cursor, '') + '<br>' + cursor;
+      lineIdx++;
+      setTimeout(type, 400);
+      return;
+    }
+    if (charIdx < line.length) {
+      var current = el.innerHTML.replace(cursor, '');
+      current += line[charIdx];
+      el.innerHTML = current + cursor;
+      charIdx++;
+      setTimeout(type, 35);
+    } else {
+      el.innerHTML = el.innerHTML.replace(cursor, '') + '<br>' + cursor;
+      lineIdx++;
+      charIdx = 0;
+      setTimeout(type, 200);
+    }
+  }
+  type();
+}
+
+// ── Skip / Enter ───────────────────────────────────────────────
+function skipToMain() {
+  if (!splashDone) document.getElementById('splash').classList.add('hidden');
+  document.getElementById('intro').style.display = 'none';
+  document.querySelector('.skip-intro').style.display = 'none';
+  document.getElementById('main-content').classList.add('visible');
+  sessionStorage.setItem('quest-intro-seen', '1');
+}
+
+function showMain() {
+  document.getElementById('intro').style.display = 'none';
+  document.querySelector('.skip-intro').style.display = 'none';
+  document.getElementById('main-content').classList.add('visible');
+  sessionStorage.setItem('quest-intro-seen', '1');
+}
+
+// Skip intro if already seen this session
+if (sessionStorage.getItem('quest-intro-seen')) {
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('intro').style.display = 'none';
+  document.querySelector('.skip-intro').style.display = 'none';
+  document.getElementById('main-content').classList.add('visible');
+}
 </script>
 </body>
 </html>
