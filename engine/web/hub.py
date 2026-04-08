@@ -205,28 +205,50 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
                 if cat not in cat_first:
                     cat_first[cat] = p.id
 
+            # Build dynamic realm list
+            realm_meta = {
+                "Kids (Ages 5-12)": {"icon": "✨", "css": "r-kids", "name": "The Primer", "desc": "A magical adventure for kids ages 5-12", "guide": "Puck"},
+                "DevOps & Engineering": {"icon": "⚡", "css": "r-devops", "name": "NEXUS Quest", "desc": "Master DevOps through a cyberpunk RPG", "guide": "CIPHER"},
+                "AI & Machine Learning": {"icon": "🧠", "css": "r-ai", "name": "AI Academy", "desc": "Learn AI from basics to building agents", "guide": "ARIA"},
+                "Learn Chinese": {"icon": "🐉", "css": "r-chinese", "name": "Learn Chinese", "desc": "Mandarin from pinyin to conversation", "guide": "龙龙"},
+                "Learn Spanish": {"icon": "🌅", "css": "r-spanish", "name": "Learn Spanish", "desc": "Spanish from basics to fluency", "guide": "Sofia"},
+                "Learn Japanese": {"icon": "🌊", "css": "r-japanese", "name": "Learn Japanese", "desc": "Japanese from hiragana to conversation", "guide": "Umi"},
+                "Learn Korean": {"icon": "🇰🇷", "css": "r-korean", "name": "Learn Korean", "desc": "Korean from Hangul to conversation", "guide": "하나"},
+                "Learn French": {"icon": "🇫🇷", "css": "r-french", "name": "Learn French", "desc": "French from basics to fluency", "guide": "Marie"},
+                "Learn German": {"icon": "🇩🇪", "css": "r-german", "name": "Learn German", "desc": "German from basics to conversation", "guide": "Hans"},
+                "Learn Italian": {"icon": "🇮🇹", "css": "r-italian", "name": "Learn Italian", "desc": "Italian from basics to fluency", "guide": "Marco"},
+                "Cybersecurity": {"icon": "🔐", "css": "r-cyber", "name": "Cybersecurity Academy", "desc": "Defend networks, hack ethically", "guide": "CIPHER"},
+                "Data Science": {"icon": "📊", "css": "r-data", "name": "Data Science Quest", "desc": "Statistics, pandas, visualization", "guide": "ARIA"},
+                "Web Development": {"icon": "🌐", "css": "r-webdev", "name": "Web Dev Quest", "desc": "HTML, CSS, JavaScript, React", "guide": "PIXEL"},
+                "Finance": {"icon": "💰", "css": "r-finance", "name": "Finance Quest", "desc": "Personal finance, investing, crypto", "guide": "SAGE"},
+                "Psychology": {"icon": "🧠", "css": "r-psych", "name": "Psychology 101", "desc": "Understand the human mind", "guide": "ARIA"},
+                "Cooking": {"icon": "👨‍🍳", "css": "r-cooking", "name": "Cooking Academy", "desc": "Kitchen skills, world cuisines, baking", "guide": "Chef"},
+            }
+            realms = []
+            for cat_name in cat_counts:
+                meta = realm_meta.get(cat_name, {"icon": "📚", "css": "r-kids", "name": cat_name, "desc": "", "guide": "Guide"})
+                realms.append({
+                    "name": meta["name"],
+                    "icon": meta["icon"],
+                    "css": meta["css"],
+                    "desc": meta["desc"],
+                    "guide": meta["guide"],
+                    "count": cat_counts[cat_name],
+                    "challenges": cat_challenges.get(cat_name, 0),
+                    "first_pack": cat_first[cat_name],
+                })
+
             return templates.TemplateResponse(request, "landing.html", {
                 "request": request,
                 "total_packs": len(skill_packs),
                 "total_challenges": total_challenges,
-                "realm_count": len(set(p.category or "Other" for p in skill_packs)),
+                "realm_count": len(realms),
+                "realms": realms,
                 "current_user": current_user,
                 "first_pack_id": skill_packs[0].id,
-                "kids_first": cat_first.get("Kids (Ages 5-12)", "letters"),
-                "kids_count": cat_counts.get("Kids (Ages 5-12)", 0),
-                "kids_challenges": cat_challenges.get("Kids (Ages 5-12)", 0),
-                "devops_first": cat_first.get("DevOps & Engineering", "bash"),
-                "devops_count": cat_counts.get("DevOps & Engineering", 0),
-                "devops_challenges": cat_challenges.get("DevOps & Engineering", 0),
-                "ai_first": cat_first.get("AI & Machine Learning", "ai_basics"),
-                "ai_count": cat_counts.get("AI & Machine Learning", 0),
-                "ai_challenges": cat_challenges.get("AI & Machine Learning", 0),
-                "chinese_first": cat_first.get("Learn Chinese", "pinyin"),
-                "chinese_count": cat_counts.get("Learn Chinese", 0),
-                "spanish_first": cat_first.get("Learn Spanish", "basics"),
-                "spanish_count": cat_counts.get("Learn Spanish", 0),
-                "japanese_first": cat_first.get("Learn Japanese", "hiragana"),
-                "japanese_count": cat_counts.get("Learn Japanese", 0),
+                "user_chapters_started": user_chapters_started,
+                "user_total_xp": user_total_xp,
+                "packs": pack_cards,
             })
 
         # Single-game mode: show hub grid

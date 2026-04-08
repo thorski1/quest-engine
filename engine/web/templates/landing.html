@@ -151,6 +151,16 @@
   .r-chinese { background: linear-gradient(135deg, #e17055, #d63031, #fdcb6e); }
   .r-spanish { background: linear-gradient(135deg, #f39c12, #e74c3c, #fd79a8); }
   .r-japanese { background: linear-gradient(135deg, #0984e3, #00b4d8, #6c5ce7); }
+  .r-korean { background: linear-gradient(135deg, #6366f1, #818cf8, #a5b4fc); }
+  .r-french { background: linear-gradient(135deg, #c084fc, #e879f9, #f0abfc); }
+  .r-german { background: linear-gradient(135deg, #78716c, #a8a29e, #fbbf24); }
+  .r-italian { background: linear-gradient(135deg, #16a34a, #f0fdf4, #dc2626); }
+  .r-cyber { background: linear-gradient(135deg, #00ff41, #0a3a0a, #00cc33); }
+  .r-data { background: linear-gradient(135deg, #3b82f6, #8b5cf6, #06b6d4); }
+  .r-webdev { background: linear-gradient(135deg, #f97316, #eab308, #84cc16); }
+  .r-finance { background: linear-gradient(135deg, #d4a030, #fbbf24, #92400e); }
+  .r-psych { background: linear-gradient(135deg, #7c6cf0, #c084fc, #e879f9); }
+  .r-cooking { background: linear-gradient(135deg, #ea580c, #dc2626, #fbbf24); }
 
   /* ── FEATURES ──────────────────────────────────────────────── */
   .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; margin: 2rem 0; }
@@ -238,42 +248,14 @@
   </div>
 
   <div class="realms">
-    <a href="/{{ kids_first }}/" class="realm r-kids">
-      <div class="realm-icon">✨</div>
-      <div class="realm-name">The Primer</div>
-      <div class="realm-desc">A magical adventure for kids ages 5-12</div>
-      <div class="realm-meta">{{ kids_count }} courses · Guided by Puck</div>
+    {% for realm in realms %}
+    <a href="/{{ realm.first_pack }}/" class="realm {{ realm.css }}">
+      <div class="realm-icon">{{ realm.icon }}</div>
+      <div class="realm-name">{{ realm.name }}</div>
+      <div class="realm-desc">{{ realm.desc }}</div>
+      <div class="realm-meta">{{ realm.count }} courses{% if realm.challenges %} · {{ realm.challenges }} challenges{% endif %} · Guided by {{ realm.guide }}</div>
     </a>
-    <a href="/{{ devops_first }}/" class="realm r-devops">
-      <div class="realm-icon">⚡</div>
-      <div class="realm-name">NEXUS Quest</div>
-      <div class="realm-desc">Master DevOps through a cyberpunk RPG</div>
-      <div class="realm-meta">{{ devops_count }} courses · Guided by CIPHER</div>
-    </a>
-    <a href="/{{ ai_first }}/" class="realm r-ai">
-      <div class="realm-icon">🧠</div>
-      <div class="realm-name">AI Academy</div>
-      <div class="realm-desc">Learn AI from basics to building agents</div>
-      <div class="realm-meta">{{ ai_count }} courses · Guided by ARIA</div>
-    </a>
-    <a href="/{{ chinese_first }}/" class="realm r-chinese">
-      <div class="realm-icon">🐉</div>
-      <div class="realm-name">Learn Chinese</div>
-      <div class="realm-desc">Mandarin from pinyin to conversation</div>
-      <div class="realm-meta">{{ chinese_count }} courses · Guided by 龙龙</div>
-    </a>
-    <a href="/{{ spanish_first }}/" class="realm r-spanish">
-      <div class="realm-icon">🌅</div>
-      <div class="realm-name">Learn Spanish</div>
-      <div class="realm-desc">Spanish from basics to fluency</div>
-      <div class="realm-meta">{{ spanish_count }} courses · Guided by Sofia</div>
-    </a>
-    <a href="/{{ japanese_first }}/" class="realm r-japanese">
-      <div class="realm-icon">🌊</div>
-      <div class="realm-name">Learn Japanese</div>
-      <div class="realm-desc">Japanese from hiragana to conversation</div>
-      <div class="realm-meta">{{ japanese_count }} courses · Guided by Umi</div>
-    </a>
+    {% endfor %}
   </div>
 
   <div class="features">
