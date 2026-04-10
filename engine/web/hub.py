@@ -434,6 +434,19 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         except Exception:
             return Response(status_code=204)
 
+    # ── 3D Avatar generation endpoint ──────────────────────────────────────
+    @hub.get("/api/generate-avatar")
+    async def generate_3d_avatar(request: Request, prompt: str = "", style: str = "fantasy"):
+        """Generate a 3D avatar from a text prompt using TRELLIS."""
+        from .trellis_3d import generate_avatar_from_prompt, is_available
+        if not is_available():
+            return Response(
+                content=json.dumps({"ok": False, "error": "3D generation not configured"}),
+                media_type="application/json"
+            )
+        result = generate_avatar_from_prompt(prompt, style)
+        return Response(content=json.dumps(result), media_type="application/json")
+
     # ── AI Tutor endpoint ──────────────────────────────────────────────────
     @hub.get("/api/explain")
     async def ai_explain(request: Request, question: str = "", answer: str = ""):
@@ -1090,6 +1103,20 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             earned_achievements=s.engine.achievements,
             **s.detailed_stats_context(),
         ))
+
+    @hub.get(f"{prefix}/avatar", response_class=HTMLResponse)
+    async def avatar_3d_page(request: Request, _pid: str = pack_id):
+        from .trellis_3d import get_preset_avatars, is_available
+        return templates.TemplateResponse(request, "avatar_3d.html", _ctx(
+            request,
+            presets=get_preset_avatars(),
+            trellis_available=is_available(),
+        ))
+
+    @hub.post(f"{prefix}/avatar/save", response_class=HTMLResponse)
+    async def save_avatar(request: Request, avatar_id: str = Form(default=""), avatar_url: str = Form(default=""), _pid: str = pack_id):
+        # TODO: persist to user profile
+        return RedirectResponse(f"{prefix}/profile", status_code=303)
 
     @hub.get(f"{prefix}/quest-log", response_class=HTMLResponse)
     async def quest_log_page(request: Request, _pid: str = pack_id):

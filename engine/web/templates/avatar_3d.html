@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<style>
+  .avatar-page { max-width: 700px; margin: 0 auto; }
+  .avatar-title { font-size: 1.5rem; font-weight: 800; color: var(--text-bright); text-align: center; margin-bottom: 0.5rem; }
+  .avatar-sub { color: var(--text-dim); text-align: center; margin-bottom: 1.5rem; }
+
+  .avatar-viewer {
+    width: 100%; height: 400px; background: var(--bg-surface);
+    border: 2px solid var(--border); border-radius: 16px;
+    margin-bottom: 1rem; overflow: hidden;
+  }
+  model-viewer { width: 100%; height: 100%; }
+
+  .preset-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem; margin-bottom: 1.5rem;
+  }
+  .preset-card {
+    padding: 1rem; background: var(--bg-surface); border: 2px solid var(--border);
+    border-radius: 12px; cursor: pointer; text-align: center;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .preset-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+  .preset-card.selected { border-color: var(--primary); box-shadow: 0 0 16px rgba(0,229,160,0.25); }
+  .preset-emoji { font-size: 2.5rem; }
+  .preset-name { font-weight: 700; font-size: 0.85rem; color: var(--text-bright); margin-top: 0.2rem; }
+  .preset-desc { font-size: 0.65rem; color: var(--text-dim); margin-top: 0.15rem; }
+
+  .custom-gen {
+    padding: 1.25rem; background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 1.5rem;
+  }
+  .custom-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.5rem; display: block; }
+  .custom-input {
+    width: 100%; padding: 0.7rem 1rem; background: var(--bg-raised);
+    border: 1px solid var(--border-bright); border-radius: var(--radius);
+    color: var(--text-bright); font-family: var(--font); font-size: 0.95rem; outline: none;
+  }
+  .custom-input:focus { border-color: var(--primary); }
+
+  .style-picker { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+  .style-btn {
+    padding: 0.4rem 0.8rem; background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 100px; color: var(--text); font-size: 0.75rem; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .style-btn.selected { background: var(--primary); color: #000; border-color: var(--primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="avatar-page">
+
+  <h1 class="avatar-title">Choose Your 3D Avatar</h1>
+  <p class="avatar-sub">Powered by Microsoft TRELLIS</p>
+
+  <!-- 3D viewer -->
+  <div class="avatar-viewer" id="avatar-viewer">
+    <model-viewer
+      id="model-viewer"
+      src="/static/avatars/wizard.glb"
+      alt="3D avatar"
+      auto-rotate
+      camera-controls
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      shadow-intensity="1"
+      environment-image="neutral"
+      exposure="1"
+      style="background-color: transparent;">
+    </model-viewer>
+  </div>
+
+  <!-- Preset avatars -->
+  <div class="custom-label">Preset Characters</div>
+  <div class="preset-grid">
+    {% for avatar in presets %}
+    <div class="preset-card {% if loop.first %}selected{% endif %}"
+         onclick="selectPreset(this, '{{ avatar.id }}', '{{ avatar.glb_url }}')">
+      <div class="preset-emoji">{{ avatar.preview }}</div>
+      <div class="preset-name">{{ avatar.name }}</div>
+      <div class="preset-desc">{{ avatar.desc }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Custom generation -->
+  {% if trellis_available %}
+  <div class="custom-gen">
+    <label class="custom-label">✨ Generate Custom Avatar (AI)</label>
+    <input type="text" id="custom-prompt" class="custom-input"
+      placeholder="e.g. 'a fierce dragon knight with blue armor'">
+
+    <label class="custom-label" style="margin-top:1rem;">Style</label>
+    <div class="style-picker">
+      {% for style in ["fantasy","cyberpunk","cute","realistic","anime","pixel"] %}
+      <button type="button" class="style-btn {% if loop.first %}selected{% endif %}"
+        onclick="selectStyle(this, '{{ style }}')">{{ style }}</button>
+      {% endfor %}
+    </div>
+
+    <button type="button" class="btn btn-primary" style="margin-top:1rem;width:100%;" onclick="generateAvatar()">
+      🎨 Generate 3D Avatar
+    </button>
+    <div id="gen-status" style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-dim);"></div>
+  </div>
+  {% else %}
+  <div style="padding:1rem;background:var(--bg-surface);border:1px dashed var(--border);border-radius:12px;text-align:center;font-size:0.8rem;color:var(--text-dim);">
+    🔌 Custom 3D generation requires HUGGINGFACE_TOKEN or REPLICATE_API_TOKEN
+  </div>
+  {% endif %}
+
+  <!-- Save -->
+  <form method="POST" action="{{ pack_url_prefix }}/avatar/save" style="text-align:center;margin-top:1.5rem;">
+    <input type="hidden" name="avatar_id" id="form-avatar-id" value="wizard">
+    <input type="hidden" name="avatar_url" id="form-avatar-url" value="/static/avatars/wizard.glb">
+    <button type="submit" class="btn btn-primary btn-lg">Use This Avatar →</button>
+  </form>
+
+</div>
+
+<script>
+var selectedStyle = 'fantasy';
+
+function selectPreset(el, id, url) {
+  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('model-viewer').src = url;
+  document.getElementById('form-avatar-id').value = id;
+  document.getElementById('form-avatar-url').value = url;
+}
+
+function selectStyle(el, style) {
+  document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedStyle = style;
+}
+
+function generateAvatar() {
+  var prompt = document.getElementById('custom-prompt').value.trim();
+  if (!prompt) {
+    document.getElementById('gen-status').textContent = 'Please enter a description';
+    return;
+  }
+  var status = document.getElementById('gen-status');
+  status.textContent = '🔄 Generating... (this can take 30-90 seconds)';
+
+  fetch('/api/generate-avatar?prompt=' + encodeURIComponent(prompt) + '&style=' + selectedStyle)
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        document.getElementById('model-viewer').src = data.glb_url;
+        document.getElementById('form-avatar-id').value = 'custom';
+        document.getElementById('form-avatar-url').value = data.glb_url;
+        status.textContent = '✅ Generated!';
+      } else {
+        status.textContent = '❌ ' + (data.error || 'Generation failed');
+      }
+    })
+    .catch(e => { status.textContent = '❌ ' + e.message; });
+}
+</script>
+{% endblock %}

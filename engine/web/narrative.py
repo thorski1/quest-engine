@@ -16,25 +16,34 @@ Baldur's Gate 3 dialogue system.
 
 ALIGNMENTS = {
     "hero": {
-        "name": "Hero",
-        "icon": "⚔️",
-        "desc": "You fight for knowledge, protect the weak, and seek truth.",
+        "name": "Hero", "icon": "⚔️",
+        "desc": "You fight for knowledge, protect the weak, seek truth.",
         "color": "#00e5a0",
         "stat_bonus": {"wis": 2, "cha": 2},
     },
     "shadow": {
-        "name": "Shadow",
-        "icon": "🌑",
+        "name": "Shadow", "icon": "🌑",
         "desc": "You seek power through forbidden knowledge. The ends justify the means.",
         "color": "#a855f7",
         "stat_bonus": {"int": 3, "spd": 1},
     },
     "trickster": {
-        "name": "Trickster",
-        "icon": "🃏",
-        "desc": "You bend the rules, find shortcuts, and laugh at the chaos.",
+        "name": "Trickster", "icon": "🃏",
+        "desc": "You bend the rules, find shortcuts, embrace the chaos.",
         "color": "#ffa500",
         "stat_bonus": {"lck": 3, "spd": 1},
+    },
+    "sage": {
+        "name": "Sage", "icon": "🧙",
+        "desc": "You pursue wisdom patiently. Mastery comes from deep understanding.",
+        "color": "#3b82f6",
+        "stat_bonus": {"wis": 4},
+    },
+    "warrior": {
+        "name": "Warrior", "icon": "🛡️",
+        "desc": "You conquer through sheer discipline and relentless practice.",
+        "color": "#dc2626",
+        "stat_bonus": {"end": 3, "spd": 1},
     },
 }
 
