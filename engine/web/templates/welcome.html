@@ -46,6 +46,14 @@
     transition: all 0.2s;
   }
   .step:hover { transform: translateY(-3px); border-color: rgba(0,229,160,0.4); }
+  .step.done { border-color: rgba(0,229,160,0.5); background: rgba(0,229,160,0.08); }
+  .step.done .step-num { background: #00e5a0; }
+  .step.done::after {
+    content: '✓'; position: absolute; top: -8px; right: -8px;
+    width: 22px; height: 22px; background: #00e5a0; color: #0a0e1a;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.8rem; box-shadow: 0 0 8px rgba(0,229,160,0.5);
+  }
   .step-num {
     position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
     width: 24px; height: 24px; background: #00e5a0; color: #000;
@@ -98,19 +106,19 @@
   </div>
 
   <div class="steps">
-    <div class="step">
+    <div class="step{% if done_prefs %} done{% endif %}">
       <div class="step-num">1</div>
       <span class="step-icon">🎛️</span>
       <div class="step-name">Preferences</div>
       <div class="step-desc">Age, game type, play style</div>
     </div>
-    <div class="step">
+    <div class="step{% if done_char %} done{% endif %}">
       <div class="step-num">2</div>
       <span class="step-icon">⚔️</span>
       <div class="step-name">Character</div>
       <div class="step-desc">Class, alignment, story tone</div>
     </div>
-    <div class="step">
+    <div class="step{% if done_avatar %} done{% endif %}">
       <div class="step-num">3</div>
       <span class="step-icon">🎨</span>
       <div class="step-name">Avatar</div>
@@ -130,8 +138,21 @@
     </div>
   </div>
 
-  <a href="/preferences" class="cta">Let's Begin →</a>
-  <a href="/browse" class="skip">Skip straight to browsing courses ›</a>
+  {% if is_returning %}
+    {% if done_avatar %}
+      <a href="/pick-course" class="cta">Continue to Courses →</a>
+    {% elif done_char %}
+      <a href="/avatar" class="cta">Pick Up Where You Left Off →</a>
+    {% elif done_prefs %}
+      <a href="/character" class="cta">Pick Up Where You Left Off →</a>
+    {% else %}
+      <a href="/preferences" class="cta">Let's Begin →</a>
+    {% endif %}
+    <a href="/preferences" class="skip">Start over from preferences ›</a>
+  {% else %}
+    <a href="/preferences" class="cta">Let's Begin →</a>
+    <a href="/browse" class="skip">Skip straight to browsing courses ›</a>
+  {% endif %}
 
 </div>
 

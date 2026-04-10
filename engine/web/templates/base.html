@@ -48,13 +48,15 @@
       <span class="stat-label">{{ total_xp }}XP</span>
     </div>
     {% if current_user %}
-    <a href="{{ pack_url_prefix }}/profile" class="stat-name" title="{{ current_user.display_name }}" style="display:flex;align-items:center;gap:0.4rem;">
-      {% if current_user.avatar_url and current_user.avatar_url.startswith('data:') %}
-        <img src="{{ current_user.avatar_url }}" alt="avatar" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border);">
-      {% elif current_user.avatar_url and current_user.avatar_url.startswith('http') %}
+    <a href="/avatar" class="stat-name" title="{{ current_user.display_name }}" style="display:flex;align-items:center;gap:0.4rem;">
+      {% if active_avatar_url %}
+        <img src="{{ active_avatar_url }}" alt="Your avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--primary);box-shadow:0 0 8px rgba(0,229,160,0.3);">
+      {% elif platform_character and platform_character.avatar_emoji %}
+        <span style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;background:var(--bg-raised);border:2px solid var(--primary);">{{ platform_character.avatar_emoji }}</span>
+      {% elif current_user.avatar_url and (current_user.avatar_url.startswith('data:') or current_user.avatar_url.startswith('http')) %}
         <img src="{{ current_user.avatar_url }}" alt="avatar" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border);">
       {% endif %}
-      <span>{{ current_user.display_name[:8] }}</span>
+      <span>{{ (platform_character.name if platform_character.name else current_user.display_name)[:10] }}</span>
     </a>
     {% endif %}
   </div>

@@ -130,6 +130,35 @@
   }
   .footer-nav a { color: rgba(200,216,232,0.5); font-size: 0.8rem; }
   .footer-nav a:hover { color: #00e5a0; }
+
+  /* ── Search + filters ───────────────────────────────────── */
+  .tools { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+  .search-wrap { flex: 1; min-width: 220px; position: relative; }
+  .search-input {
+    width: 100%; padding: 0.7rem 1rem 0.7rem 2.5rem; background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.1); border-radius: 12px;
+    color: #e8f4ff; font-size: 0.9rem; outline: none; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .search-input:focus { border-color: #00e5a0; background: rgba(0,229,160,0.03); }
+  .search-input::placeholder { color: rgba(200,216,232,0.4); }
+  .search-icon { position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%); color: rgba(200,216,232,0.5); pointer-events: none; }
+
+  .filter-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .chip {
+    padding: 0.5rem 1rem; background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.1); border-radius: 100px;
+    font-size: 0.75rem; font-weight: 700; color: rgba(200,216,232,0.7);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .chip:hover { border-color: rgba(0,229,160,0.4); color: #e8f4ff; }
+  .chip.active { background: rgba(0,229,160,0.12); border-color: #00e5a0; color: #00e5a0; }
+
+  .no-results {
+    text-align: center; padding: 3rem 1rem; color: rgba(200,216,232,0.5);
+    font-size: 0.9rem; display: none;
+  }
+  .no-results.show { display: block; }
 </style>
 </head>
 <body>
@@ -178,6 +207,22 @@
   {% endif %}
 
   <div class="section-label">Browse by path</div>
+
+  <div class="tools">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="course-search" class="search-input" placeholder="Search courses..." oninput="filterCourses()">
+    </div>
+    <div class="filter-chips" id="filter-chips">
+      <button class="chip active" data-path="all" onclick="setPathFilter(this, 'all')">All</button>
+      {% for path in paths %}
+      <button class="chip" data-path="{{ path.id }}" onclick="setPathFilter(this, '{{ path.id }}')">{{ path.icon }} {{ path.name }}</button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="no-results" id="no-results">No courses match your search. Try different keywords.</div>
+
   <div class="paths">
     {% for path in paths %}
     <div class="path-card{% if loop.first %} open{% endif %}" data-path="{{ path.id }}">
@@ -224,6 +269,54 @@
 
 <script>
   function togglePath(el) { el.classList.toggle('open'); }
+
+  var activePathFilter = 'all';
+
+  function setPathFilter(btn, pathId) {
+    activePathFilter = pathId;
+    document.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    filterCourses();
+  }
+
+  function filterCourses() {
+    var q = (document.getElementById('course-search').value || '').toLowerCase().trim();
+    var pathCards = document.querySelectorAll('.path-card');
+    var anyVisible = false;
+
+    pathCards.forEach(function(pc) {
+      var pathId = pc.getAttribute('data-path');
+      var pathMatchesFilter = (activePathFilter === 'all' || activePathFilter === pathId);
+
+      // Filter individual courses within this path
+      var items = pc.querySelectorAll('.course-item');
+      var visibleCount = 0;
+      items.forEach(function(it) {
+        var txt = (it.innerText || '').toLowerCase();
+        var matches = !q || txt.indexOf(q) !== -1;
+        it.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+      });
+
+      // Hide entire path if filter excludes it, or if no courses match search
+      var shouldShow = pathMatchesFilter && (visibleCount > 0 || !q);
+      pc.style.display = shouldShow ? '' : 'none';
+
+      // Auto-open when searching so matches are visible
+      if (q && shouldShow && visibleCount > 0) pc.classList.add('open');
+      if (shouldShow) anyVisible = true;
+    });
+
+    var nr = document.getElementById('no-results');
+    if (nr) nr.classList.toggle('show', !anyVisible && (q || activePathFilter !== 'all'));
+
+    // Also filter the recommended row
+    document.querySelectorAll('.rec-card').forEach(function(rc) {
+      var txt = (rc.innerText || '').toLowerCase();
+      var matches = !q || txt.indexOf(q) !== -1;
+      rc.style.display = matches ? '' : 'none';
+    });
+  }
 </script>
 
 </body>

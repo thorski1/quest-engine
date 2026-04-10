@@ -373,12 +373,24 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
     async def welcome_page(request: Request):
         """First stop after sign-up. Explains the flow."""
         user = _get_current_user_hub(request)
+        character = _get_platform_character(request)
+        prefs = _get_platform_preferences(request)
+        avatar_url = _get_active_avatar_url(user)
+        # Determine which step the user has reached
+        done_prefs = bool(prefs.get("age_level"))
+        done_char = bool(character.get("class"))
+        done_avatar = bool(avatar_url) or character.get("avatar_emoji") not in (None, "", "🧙")
         return templates.TemplateResponse(request, "welcome.html", {
             "request": request, "current_user": user,
             "total_packs": len(skill_packs),
             "total_challenges": sum(sum(len(z.get("challenges", [])) for z in p.zones.values()) for p in skill_packs),
-            "active_avatar_url": _get_active_avatar_url(user),
-            "character": _get_platform_character(request),
+            "active_avatar_url": avatar_url,
+            "character": character,
+            "preferences": prefs,
+            "done_prefs": done_prefs,
+            "done_char": done_char,
+            "done_avatar": done_avatar,
+            "is_returning": done_prefs or done_char or done_avatar,
         })
 
     def _platform_base_ctx(request: Request, user: dict | None) -> dict:
@@ -571,6 +583,7 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         user = _get_current_user_hub(request)
         prefs = _get_platform_preferences(request)
         interests = set(prefs.get("interests", []))
+        age_level = prefs.get("age_level", "adult")
 
         # Build list of all courses with metadata
         all_courses = []
@@ -578,6 +591,7 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             cat = p.category or "Other"
             path_id = _assign_path(cat)
             session = _sessions[p.id]
+            is_kids = bool(p.kids_mode) or "kids" in cat.lower() or path_id == "kids"
             all_courses.append({
                 "id": p.id,
                 "title": p.title,
@@ -587,15 +601,28 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
                 "total_zones": len(p.zone_order),
                 "has_progress": session.has_progress(),
                 "is_recommended": cat in interests,
+                "is_kids": is_kids,
                 "theme": p.theme or ("playful" if p.kids_mode else "cyberpunk"),
             })
 
+        # Age-level ordering: kids users see Kids Zone first, adults see it last.
+        # "teen" and "adult" both de-prioritize kids content without hiding it.
+        def _path_order(path_id: str) -> int:
+            kids_rank = {"kids": 0, "teen": 3, "adult": 3}.get(age_level, 3)
+            if path_id == "kids":
+                return kids_rank
+            # Push path matching user interests higher
+            order_map = {"languages": 1, "tech": 1, "creative": 2}
+            return order_map.get(path_id, 2)
+
+        ordered_paths = sorted(LEARNING_PATHS, key=lambda p: _path_order(p["id"]))
+
         # Group by path
         paths_with_courses = []
-        for path in LEARNING_PATHS:
+        for path in ordered_paths:
             courses = [c for c in all_courses if c["path_id"] == path["id"]]
             if courses:
-                # Recommended courses first
+                # Recommended first, then alphabetical
                 courses.sort(key=lambda c: (not c["is_recommended"], c["title"]))
                 paths_with_courses.append({
                     **path,
@@ -942,12 +969,39 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     def _ctx(request: Request, **extra) -> dict:
         sess = _session(request)
         user = _get_user(request) if _is_postgres() else None
+
+        # Pull platform-level avatar + character so pack pages display them too.
+        active_avatar_url = ""
+        platform_character = {}
+        if user:
+            try:
+                from ..storage import get_store
+                store = get_store()
+                if hasattr(store, 'get_user_avatars'):
+                    avatars = store.get_user_avatars(user["id"])
+                    for a in avatars:
+                        if a.get("is_active"):
+                            active_avatar_url = a.get("image_data_url", "")
+                            break
+                    if not active_avatar_url and avatars:
+                        active_avatar_url = avatars[0].get("image_data_url", "")
+            except Exception:
+                pass
+        try:
+            raw = request.cookies.get("quest_character", "")
+            if raw:
+                platform_character = json.loads(raw)
+        except Exception:
+            pass
+
         return {
             "request": request,
             "theme": theme,
             "pack": skill_pack,
             "pack_url_prefix": prefix,
             "current_user": user,
+            "active_avatar_url": active_avatar_url,
+            "platform_character": platform_character,
             **sess.stats_context(),
             **extra,
         }
@@ -1044,9 +1098,21 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
     @hub.get(f"{prefix}/", response_class=HTMLResponse)
     async def menu(request: Request, _pid: str = pack_id):
         s = _session(request)
-        # Redirect new players to character creation
+        # If new player and they already have a platform-level character,
+        # auto-start the game using that character — skip per-course creation.
         if not s.has_progress():
-            return templates.TemplateResponse(request, "character_create.html", _ctx(request))
+            try:
+                raw = request.cookies.get("quest_character", "")
+                platform_char = json.loads(raw) if raw else {}
+            except Exception:
+                platform_char = {}
+            if platform_char.get("class"):
+                name = platform_char.get("name") or skill_pack.default_player_name
+                s.new_game(name)
+                first_zone = skill_pack.zone_order[0]
+                return RedirectResponse(f"{prefix}/zone/{first_zone}/intro", status_code=303)
+            # No platform character yet — send to platform-level flow
+            return RedirectResponse("/welcome", status_code=303)
         zones = s.all_zones_context()
         return templates.TemplateResponse(request, "menu.html", _ctx(
             request, zones=zones,
