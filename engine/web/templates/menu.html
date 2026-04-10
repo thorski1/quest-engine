@@ -77,7 +77,8 @@
 
   <!-- ── Quick links ──────────────────────────────────────────────────── -->
   <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;flex-wrap:wrap;">
-    <a href="{{ pack_url_prefix }}/avatar" class="menu-quick-link" style="background:linear-gradient(135deg,rgba(0,229,160,0.15),rgba(168,85,247,0.15));border-color:var(--primary);">🎨 Create Avatar ✨</a>
+    <a href="/avatar" class="menu-quick-link" style="background:linear-gradient(135deg,rgba(0,229,160,0.15),rgba(168,85,247,0.15));border-color:var(--primary);">🎨 {% if active_avatar_url %}Change Avatar{% else %}Create Avatar ✨{% endif %}</a>
+    <a href="/pick-course" class="menu-quick-link">📚 All Courses</a>
     <a href="{{ pack_url_prefix }}/profile" class="menu-quick-link">⚔️ Character Sheet</a>
     <a href="{{ pack_url_prefix }}/stats" class="menu-quick-link">📊 Stats</a>
     <a href="{{ pack_url_prefix }}/leaderboard" class="menu-quick-link">🏆 {% if theme == 'playful' %}Heroes{% else %}Ranks{% endif %}</a>

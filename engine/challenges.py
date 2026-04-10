@@ -210,6 +210,96 @@ class ChallengeRunner:
 
     # ── Challenge Types ───────────────────────────────────────────────────────
 
+    @staticmethod
+    def _normalize_free_text(s: str) -> str:
+        """Loose-normalize a free-text answer so minor typing differences don't matter.
+
+        Handles: case, whitespace, degree symbols, common unit words, dashes,
+        punctuation, and equivalent connectives like "to"/"and".
+        """
+        if s is None:
+            return ""
+        t = str(s).lower().strip()
+
+        # Unicode cleanups: degree symbol and temperature glyphs
+        for ch in ("°", "℃", "℉", "º", "˚"):
+            t = t.replace(ch, "")
+
+        # Normalize various dash characters to a plain hyphen
+        for ch in ("–", "—", "−", "‐", "‑"):
+            t = t.replace(ch, "-")
+
+        # Strip unit/word suffixes so "40-140 degrees fahrenheit" == "40-140"
+        unit_words = [
+            "degrees fahrenheit", "degrees celsius", "degree fahrenheit", "degree celsius",
+            "degrees f", "degrees c", "degree f", "degree c",
+            "fahrenheit", "celsius",
+            "degrees", "degree", "deg",
+            "percent", "%",
+            "inches", "inch", "in.",
+            "feet", "foot", "ft.",
+            "meters", "meter", "metres", "metre", "m.",
+            "kilometers", "kilometer", "km",
+            "pounds", "pound", "lbs", "lb",
+            "ounces", "ounce", "oz",
+            "grams", "gram", "g.",
+            "kilograms", "kilogram", "kg",
+        ]
+        for word in sorted(unit_words, key=len, reverse=True):
+            t = re.sub(r"\b" + re.escape(word) + r"\b", " ", t)
+
+        # Strip bare trailing "f" or "c" after a number (e.g. "140f" → "140")
+        t = re.sub(r"(\d)\s*[fc]\b", r"\1", t)
+
+        # Normalize connectives: "to", "and", "through", "between" → "-"
+        t = re.sub(r"\bbetween\b", " ", t)
+        t = re.sub(r"\b(to|and|thru|through)\b", "-", t)
+
+        # Remove punctuation other than hyphens and digits/letters/space
+        t = re.sub(r"[^\w\s-]", " ", t)
+
+        # Collapse whitespace and trim
+        t = re.sub(r"\s*-\s*", "-", t)
+        t = re.sub(r"\s+", " ", t).strip()
+        t = t.strip("-")
+        return t
+
+    @staticmethod
+    def _extract_numbers(s: str) -> list[str]:
+        """Pull all numbers from a string (as strings, preserving order)."""
+        return re.findall(r"-?\d+(?:\.\d+)?", str(s or ""))
+
+    def _fuzzy_match(self, user_answer: str, correct_answer: str) -> bool:
+        """Multi-strategy fuzzy comparison for fill-in-the-blank style answers.
+
+        Accepts answers that differ from the canonical in superficial ways:
+        casing, whitespace, degree symbols, unit wording, dashes, connective
+        words like "to" vs "-", extra trailing/leading context.
+
+        Does NOT accept partial answers — the user must cover all the same
+        numeric content as the canonical answer.
+        """
+        if not correct_answer:
+            return False
+        u = self._normalize_free_text(user_answer)
+        c = self._normalize_free_text(correct_answer)
+        if not u:
+            return False
+        if u == c:
+            return True
+        # Correct answer is contained in user input (user added extra context,
+        # e.g. canonical "40-140" vs user "40-140 fahrenheit"). Not the other
+        # way round — that would accept incomplete answers.
+        if c and c in u:
+            return True
+        # Number-based match: when the correct answer is primarily numeric
+        # (e.g. a range like "40-140"), require ALL the same numbers in order.
+        c_nums = self._extract_numbers(c)
+        u_nums = self._extract_numbers(u)
+        if c_nums and u_nums == c_nums:
+            return True
+        return False
+
     def run_quiz(self, challenge: dict, user_answer: str) -> ChallengeResult:
         """Validate text answer for quiz/flag_quiz/fill_blank challenges.
 
@@ -242,7 +332,15 @@ class ChallengeRunner:
 
         # ── Single-string fill-blank: answer only, no options ──────────────────
         if answer is not None:
+            # Exact (case-insensitive) match
             if user_clean == str(answer).lower():
+                return ChallengeResult(True, get_praise())
+            # Author-supplied alternate phrasings
+            for alt in challenge.get("alt_answers", []) or []:
+                if self._fuzzy_match(user_clean, alt):
+                    return ChallengeResult(True, get_praise())
+            # Fuzzy match against the canonical answer
+            if self._fuzzy_match(user_clean, str(answer)):
                 return ChallengeResult(True, get_praise())
             return ChallengeResult(False, f"Not quite. The answer was: {answer}")
 
@@ -263,6 +361,11 @@ class ChallengeRunner:
         # Substring match (e.g. "ls -la" contains "-la")
         for ans in valid_answers:
             if ans in user_clean:
+                return ChallengeResult(True, get_praise())
+
+        # Fuzzy match on any of the valid answers (normalizes units, dashes, etc.)
+        for ans in challenge.get("answers", []):
+            if self._fuzzy_match(user_clean, ans):
                 return ChallengeResult(True, get_praise())
 
         return ChallengeResult(

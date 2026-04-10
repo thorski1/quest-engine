@@ -28,14 +28,14 @@
 <!-- Skip to content (accessibility) -->
 <a href="#main-content" class="skip-link">Skip to content</a>
 
-<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<!-- ── Header (smart top nav: primary actions + user menu) ────────────── -->
 <header class="site-header" role="banner">
   <a href="/" class="site-logo" aria-label="Home">{% if theme == "playful" %}✨{% elif theme == "neural" %}🧠{% elif theme == "medieval" %}🐉{% elif theme == "ocean" %}🌊{% elif theme == "sunset" %}🌅{% else %}⚡{% endif %} {{ pack.title }}</a>
 
   <nav class="header-nav" role="navigation" aria-label="Main navigation">
-    <a href="{{ pack_url_prefix }}/" class="nav-link">📚 Zones</a>
-    <a href="{{ pack_url_prefix }}/challenge" class="nav-link">▶ Play</a>
-    <a href="{{ pack_url_prefix }}/profile" class="nav-link">⚔️ Me</a>
+    <a href="{{ pack_url_prefix }}/" class="nav-link">Zones</a>
+    <a href="{{ pack_url_prefix }}/challenge" class="nav-link">Play</a>
+    <a href="/pick-course" class="nav-link">Courses</a>
   </nav>
 
   <div class="header-stats" aria-label="Player stats">
@@ -47,18 +47,57 @@
       </div>
       <span class="stat-label">{{ total_xp }}XP</span>
     </div>
-    {% if current_user %}
-    <a href="/avatar" class="stat-name" title="{{ current_user.display_name }}" style="display:flex;align-items:center;gap:0.4rem;">
-      {% if active_avatar_url %}
-        <img src="{{ active_avatar_url }}" alt="Your avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--primary);box-shadow:0 0 8px rgba(0,229,160,0.3);">
-      {% elif platform_character and platform_character.avatar_emoji %}
-        <span style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;background:var(--bg-raised);border:2px solid var(--primary);">{{ platform_character.avatar_emoji }}</span>
-      {% elif current_user.avatar_url and (current_user.avatar_url.startswith('data:') or current_user.avatar_url.startswith('http')) %}
-        <img src="{{ current_user.avatar_url }}" alt="avatar" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border);">
-      {% endif %}
-      <span>{{ (platform_character.name if platform_character.name else current_user.display_name)[:10] }}</span>
-    </a>
-    {% endif %}
+
+    <div class="user-menu" id="user-menu">
+      <button class="user-menu-trigger" onclick="toggleUserMenu()" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
+        {% if active_avatar_url %}
+          <img src="{{ active_avatar_url }}" alt="Your avatar" class="user-avatar-img">
+        {% elif platform_character and platform_character.avatar_emoji %}
+          <span class="user-avatar-emoji">{{ platform_character.avatar_emoji }}</span>
+        {% elif current_user and current_user.avatar_url and (current_user.avatar_url.startswith('data:') or current_user.avatar_url.startswith('http')) %}
+          <img src="{{ current_user.avatar_url }}" alt="avatar" class="user-avatar-img">
+        {% else %}
+          <span class="user-avatar-emoji">🧙</span>
+        {% endif %}
+        <span class="user-menu-name">
+          {% if platform_character.name %}{{ platform_character.name[:12] }}
+          {%- elif current_user %}{{ current_user.display_name[:12] }}
+          {%- else %}Menu{% endif %}
+        </span>
+        <span class="user-menu-chev">▾</span>
+      </button>
+      <div class="user-menu-drop" role="menu">
+        {% if current_user %}
+        <div class="user-menu-header">
+          {% if platform_character.class %}
+          <div class="user-menu-class">{{ platform_character.class|capitalize }}{% if platform_character.alignment %} · {{ platform_character.alignment|capitalize }}{% endif %}</div>
+          {% endif %}
+          <div class="user-menu-email">{{ current_user.display_name }}</div>
+        </div>
+        {% endif %}
+        <a href="/avatar" class="user-menu-link">🎨 Change Avatar</a>
+        <a href="/character" class="user-menu-link">⚔️ Edit Character</a>
+        <a href="/preferences" class="user-menu-link">🎛️ Preferences</a>
+        <div class="user-menu-sep"></div>
+        <a href="/pick-course" class="user-menu-link">📚 All Courses</a>
+        <a href="{{ pack_url_prefix }}/profile" class="user-menu-link">📊 Profile</a>
+        <a href="{{ pack_url_prefix }}/stats" class="user-menu-link">📈 Stats</a>
+        <a href="{{ pack_url_prefix }}/quest-log" class="user-menu-link">📜 Quest Log</a>
+        <a href="{{ pack_url_prefix }}/achievements" class="user-menu-link">🎖️ Achievements</a>
+        <a href="{{ pack_url_prefix }}/leaderboard" class="user-menu-link">🏆 Leaderboard</a>
+        <div class="user-menu-sep"></div>
+        <a href="{{ pack_url_prefix }}/settings" class="user-menu-link">⚙️ Settings</a>
+        {% if theme == "playful" %}<a href="{{ pack_url_prefix }}/parent" class="user-menu-link">👨‍👩‍👧 Parent</a>{% endif %}
+        <button type="button" class="user-menu-link user-menu-sound" onclick="toggleSound(this);event.stopPropagation();" aria-label="Toggle sound">
+          <span class="sound-icon">🔊</span> <span class="sound-label">Sound</span>
+        </button>
+        {% if current_user %}
+        <a href="{{ pack_url_prefix }}/auth/logout" class="user-menu-link user-menu-logout">🚪 Sign Out</a>
+        {% else %}
+        <a href="{{ pack_url_prefix }}/auth/login" class="user-menu-link">🔐 Sign In</a>
+        {% endif %}
+      </div>
+    </div>
   </div>
 </header>
 
@@ -66,24 +105,6 @@
 <main class="site-main" id="main-content" role="main">
   {% block content %}{% endblock %}
 </main>
-
-<!-- ── Footer ──────────────────────────────────────────────────────────── -->
-<footer class="site-footer" role="contentinfo">
-  <nav style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
-    <a href="/" class="footer-link">All Courses</a>
-    <a href="{{ pack_url_prefix }}/stats" class="footer-link">Stats</a>
-    <a href="{{ pack_url_prefix }}/quest-log" class="footer-link">Quest Log</a>
-    <a href="{{ pack_url_prefix }}/leaderboard" class="footer-link">Leaderboard</a>
-    <a href="{{ pack_url_prefix }}/settings" class="footer-link">Settings</a>
-    {% if theme == "playful" %}<a href="{{ pack_url_prefix }}/parent" class="footer-link">Parent</a>{% endif %}
-    {% if current_user %}<a href="{{ pack_url_prefix }}/auth/logout" class="footer-link" style="color:var(--text-dim);">Sign Out</a>{% endif %}
-  </nav>
-  <div style="display:flex;align-items:center;gap:0.5rem;">
-    <button class="sound-toggle" onclick="toggleSound(this)" aria-label="Toggle sound" title="Sound">
-      <span class="sound-icon">🔊</span>
-    </button>
-  </div>
-</footer>
 
 <script>
   // Apply saved theme override + font size
@@ -100,14 +121,28 @@
   // Sound toggle
   function toggleSound(btn) {
     var on = window.QuestSounds && window.QuestSounds.toggle();
-    btn.querySelector('.sound-icon').textContent = on ? '🔊' : '🔇';
+    var icon = btn.querySelector('.sound-icon');
+    if (icon) icon.textContent = on ? '🔊' : '🔇';
   }
   // Set initial sound icon state
   document.addEventListener('DOMContentLoaded', function() {
-    var btn = document.querySelector('.sound-toggle');
-    if (btn && window.QuestSounds) {
-      btn.querySelector('.sound-icon').textContent = QuestSounds.isEnabled() ? '🔊' : '🔇';
+    var icons = document.querySelectorAll('.sound-icon');
+    if (icons.length && window.QuestSounds) {
+      var label = QuestSounds.isEnabled() ? '🔊' : '🔇';
+      icons.forEach(function(i) { i.textContent = label; });
     }
+  });
+  // User-menu dropdown
+  function toggleUserMenu() {
+    var menu = document.getElementById('user-menu');
+    if (!menu) return;
+    menu.classList.toggle('open');
+    var btn = menu.querySelector('.user-menu-trigger');
+    if (btn) btn.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
+  }
+  document.addEventListener('click', function(e) {
+    var menu = document.getElementById('user-menu');
+    if (menu && !menu.contains(e.target)) menu.classList.remove('open');
   });
 </script>
 
