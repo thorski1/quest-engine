@@ -1249,6 +1249,59 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             return RedirectResponse(f"{prefix}/", status_code=303)
         return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
+    # ── Boss battle helpers ─────────────────────────────────────────────
+    def _is_boss_zone(zone_id: str) -> bool:
+        """A zone is a 'boss zone' if it's the final zone of the pack or the
+        zone name/id contains 'boss' or 'final'. The entire zone's challenges
+        become boss-battle turns."""
+        if not zone_id or not skill_pack.zone_order:
+            return False
+        if zone_id == skill_pack.zone_order[-1]:
+            return True
+        zone = skill_pack.zones.get(zone_id, {})
+        text = (zone.get("name", "") + " " + zone_id).lower()
+        return "boss" in text or "final" in text
+
+    def _compute_player_stats(character: dict) -> dict:
+        """Derive combat stats from the platform character (class + alignment)."""
+        cls = (character or {}).get("class", "scholar")
+        alignment = (character or {}).get("alignment", "hero")
+        # Base HP by class
+        hp_by_class = {"scholar": 110, "speedrunner": 100, "explorer": 140, "champion": 130}
+        hp = hp_by_class.get(cls, 100)
+        # Alignment modifiers
+        if alignment == "hero":     hp += 30
+        if alignment == "shadow":   hp -= 10
+        if alignment == "trickster": hp += 10
+        # Damage per correct
+        dmg_by_class = {"scholar": 38, "speedrunner": 42, "explorer": 34, "champion": 36}
+        damage = dmg_by_class.get(cls, 34)
+        if alignment == "shadow":   damage += 12
+        if alignment == "trickster": damage += 0  # trickster relies on crits
+        crit_chance = 0.25 if alignment == "trickster" else (0.1 if cls == "speedrunner" else 0.05)
+        return {
+            "hp_max": hp,
+            "damage": damage,
+            "crit_chance": crit_chance,
+            "class": cls,
+            "alignment": alignment,
+        }
+
+    def _boss_config_for_zone(zone_id: str) -> dict:
+        """Pick a boss character for a zone based on the pack theme."""
+        base = _BOSS_BY_THEME.get(theme, {"id": "boss_shadow", "name": "The Adversary"})
+        zone = skill_pack.zones.get(zone_id, {})
+        zone_name = zone.get("name", "Boss")
+        # HP scales with number of challenges: more challenges = tougher boss
+        n = len(zone.get("challenges", []))
+        hp_max = max(100, 40 * n)  # 8 challenges × 40 = 320 HP
+        return {
+            "id": base["id"],
+            "name": base["name"],
+            "zone_name": zone_name,
+            "hp_max": hp_max,
+        }
+
     # ── Narrator character mapping by theme ─────────────────────────────
     # Each pack theme maps to a primary narrator + optional boss adversary.
     _NARRATOR_BY_THEME = {
@@ -1413,12 +1466,42 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             options, letter_map = _shuffle_options(options, challenge.get("answer", "a"), seed)
             shuffle_map_json = json.dumps(letter_map)
 
+        # ── Boss battle mode ────────────────────────────────────────────
+        # If this zone is a "boss zone", set up combat state so the template
+        # can render the battle UI around the challenge card.
+        boss_fight = None
+        if _is_boss_zone(s.engine.current_zone):
+            try:
+                raw = request.cookies.get("quest_character", "")
+                character = json.loads(raw) if raw else {}
+            except Exception:
+                character = {}
+            stats = _compute_player_stats(character)
+            boss_cfg = _boss_config_for_zone(s.engine.current_zone)
+            s.enter_boss(s.engine.current_zone, stats["hp_max"], boss_cfg["hp_max"])
+            combat = s.combat_state()
+            boss_fight = {
+                "boss_id": boss_cfg["id"],
+                "boss_name": boss_cfg["name"],
+                "boss_hp": combat["boss_hp"],
+                "boss_hp_max": combat["boss_hp_max"],
+                "boss_hp_pct": int(combat["boss_hp"] / combat["boss_hp_max"] * 100) if combat["boss_hp_max"] else 100,
+                "player_hp": combat["player_hp"],
+                "player_hp_max": combat["player_hp_max"],
+                "player_hp_pct": int(combat["player_hp"] / combat["player_hp_max"] * 100) if combat["player_hp_max"] else 100,
+                "turns": combat["turns"],
+                "player_class": stats["class"],
+                "player_alignment": stats["alignment"],
+                "damage": stats["damage"],
+            }
+
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge, challenge_num=num, challenge_total=total,
             zone=zone, zone_id=s.engine.current_zone,
             ctype=ctype, options=options,
             is_boss=is_boss, boss_intro=boss_intro,
+            boss_fight=boss_fight,
             prompt_html=rich_to_html(challenge.get("prompt", challenge.get("question", ""))),
             lesson_html=rich_to_html(challenge.get("lesson", "")),
             url=challenge.get("url", ""),
@@ -1493,6 +1576,65 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         if ctype == "live":
             ctype = "text"
 
+        # ── Apply combat damage if this is a boss zone ─────────────────
+        boss_fight = None
+        combat_event = None
+        if _is_boss_zone(zone_id):
+            try:
+                raw = request.cookies.get("quest_character", "")
+                character = json.loads(raw) if raw else {}
+            except Exception:
+                character = {}
+            stats = _compute_player_stats(character)
+            boss_cfg = _boss_config_for_zone(zone_id)
+            s.enter_boss(zone_id, stats["hp_max"], boss_cfg["hp_max"])
+
+            # Damage calculation
+            dmg_dealt = stats["damage"]
+            # Speed bonus: extra damage if answered under 5s
+            if result.correct and elapsed_s > 0 and elapsed_s < 5:
+                dmg_dealt = int(dmg_dealt * 1.3)
+            # Streak combo: +10% per streak above 2
+            if result.correct and s.engine.streak > 2:
+                dmg_dealt = int(dmg_dealt * (1 + min(s.engine.streak - 2, 5) * 0.1))
+            # Trickster crits
+            import random as _r
+            is_crit = False
+            if result.correct and _r.random() < stats["crit_chance"]:
+                dmg_dealt = int(dmg_dealt * 2)
+                is_crit = True
+            dmg_taken = 25
+
+            new_state = s.apply_combat_turn(result.correct, dmg_dealt, dmg_taken)
+            combat_event = {
+                "correct": result.correct,
+                "damage_dealt": dmg_dealt if result.correct else 0,
+                "damage_taken": 0 if result.correct else dmg_taken,
+                "is_crit": is_crit,
+                "boss_defeated": new_state["boss_hp"] <= 0,
+                "player_defeated": new_state["player_hp"] <= 0,
+            }
+            # If player is defeated, heal to full and warn them
+            if new_state["player_hp"] <= 0:
+                new_state["player_hp"] = new_state["player_hp_max"] // 2
+                s._combat["player_hp"] = new_state["player_hp"]
+
+            boss_fight = {
+                "boss_id": boss_cfg["id"],
+                "boss_name": boss_cfg["name"],
+                "boss_hp": new_state["boss_hp"],
+                "boss_hp_max": new_state["boss_hp_max"],
+                "boss_hp_pct": int(new_state["boss_hp"] / new_state["boss_hp_max"] * 100) if new_state["boss_hp_max"] else 0,
+                "player_hp": new_state["player_hp"],
+                "player_hp_max": new_state["player_hp_max"],
+                "player_hp_pct": int(new_state["player_hp"] / new_state["player_hp_max"] * 100) if new_state["player_hp_max"] else 100,
+                "turns": new_state["turns"],
+                "player_class": stats["class"],
+                "player_alignment": stats["alignment"],
+                "damage": stats["damage"],
+                "event": combat_event,
+            }
+
         # Re-shuffle options for result display (same seed = same order)
         result_options = challenge.get("options", [])
         result_shuffle_map = ""
@@ -1511,6 +1653,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             zone=zone, zone_id=s.engine.current_zone,
             ctype=ctype, options=result_options,
             is_boss=challenge.get("is_boss", False), boss_intro="",
+            boss_fight=boss_fight,
             prompt_html=rich_to_html(challenge.get("prompt", challenge.get("question", ""))),
             lesson_html=rich_to_html(challenge.get("lesson", "")),
             url=challenge.get("url", ""),

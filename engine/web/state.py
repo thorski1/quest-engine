@@ -65,6 +65,61 @@ class WebGameSession:
         # Challenges skipped this zone (temporarily bypassed, revisited at end)
         self._skipped_ids: set[str] = set()
 
+        # Boss-battle state (per-zone, ephemeral). Populated on demand by the
+        # challenge route when the player enters the final challenge of a zone.
+        self._combat: dict = {
+            "zone_id": "",
+            "active": False,
+            "player_hp": 100,
+            "player_hp_max": 100,
+            "boss_hp": 100,
+            "boss_hp_max": 100,
+            "turns": 0,
+            "log": [],
+        }
+
+    def enter_boss(self, zone_id: str, player_hp_max: int, boss_hp_max: int):
+        """Initialize or refresh combat state for a zone's boss fight."""
+        if self._combat.get("zone_id") != zone_id or not self._combat.get("active"):
+            self._combat = {
+                "zone_id": zone_id,
+                "active": True,
+                "player_hp": player_hp_max,
+                "player_hp_max": player_hp_max,
+                "boss_hp": boss_hp_max,
+                "boss_hp_max": boss_hp_max,
+                "turns": 0,
+                "log": [],
+            }
+
+    def reset_combat(self):
+        self._combat = {
+            "zone_id": "",
+            "active": False,
+            "player_hp": 100,
+            "player_hp_max": 100,
+            "boss_hp": 100,
+            "boss_hp_max": 100,
+            "turns": 0,
+            "log": [],
+        }
+
+    def combat_state(self) -> dict:
+        return dict(self._combat)
+
+    def apply_combat_turn(self, correct: bool, damage_dealt: int, damage_taken: int) -> dict:
+        """Apply a turn of combat and return the updated state."""
+        if not self._combat.get("active"):
+            return dict(self._combat)
+        if correct:
+            self._combat["boss_hp"] = max(0, self._combat["boss_hp"] - damage_dealt)
+            self._combat["log"].append({"type": "hit", "amount": damage_dealt})
+        else:
+            self._combat["player_hp"] = max(0, self._combat["player_hp"] - damage_taken)
+            self._combat["log"].append({"type": "take", "amount": damage_taken})
+        self._combat["turns"] += 1
+        return dict(self._combat)
+
     # ── Navigation ────────────────────────────────────────────────────────────
 
     def start_zone(self, zone_id: str):
