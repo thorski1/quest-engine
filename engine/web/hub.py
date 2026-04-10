@@ -447,6 +447,42 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         result = generate_avatar_from_prompt(prompt, style)
         return Response(content=json.dumps(result), media_type="application/json")
 
+    @hub.post("/api/generate-2d")
+    async def generate_2d_image(request: Request):
+        """Generate a 2D character image using Gemini 2.5 Flash Image (free)."""
+        from .gemini_image import generate_image_from_prompt as gen_gemini, is_available as gemini_ok
+        body = await request.json()
+        prompt = body.get("prompt", "")
+        style = body.get("style", "fantasy")
+        if gemini_ok():
+            result = gen_gemini(prompt, style)
+            return Response(content=json.dumps(result), media_type="application/json")
+        # Fallback to Replicate FLUX
+        from .trellis_3d import generate_image_from_prompt as gen_flux, is_available as rep_ok
+        if rep_ok():
+            result = gen_flux(prompt, style)
+            # FLUX returns a URL not base64
+            if result.get("ok"):
+                return Response(content=json.dumps({"ok": True, "image_data_url": result["image_url"]}), media_type="application/json")
+            return Response(content=json.dumps(result), media_type="application/json")
+        return Response(
+            content=json.dumps({"ok": False, "error": "Set GEMINI_API_KEY (free) or REPLICATE_API_TOKEN"}),
+            media_type="application/json"
+        )
+
+    @hub.post("/api/edit-2d")
+    async def edit_2d_image(request: Request):
+        """Edit an existing image with a text prompt (Nano Banana specialty)."""
+        from .gemini_image import edit_image, is_available as gemini_ok
+        body = await request.json()
+        if not gemini_ok():
+            return Response(
+                content=json.dumps({"ok": False, "error": "Set GEMINI_API_KEY to enable image editing"}),
+                media_type="application/json"
+            )
+        result = edit_image(body.get("image_data_url", ""), body.get("prompt", ""))
+        return Response(content=json.dumps(result), media_type="application/json")
+
     @hub.get("/api/image-to-3d")
     async def image_to_3d_avatar(request: Request, url: str = ""):
         """Convert a reference image directly to 3D GLB mesh."""
@@ -1123,11 +1159,13 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
 
     @hub.get(f"{prefix}/avatar", response_class=HTMLResponse)
     async def avatar_3d_page(request: Request, _pid: str = pack_id):
-        from .trellis_3d import get_preset_avatars, is_available
+        from .trellis_3d import get_preset_avatars, is_available as trellis_ok
+        from .gemini_image import is_available as gemini_ok
         return templates.TemplateResponse(request, "avatar_3d.html", _ctx(
             request,
             presets=get_preset_avatars(),
-            trellis_available=is_available(),
+            trellis_available=trellis_ok(),
+            gemini_available=gemini_ok(),
         ))
 
     @hub.post(f"{prefix}/avatar/save", response_class=HTMLResponse)

@@ -27,6 +27,11 @@ def is_available() -> bool:
     return bool(os.environ.get("REPLICATE_API_TOKEN"))
 
 
+def is_2d_available() -> bool:
+    """2D generation via Gemini is free tier available."""
+    return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("REPLICATE_API_TOKEN"))
+
+
 # Style prompts enhance the base description
 STYLE_PROMPTS = {
     "fantasy": "epic fantasy RPG character, full body portrait, detailed armor and weapons, magical aura, centered on plain gray background, studio lighting, game asset reference sheet",
