@@ -111,6 +111,21 @@ CREATE TABLE IF NOT EXISTS daily_completions (
     UNIQUE(user_id, pack_name, challenge_date)
 );
 
+-- Avatar gallery (generated avatars per user)
+CREATE TABLE IF NOT EXISTS avatars (
+    id              SERIAL PRIMARY KEY,
+    user_id         INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    image_data_url  TEXT NOT NULL,  -- base64 data URL or external URL
+    glb_url         TEXT,           -- optional 3D GLB URL
+    prompt          TEXT,           -- the prompt used to generate it
+    style           VARCHAR(32),    -- fantasy/cyberpunk/anime/etc
+    source          VARCHAR(32),    -- gemini/trellis/upload/preset
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    is_active       BOOLEAN DEFAULT FALSE  -- is this the currently equipped avatar?
+);
+CREATE INDEX IF NOT EXISTS idx_avatars_user ON avatars(user_id);
+CREATE INDEX IF NOT EXISTS idx_avatars_active ON avatars(user_id, is_active) WHERE is_active = TRUE;
+
 -- Leaderboard materialized view (refresh periodically)
 CREATE MATERIALIZED VIEW IF NOT EXISTS leaderboard AS
     SELECT
@@ -287,6 +302,78 @@ class PostgresStore(BaseStore):
             if self._conn and not self._conn.closed:
                 self._conn.rollback()
             return None
+
+    def save_avatar(self, user_id: int, image_data_url: str, glb_url: str = "",
+                    prompt: str = "", style: str = "", source: str = "gemini") -> int:
+        """Save a new avatar to the gallery. Returns the new avatar's ID."""
+        if not user_id:
+            return 0
+        try:
+            conn = self._get_conn()
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO avatars (user_id, image_data_url, glb_url, prompt, style, source)
+                       VALUES (%s, %s, %s, %s, %s, %s) RETURNING id""",
+                    (user_id, image_data_url, glb_url, prompt, style, source)
+                )
+                return cur.fetchone()[0]
+        except Exception:
+            return 0
+
+    def set_active_avatar(self, user_id: int, avatar_id: int) -> bool:
+        """Mark an avatar as the user's active/equipped one."""
+        if not user_id or not avatar_id:
+            return False
+        try:
+            conn = self._get_conn()
+            with conn.cursor() as cur:
+                # Deactivate all existing
+                cur.execute("UPDATE avatars SET is_active = FALSE WHERE user_id = %s", (user_id,))
+                # Activate the chosen one (must belong to user)
+                cur.execute(
+                    "UPDATE avatars SET is_active = TRUE WHERE id = %s AND user_id = %s RETURNING id",
+                    (avatar_id, user_id)
+                )
+                row = cur.fetchone()
+                if row:
+                    # Also update users.avatar_url for quick lookups
+                    cur.execute("SELECT image_data_url FROM avatars WHERE id = %s", (avatar_id,))
+                    img = cur.fetchone()
+                    if img:
+                        cur.execute("UPDATE users SET avatar_url = %s WHERE id = %s", (img[0], user_id))
+                    return True
+            return False
+        except Exception:
+            return False
+
+    def get_user_avatars(self, user_id: int, limit: int = 50) -> list[dict]:
+        """Get all avatars for a user, newest first."""
+        if not user_id:
+            return []
+        try:
+            conn = self._get_conn()
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                cur.execute(
+                    """SELECT id, image_data_url, glb_url, prompt, style, source, is_active, created_at
+                       FROM avatars WHERE user_id = %s ORDER BY created_at DESC LIMIT %s""",
+                    (user_id, limit)
+                )
+                return [dict(r) for r in cur.fetchall()]
+        except Exception:
+            return []
+
+    def delete_avatar(self, user_id: int, avatar_id: int) -> bool:
+        """Delete an avatar from the gallery."""
+        try:
+            conn = self._get_conn()
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM avatars WHERE id = %s AND user_id = %s",
+                    (avatar_id, user_id)
+                )
+                return cur.rowcount > 0
+        except Exception:
+            return False
 
     def record_attempt(self, user_id: int, pack_name: str, zone_id: str,
                        challenge_id: str, correct: bool, answer: str = "",

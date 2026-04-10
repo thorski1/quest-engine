@@ -264,33 +264,43 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "user_chapters_started": user_chapters_started,
         })
 
-    # ── Browse all courses (platform mode) ─────────────────────────────────
+    # ── Browse all courses (with search/filter/pagination) ────────────────
     @hub.get("/browse", response_class=HTMLResponse)
     async def browse_courses(request: Request):
-        """Full course catalog with realm grouping."""
+        """Full course catalog with search, filters, and pagination."""
         pack_cards = []
+        category_counts = {}
         for pack in skill_packs:
             session = _sessions[pack.id]
+            cat = pack.category or "Other"
+            category_counts[cat] = category_counts.get(cat, 0) + 1
             pack_cards.append({
                 "id": pack.id, "title": pack.title, "subtitle": pack.subtitle,
-                "theme": pack.theme or ("playful" if pack.kids_mode else "cyberpunk"),
-                "category": pack.category or "",
+                "category": cat,
                 "has_progress": session.has_progress(),
                 "completed_zones": len(session.engine.completed_zones),
                 "total_zones": len(pack.zone_order),
-                "total_xp": session.engine.total_xp,
             })
-        themes = [p.theme or ("playful" if p.kids_mode else "cyberpunk") for p in skill_packs]
-        hub_theme = max(set(themes), key=themes.count)
-        total_challenges = sum(
-            sum(len(z.get("challenges", [])) for z in p.zones.values())
-            for p in skill_packs
-        )
-        return templates.TemplateResponse(request, "hub.html", {
-            "request": request, "packs": pack_cards, "theme": hub_theme,
-            "total_challenges": total_challenges, "total_users": 0,
-            "daily_teaser": None, "current_user": None,
-            "user_total_xp": 0, "user_chapters_started": 0,
+
+        # Get current user for header
+        current_user = None
+        try:
+            from .auth import AuthManager, SESSION_COOKIE
+            from ..storage import get_store
+            store = get_store()
+            if hasattr(store, 'create_user'):
+                sid = request.cookies.get(SESSION_COOKIE, "")
+                if sid:
+                    current_user = AuthManager(store).get_user_from_session(sid)
+        except Exception:
+            pass
+
+        return templates.TemplateResponse(request, "browse.html", {
+            "request": request,
+            "packs": pack_cards,
+            "category_counts": dict(sorted(category_counts.items())),
+            "current_user": current_user,
+            "first_pack_id": skill_packs[0].id if skill_packs else "letters",
         })
 
     # ── Admin analytics (hub-level, cross-game) ────────────────────────────────
@@ -1169,9 +1179,59 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         ))
 
     @hub.post(f"{prefix}/avatar/save", response_class=HTMLResponse)
-    async def save_avatar(request: Request, avatar_id: str = Form(default=""), avatar_url: str = Form(default=""), _pid: str = pack_id):
-        # TODO: persist to user profile
+    async def save_avatar(request: Request,
+                          avatar_id: str = Form(default=""),
+                          avatar_url: str = Form(default=""),
+                          avatar_image: str = Form(default=""),
+                          prompt: str = Form(default=""),
+                          style: str = Form(default=""),
+                          _pid: str = pack_id):
+        """Save an avatar to the user's gallery and mark it active."""
+        from ..storage import get_store
+        store = get_store()
+        user = _get_user(request) if _is_postgres() else None
+        if user and hasattr(store, 'save_avatar') and avatar_image:
+            source = "gemini" if avatar_image.startswith("data:") else "preset"
+            new_id = store.save_avatar(
+                user_id=user["id"],
+                image_data_url=avatar_image,
+                glb_url=avatar_url if avatar_url.endswith(".glb") else "",
+                prompt=prompt, style=style, source=source,
+            )
+            if new_id:
+                store.set_active_avatar(user["id"], new_id)
         return RedirectResponse(f"{prefix}/profile", status_code=303)
+
+    @hub.get(f"{prefix}/avatar/gallery", response_class=HTMLResponse)
+    async def avatar_gallery(request: Request, _pid: str = pack_id):
+        """Show all avatars the user has generated."""
+        from ..storage import get_store
+        store = get_store()
+        user = _get_user(request) if _is_postgres() else None
+        avatars = []
+        if user and hasattr(store, 'get_user_avatars'):
+            avatars = store.get_user_avatars(user["id"])
+        return templates.TemplateResponse(request, "avatar_gallery.html", _ctx(
+            request, avatars=avatars,
+        ))
+
+    @hub.post(f"{prefix}/avatar/activate/{{avatar_id}}", response_class=HTMLResponse)
+    async def activate_avatar(request: Request, avatar_id: int, _pid: str = pack_id):
+        from ..storage import get_store
+        store = get_store()
+        user = _get_user(request) if _is_postgres() else None
+        if user and hasattr(store, 'set_active_avatar'):
+            store.set_active_avatar(user["id"], avatar_id)
+        return RedirectResponse(f"{prefix}/avatar/gallery", status_code=303)
+
+    @hub.post(f"{prefix}/avatar/delete/{{avatar_id}}", response_class=HTMLResponse)
+    async def delete_avatar_route(request: Request, avatar_id: int, _pid: str = pack_id):
+        from ..storage import get_store
+        store = get_store()
+        user = _get_user(request) if _is_postgres() else None
+        if user and hasattr(store, 'delete_avatar'):
+            store.delete_avatar(user["id"], avatar_id)
+        return RedirectResponse(f"{prefix}/avatar/gallery", status_code=303)
 
     @hub.get(f"{prefix}/quest-log", response_class=HTMLResponse)
     async def quest_log_page(request: Request, _pid: str = pack_id):
