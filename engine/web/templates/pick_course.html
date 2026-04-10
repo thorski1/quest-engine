@@ -113,26 +113,70 @@
   .path-card.open .path-body { max-height: 2000px; }
   .path-body-inner { padding: 1rem 1.5rem 1.5rem; }
 
-  .course-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.6rem; }
+  .course-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .course-wrap {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; overflow: hidden; transition: border-color 0.15s;
+  }
+  .course-wrap.open { border-color: rgba(0,229,160,0.3); }
+  .course-wrap.has-progress { border-color: rgba(255,217,61,0.25); }
+
   .course-item {
-    display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem;
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px; transition: all 0.15s; text-decoration: none; color: inherit;
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem;
+    cursor: pointer; user-select: none; transition: background 0.12s;
   }
-  .course-item:hover {
-    background: rgba(0,229,160,0.06); border-color: rgba(0,229,160,0.3);
-    color: inherit; transform: translateX(3px);
-  }
-  .course-dot { width: 8px; height: 8px; border-radius: 50%; background: #00e5a0; flex-shrink: 0; }
+  .course-item:hover { background: rgba(0,229,160,0.06); }
+  .course-wrap.open .course-item { background: rgba(0,229,160,0.04); border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .course-dot { width: 10px; height: 10px; border-radius: 50%; background: #00e5a0; flex-shrink: 0; }
   .course-content { flex: 1; min-width: 0; }
-  .course-title { font-weight: 700; color: #e8f4ff; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .course-sub { font-size: 0.7rem; color: rgba(200,216,232,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .course-title { font-weight: 700; color: #e8f4ff; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .course-sub { font-size: 0.7rem; color: rgba(200,216,232,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.1rem; }
   .course-badge {
     font-size: 0.6rem; padding: 0.15rem 0.5rem; border-radius: 100px;
     background: rgba(0,229,160,0.15); color: #00e5a0; font-weight: 700;
+    white-space: nowrap;
   }
-  .course-arrow { color: rgba(200,216,232,0.3); font-size: 1rem; }
-  .course-item:hover .course-arrow { color: #00e5a0; }
+  .resume-badge { background: rgba(255,217,61,0.15) !important; color: #ffd93d !important; }
+  .course-chev { color: rgba(200,216,232,0.4); font-size: 0.85rem; transition: transform 0.2s; }
+  .course-wrap.open .course-chev { transform: rotate(180deg); color: #00e5a0; }
+
+  /* Nested zone/lesson list */
+  .zone-list {
+    max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+  }
+  .course-wrap.open .zone-list { max-height: 2500px; }
+  .zone-row {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.55rem 1rem 0.55rem 2.5rem;
+    text-decoration: none; color: inherit;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.12s, padding-left 0.15s;
+  }
+  .zone-row:hover {
+    background: rgba(0,229,160,0.05);
+    padding-left: 2.75rem;
+    color: inherit;
+  }
+  .zone-row.done .zone-row-dot { background: rgba(0,229,160,0.18); color: #00e5a0; }
+  .zone-row.done .zone-row-name { color: rgba(200,216,232,0.65); }
+  .zone-row-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 800;
+    background: rgba(255,255,255,0.06); color: rgba(200,216,232,0.6);
+    flex-shrink: 0;
+  }
+  .zone-row-main { flex: 1; min-width: 0; }
+  .zone-row-name {
+    font-size: 0.82rem; font-weight: 700; color: #e8f4ff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .zone-row-meta { font-size: 0.65rem; color: rgba(200,216,232,0.45); margin-top: 0.1rem; }
+  .zone-row-arrow { font-size: 0.85rem; color: rgba(200,216,232,0.3); }
+  .zone-row:hover .zone-row-arrow { color: #00e5a0; }
+  .zone-row-all { border-top: 1px dashed rgba(255,255,255,0.08); }
+  .zone-row-all .zone-row-name { color: rgba(200,216,232,0.75); font-weight: 600; }
 
   .footer-nav {
     display: flex; justify-content: center; gap: 1rem;
@@ -265,16 +309,43 @@
         <div class="path-body-inner">
           <div class="course-list">
             {% for c in path.courses %}
-            <a href="/{{ c.id }}/" class="course-item">
-              <div class="course-dot" style="background: {{ path.color }};"></div>
-              <div class="course-content">
-                <div class="course-title">{{ c.title }}</div>
-                <div class="course-sub">{{ c.subtitle or c.category }}</div>
+            <div class="course-wrap{% if c.has_progress %} has-progress{% endif %}" data-course="{{ c.id }}">
+              <div class="course-item" onclick="toggleCourse(this.parentElement)">
+                <div class="course-dot" style="background: {{ path.color }};"></div>
+                <div class="course-content">
+                  <div class="course-title">{{ c.title }}</div>
+                  <div class="course-sub">
+                    {{ c.total_zones }} lesson{{ 's' if c.total_zones != 1 else '' }}{% if c.has_progress %} · {{ c.completed_zones }}/{{ c.total_zones }} done{% endif %}
+                    {% if c.subtitle %} · {{ c.subtitle|truncate(40) }}{% endif %}
+                  </div>
+                </div>
+                {% if c.is_recommended %}<span class="course-badge">MATCH</span>{% endif %}
+                {% if c.has_progress %}<span class="course-badge resume-badge">RESUME</span>{% endif %}
+                <span class="course-chev">▾</span>
               </div>
-              {% if c.is_recommended %}<span class="course-badge">MATCH</span>{% endif %}
-              {% if c.has_progress %}<span class="course-badge" style="background:rgba(255,217,61,0.15);color:#ffd93d;">RESUME</span>{% endif %}
-              <span class="course-arrow">→</span>
-            </a>
+              <div class="zone-list">
+                {% for z in c.zones %}
+                <a href="/{{ c.id }}/zone/{{ z.id }}/intro" class="zone-row{% if z.completed %} done{% endif %}">
+                  <span class="zone-row-dot">
+                    {% if z.completed %}✓{% elif z.is_first %}▶{% else %}{{ loop.index }}{% endif %}
+                  </span>
+                  <div class="zone-row-main">
+                    <div class="zone-row-name">{{ z.name }}</div>
+                    <div class="zone-row-meta">{{ z.challenge_count }} challenge{{ 's' if z.challenge_count != 1 else '' }}</div>
+                  </div>
+                  <span class="zone-row-arrow">→</span>
+                </a>
+                {% endfor %}
+                <a href="/{{ c.id }}/" class="zone-row zone-row-all">
+                  <span class="zone-row-dot">📚</span>
+                  <div class="zone-row-main">
+                    <div class="zone-row-name">Open {{ c.title }} menu</div>
+                    <div class="zone-row-meta">Full course dashboard, stats, settings</div>
+                  </div>
+                  <span class="zone-row-arrow">→</span>
+                </a>
+              </div>
+            </div>
             {% endfor %}
           </div>
         </div>
@@ -293,6 +364,11 @@
 
 <script>
   function togglePath(el) { el.classList.toggle('open'); }
+  function toggleCourse(el) {
+    // Stop event so it doesn't bubble to path toggle
+    if (event) event.stopPropagation();
+    el.classList.toggle('open');
+  }
 
   var activePathFilter = 'all';
 
@@ -312,22 +388,35 @@
       var pathId = pc.getAttribute('data-path');
       var pathMatchesFilter = (activePathFilter === 'all' || activePathFilter === pathId);
 
-      // Filter individual courses within this path
-      var items = pc.querySelectorAll('.course-item');
-      var visibleCount = 0;
-      items.forEach(function(it) {
-        var txt = (it.innerText || '').toLowerCase();
-        var matches = !q || txt.indexOf(q) !== -1;
-        it.style.display = matches ? '' : 'none';
-        if (matches) visibleCount++;
+      // Filter course-wraps inside this path. A course is visible if the
+      // query matches the course itself OR any of its nested zones.
+      var courseWraps = pc.querySelectorAll('.course-wrap');
+      var visibleCourseCount = 0;
+      courseWraps.forEach(function(cw) {
+        var headText = (cw.querySelector('.course-item').innerText || '').toLowerCase();
+        var zoneRows = cw.querySelectorAll('.zone-row');
+        var zoneMatches = 0;
+        zoneRows.forEach(function(zr) {
+          var t = (zr.innerText || '').toLowerCase();
+          var m = !q || t.indexOf(q) !== -1 || headText.indexOf(q) !== -1;
+          zr.style.display = m ? '' : 'none';
+          if (m) zoneMatches++;
+        });
+        var courseMatches = !q || headText.indexOf(q) !== -1 || zoneMatches > 0;
+        cw.style.display = courseMatches ? '' : 'none';
+        if (courseMatches) {
+          visibleCourseCount++;
+          // Auto-open when searching so the matching zones are visible
+          if (q) cw.classList.add('open');
+        }
       });
 
       // Hide entire path if filter excludes it, or if no courses match search
-      var shouldShow = pathMatchesFilter && (visibleCount > 0 || !q);
+      var shouldShow = pathMatchesFilter && (visibleCourseCount > 0 || !q);
       pc.style.display = shouldShow ? '' : 'none';
 
       // Auto-open when searching so matches are visible
-      if (q && shouldShow && visibleCount > 0) pc.classList.add('open');
+      if (q && shouldShow) pc.classList.add('open');
       if (shouldShow) anyVisible = true;
     });
 

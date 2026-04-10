@@ -9,8 +9,28 @@
   <a href="/" class="platform-logo">⚡ Quest <span>Platform</span></a>
 
   <nav class="platform-nav-links" aria-label="Primary">
-    <a href="/pick-course">Courses</a>
-    <a href="/browse">Browse All</a>
+    {% if in_progress_courses and in_progress_courses|length > 0 %}
+    <div class="continue-menu" id="continue-menu-platform">
+      <button class="continue-trigger-platform" type="button" onclick="togglePlatformContinue()" aria-haspopup="true" aria-expanded="false">
+        ▶ Continue <span class="continue-badge">{{ in_progress_courses|length }}</span>
+      </button>
+      <div class="continue-drop" role="menu">
+        <div class="continue-head">Continue Playing</div>
+        {% for c in in_progress_courses %}
+        <a href="/{{ c.id }}/" class="continue-item">
+          <div class="continue-item-main">
+            <div class="continue-item-title">{{ c.title }}</div>
+            <div class="continue-item-meta">{{ c.category }} · {{ c.completed }}/{{ c.total }} zones · {{ c.total_xp }} XP</div>
+            <div class="continue-progress-bar"><div class="continue-progress-fill" style="width:{{ c.progress_pct }}%"></div></div>
+          </div>
+        </a>
+        {% endfor %}
+        <a href="/pick-course" class="continue-item continue-browse">📚 Browse all courses →</a>
+      </div>
+    </div>
+    {% endif %}
+    <a href="/pick-course">All Courses</a>
+    <a href="/browse">Browse</a>
   </nav>
 
   <div class="platform-nav-right">
@@ -84,6 +104,16 @@
   }
   .platform-nav-links a:hover { color: #00e5a0; }
   .platform-nav-right { display: flex; align-items: center; }
+
+  .platform-nav .continue-trigger-platform {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-size: 0.85rem; font-weight: 700; color: #e8f4ff;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+    padding: 0;
+  }
+  .platform-nav .continue-trigger-platform:hover { color: #00e5a0; }
+  .platform-nav .continue-menu { position: relative; }
+  .platform-nav .continue-drop { left: 0; right: auto; }
 
   /* Scoped user-menu styles so standalone pages (which don't load themes.css
      class scopes) still render the dropdown correctly. themes.css already
@@ -163,8 +193,17 @@
     var btn = menu.querySelector('.user-menu-trigger');
     if (btn) btn.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
   }
+  function togglePlatformContinue() {
+    var menu = document.getElementById('continue-menu-platform');
+    if (!menu) return;
+    menu.classList.toggle('open');
+    var btn = menu.querySelector('.continue-trigger-platform');
+    if (btn) btn.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
+  }
   document.addEventListener('click', function(e) {
     var menu = document.getElementById('platform-user-menu');
     if (menu && !menu.contains(e.target)) menu.classList.remove('open');
+    var cm = document.getElementById('continue-menu-platform');
+    if (cm && !cm.contains(e.target)) cm.classList.remove('open');
   });
 </script>

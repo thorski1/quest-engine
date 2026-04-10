@@ -30,12 +30,31 @@
 
 <!-- ── Header (smart top nav: primary actions + user menu) ────────────── -->
 <header class="site-header" role="banner">
-  <a href="/" class="site-logo" aria-label="Home">{% if theme == "playful" %}✨{% elif theme == "neural" %}🧠{% elif theme == "medieval" %}🐉{% elif theme == "ocean" %}🌊{% elif theme == "sunset" %}🌅{% else %}⚡{% endif %} {{ pack.title }}</a>
+  <a href="/" class="site-logo" aria-label="Quest Platform home">⚡ Quest <span class="logo-accent">Platform</span></a>
 
   <nav class="header-nav" role="navigation" aria-label="Main navigation">
-    <a href="{{ pack_url_prefix }}/" class="nav-link">Zones</a>
-    <a href="{{ pack_url_prefix }}/challenge" class="nav-link">Play</a>
-    <a href="/pick-course" class="nav-link">Courses</a>
+    {% if in_progress_courses and in_progress_courses|length > 0 %}
+    <div class="continue-menu" id="continue-menu">
+      <button class="nav-link continue-trigger" type="button" onclick="toggleContinueMenu()" aria-haspopup="true" aria-expanded="false">
+        ▶ Continue <span class="continue-badge">{{ in_progress_courses|length }}</span>
+      </button>
+      <div class="continue-drop" role="menu">
+        <div class="continue-head">Continue Playing</div>
+        {% for c in in_progress_courses %}
+        <a href="/{{ c.id }}/" class="continue-item{% if c.is_current %} current{% endif %}">
+          <div class="continue-item-main">
+            <div class="continue-item-title">{{ c.title }}{% if c.is_current %} <span class="here-tag">here</span>{% endif %}</div>
+            <div class="continue-item-meta">{{ c.category }} · {{ c.completed }}/{{ c.total }} zones · {{ c.total_xp }} XP</div>
+            <div class="continue-progress-bar"><div class="continue-progress-fill" style="width:{{ c.progress_pct }}%"></div></div>
+          </div>
+        </a>
+        {% endfor %}
+        <a href="/pick-course" class="continue-item continue-browse">📚 Browse all courses →</a>
+      </div>
+    </div>
+    {% endif %}
+    <a href="{{ pack_url_prefix }}/" class="nav-link">{{ pack.title | truncate(24) }}</a>
+    <a href="/pick-course" class="nav-link">All Courses</a>
   </nav>
 
   <div class="header-stats" aria-label="Player stats">
@@ -140,9 +159,18 @@
     var btn = menu.querySelector('.user-menu-trigger');
     if (btn) btn.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
   }
+  function toggleContinueMenu() {
+    var menu = document.getElementById('continue-menu');
+    if (!menu) return;
+    menu.classList.toggle('open');
+    var btn = menu.querySelector('.continue-trigger');
+    if (btn) btn.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
+  }
   document.addEventListener('click', function(e) {
-    var menu = document.getElementById('user-menu');
-    if (menu && !menu.contains(e.target)) menu.classList.remove('open');
+    var um = document.getElementById('user-menu');
+    if (um && !um.contains(e.target)) um.classList.remove('open');
+    var cm = document.getElementById('continue-menu');
+    if (cm && !cm.contains(e.target)) cm.classList.remove('open');
   });
 </script>
 

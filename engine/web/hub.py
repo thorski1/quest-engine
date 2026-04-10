@@ -395,6 +395,37 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "first_pack_id": skill_packs[0].id if skill_packs else "letters",
         })
 
+    def _get_in_progress_courses(user: dict | None, limit: int = 6) -> list[dict]:
+        """Return a Netflix-style list of courses the user is actively playing.
+        Most recently touched first; falls back to all packs with progress.
+        """
+        out = []
+        for p in skill_packs:
+            # Prefer user-specific session when authed, else global session.
+            session = None
+            if user:
+                key = f"{p.id}:{user.get('id', 0)}"
+                session = _sessions.get(key)
+            if session is None:
+                session = _sessions.get(p.id)
+            if session is None or not session.has_progress():
+                continue
+            completed = len(session.engine.completed_zones)
+            total = len(p.zone_order)
+            out.append({
+                "id": p.id,
+                "title": p.title,
+                "category": p.category or "",
+                "completed": completed,
+                "total": total,
+                "progress_pct": int((completed / total) * 100) if total else 0,
+                "total_xp": session.engine.total_xp,
+                "updated_at": getattr(session.engine, "last_updated", 0) or 0,
+            })
+        # Most recent first, then by XP
+        out.sort(key=lambda c: (-c["updated_at"], -c["total_xp"]))
+        return out[:limit]
+
     def _platform_base_ctx(request: Request, user: dict | None) -> dict:
         """Default context for platform-level pages that extend base.html."""
         # Use first pack as a visual placeholder for header rendering.
@@ -412,6 +443,7 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "pack_image": "",
             "active_avatar_url": _get_active_avatar_url(user),
             "platform_character": _get_platform_character(request),
+            "in_progress_courses": _get_in_progress_courses(user),
         }
 
     @hub.get("/character", response_class=HTMLResponse)
@@ -627,13 +659,25 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         interests = set(prefs.get("interests", []))
         age_level = prefs.get("age_level", "adult")
 
-        # Build list of all courses with metadata
+        # Build list of all courses with metadata (including their zones)
         all_courses = []
         for p in skill_packs:
             cat = p.category or "Other"
             path_id = _assign_path(cat)
             session = _sessions[p.id]
             is_kids = bool(p.kids_mode) or "kids" in cat.lower() or path_id == "kids"
+            # Build zone list for this course
+            zones = []
+            completed_ids = session.engine.completed_zones if session else set()
+            for idx, zone_id in enumerate(p.zone_order):
+                z = p.zones.get(zone_id, {})
+                zones.append({
+                    "id": zone_id,
+                    "name": z.get("name", zone_id),
+                    "challenge_count": len(z.get("challenges", [])),
+                    "completed": zone_id in completed_ids,
+                    "is_first": idx == 0,
+                })
             all_courses.append({
                 "id": p.id,
                 "title": p.title,
@@ -641,10 +685,12 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
                 "category": cat,
                 "path_id": path_id,
                 "total_zones": len(p.zone_order),
+                "completed_zones": len(completed_ids),
                 "has_progress": session.has_progress(),
                 "is_recommended": cat in interests,
                 "is_kids": is_kids,
                 "theme": p.theme or ("playful" if p.kids_mode else "cyberpunk"),
+                "zones": zones,
             })
 
         # Age-level ordering: kids users see Kids Zone first, adults see it last.
@@ -808,7 +854,7 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
 
     # ── Per-pack routes ────────────────────────────────────────────────────────
     for pack in skill_packs:
-        _register_pack_routes(hub, pack, templates)
+        _register_pack_routes(hub, pack, templates, skill_packs)
 
     # ── TTS audio endpoint ─────────────────────────────────────────────────
     from starlette.responses import Response
@@ -955,7 +1001,7 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
     return hub
 
 
-def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja2Templates"):
+def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja2Templates", all_skill_packs: list[SkillPack] | None = None):
     """Register all routes for one pack under /{pack_id}/."""
     pack_id = skill_pack.id
     prefix = f"/{pack_id}"
@@ -1039,6 +1085,30 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         except Exception:
             pass
 
+        # Continue Playing: in-progress courses across all packs.
+        in_progress = []
+        if all_skill_packs:
+            for p in all_skill_packs:
+                skey = f"{p.id}:{user['id']}" if user else p.id
+                s = _sessions.get(skey) or _sessions.get(p.id)
+                if s is None or not s.has_progress():
+                    continue
+                total = len(p.zone_order)
+                comp = len(s.engine.completed_zones)
+                in_progress.append({
+                    "id": p.id,
+                    "title": p.title,
+                    "category": p.category or "",
+                    "completed": comp,
+                    "total": total,
+                    "progress_pct": int((comp / total) * 100) if total else 0,
+                    "total_xp": s.engine.total_xp,
+                    "is_current": p.id == skill_pack.id,
+                })
+            # Current pack first, then most-XP first
+            in_progress.sort(key=lambda c: (not c["is_current"], -c["total_xp"]))
+            in_progress = in_progress[:6]
+
         return {
             "request": request,
             "theme": theme,
@@ -1047,6 +1117,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             "current_user": user,
             "active_avatar_url": active_avatar_url,
             "platform_character": platform_character,
+            "in_progress_courses": in_progress,
             **sess.stats_context(),
             **extra,
         }

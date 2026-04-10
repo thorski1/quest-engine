@@ -10,16 +10,16 @@
     100% { opacity: 1; transform: scale(1); }
   }
 
-  .zc-icon { font-size: 4rem; margin: 2rem 0 1rem; }
-  .zc-title { font-size: 1.6rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem; }
+  .zc-icon { font-size: 3.2rem; margin: 0.5rem 0 0.5rem; }
+  .zc-title { font-size: 1.6rem; font-weight: 800; color: var(--primary); margin-bottom: 0.25rem; }
   [data-theme="playful"] .zc-title { font-size: 1.9rem; }
 
-  .zc-stars { font-size: 2rem; margin-bottom: 1rem; letter-spacing: 0.3rem; }
+  .zc-stars { font-size: 1.8rem; margin-bottom: 0.6rem; letter-spacing: 0.3rem; }
   .zc-star-filled { color: var(--warn); }
   .zc-star-empty { color: var(--border); }
 
   .zc-stats {
-    display: flex; justify-content: center; gap: 2rem; margin: 1.5rem 0;
+    display: flex; justify-content: center; gap: 2rem; margin: 0.75rem 0;
     animation: fade-in-up 0.4s ease 0.2s both;
   }
   .zc-stat { text-align: center; }
@@ -27,24 +27,25 @@
   .zc-stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
 
   .zc-narrative {
-    text-align: left; padding: 1.25rem; margin: 1.5rem 0;
+    text-align: left; padding: 1rem 1.25rem; margin: 0.75rem 0 0.5rem;
     background: var(--bg-surface); border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     animation: fade-in-up 0.4s ease 0.3s both;
   }
+  .zc-narrative > *:last-child { margin-bottom: 0 !important; }
 
   .zc-actions {
     display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;
-    margin-top: 1.5rem;
+    margin-top: 0.75rem;
     animation: fade-in-up 0.4s ease 0.4s both;
   }
 
   .zc-achievement {
     display: inline-flex; align-items: center; gap: 0.5rem;
-    padding: 0.5rem 1rem; background: rgba(251,191,36,0.08);
+    padding: 0.4rem 0.9rem; background: rgba(251,191,36,0.08);
     border: 1px solid var(--warn); border-radius: var(--radius);
     color: var(--warn); font-weight: 700; font-size: 0.85rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     animation: fade-in-up 0.4s ease 0.15s both;
   }
 
