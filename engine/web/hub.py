@@ -425,16 +425,18 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
     async def platform_character_save(request: Request,
                                       player_name: str = Form(default=""),
                                       player_class: str = Form(default="scholar"),
-                                      player_avatar: str = Form(default="🧙"),
                                       player_alignment: str = Form(default="hero"),
                                       player_tone: str = Form(default="epic")):
         """Save platform-level character and move to avatar step."""
+        # Preserve any existing avatar_emoji from prior character data so we
+        # don't drop it when the user re-edits their character.
+        prior = _get_platform_character(request)
         char = {
             "name": player_name or "Adventurer",
             "class": player_class,
-            "avatar_emoji": player_avatar,
             "alignment": player_alignment,
             "tone": player_tone,
+            "avatar_emoji": prior.get("avatar_emoji", ""),
         }
         resp = RedirectResponse("/avatar", status_code=303)
         resp.set_cookie(
@@ -531,6 +533,24 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         ctx = _platform_base_ctx(request, user)
         ctx["avatars"] = avatars
         return templates.TemplateResponse(request, "avatar_gallery.html", ctx)
+
+    @hub.post("/avatar/activate/{avatar_id}", response_class=HTMLResponse)
+    async def platform_activate_avatar(request: Request, avatar_id: int):
+        from ..storage import get_store
+        store = get_store()
+        user = _get_current_user_hub(request)
+        if user and hasattr(store, 'set_active_avatar'):
+            store.set_active_avatar(user["id"], avatar_id)
+        return RedirectResponse("/avatar/gallery", status_code=303)
+
+    @hub.post("/avatar/delete/{avatar_id}", response_class=HTMLResponse)
+    async def platform_delete_avatar(request: Request, avatar_id: int):
+        from ..storage import get_store
+        store = get_store()
+        user = _get_current_user_hub(request)
+        if user and hasattr(store, 'delete_avatar'):
+            store.delete_avatar(user["id"], avatar_id)
+        return RedirectResponse("/avatar/gallery", status_code=303)
 
     # Higher-level learning "paths" — groups of related categories.
     # Order matters: first match wins. Category substrings are matched
@@ -1564,71 +1584,10 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             **s.detailed_stats_context(),
         ))
 
-    @hub.get(f"{prefix}/avatar", response_class=HTMLResponse)
-    async def avatar_3d_page(request: Request, _pid: str = pack_id):
-        from .trellis_3d import get_preset_avatars, is_available as trellis_ok
-        from .gemini_image import is_available as gemini_ok
-        return templates.TemplateResponse(request, "avatar_3d.html", _ctx(
-            request,
-            presets=get_preset_avatars(),
-            trellis_available=trellis_ok(),
-            gemini_available=gemini_ok(),
-        ))
-
-    @hub.post(f"{prefix}/avatar/save", response_class=HTMLResponse)
-    async def save_avatar(request: Request,
-                          avatar_id: str = Form(default=""),
-                          avatar_url: str = Form(default=""),
-                          avatar_image: str = Form(default=""),
-                          prompt: str = Form(default=""),
-                          style: str = Form(default=""),
-                          _pid: str = pack_id):
-        """Save an avatar to the user's gallery and mark it active."""
-        from ..storage import get_store
-        store = get_store()
-        user = _get_user(request) if _is_postgres() else None
-        if user and hasattr(store, 'save_avatar') and avatar_image:
-            source = "gemini" if avatar_image.startswith("data:") else "preset"
-            new_id = store.save_avatar(
-                user_id=user["id"],
-                image_data_url=avatar_image,
-                glb_url=avatar_url if avatar_url.endswith(".glb") else "",
-                prompt=prompt, style=style, source=source,
-            )
-            if new_id:
-                store.set_active_avatar(user["id"], new_id)
-        return RedirectResponse(f"{prefix}/profile", status_code=303)
-
-    @hub.get(f"{prefix}/avatar/gallery", response_class=HTMLResponse)
-    async def avatar_gallery(request: Request, _pid: str = pack_id):
-        """Show all avatars the user has generated."""
-        from ..storage import get_store
-        store = get_store()
-        user = _get_user(request) if _is_postgres() else None
-        avatars = []
-        if user and hasattr(store, 'get_user_avatars'):
-            avatars = store.get_user_avatars(user["id"])
-        return templates.TemplateResponse(request, "avatar_gallery.html", _ctx(
-            request, avatars=avatars,
-        ))
-
-    @hub.post(f"{prefix}/avatar/activate/{{avatar_id}}", response_class=HTMLResponse)
-    async def activate_avatar(request: Request, avatar_id: int, _pid: str = pack_id):
-        from ..storage import get_store
-        store = get_store()
-        user = _get_user(request) if _is_postgres() else None
-        if user and hasattr(store, 'set_active_avatar'):
-            store.set_active_avatar(user["id"], avatar_id)
-        return RedirectResponse(f"{prefix}/avatar/gallery", status_code=303)
-
-    @hub.post(f"{prefix}/avatar/delete/{{avatar_id}}", response_class=HTMLResponse)
-    async def delete_avatar_route(request: Request, avatar_id: int, _pid: str = pack_id):
-        from ..storage import get_store
-        store = get_store()
-        user = _get_user(request) if _is_postgres() else None
-        if user and hasattr(store, 'delete_avatar'):
-            store.delete_avatar(user["id"], avatar_id)
-        return RedirectResponse(f"{prefix}/avatar/gallery", status_code=303)
+    # Avatar management lives at platform level only (/avatar, /avatar/save,
+    # /avatar/gallery, /avatar/activate/{id}, /avatar/delete/{id}). Per-course
+    # avatar routes were intentionally removed — every player has a single
+    # avatar that follows them across all courses.
 
     @hub.get(f"{prefix}/quest-log", response_class=HTMLResponse)
     async def quest_log_page(request: Request, _pid: str = pack_id):

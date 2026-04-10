@@ -82,7 +82,7 @@
       <h1 class="gallery-title">Avatar <span>Gallery</span></h1>
       <p class="gallery-sub">{{ avatars | length }} saved avatar{% if avatars | length != 1 %}s{% endif %}</p>
     </div>
-    <a href="{{ pack_url_prefix }}/avatar" class="btn-create">✨ Create New Avatar</a>
+    <a href="/avatar" class="btn-create">✨ Create New Avatar</a>
   </div>
 
   {% if avatars %}
@@ -100,11 +100,11 @@
       </div>
       <div class="avatar-actions">
         {% if not av.is_active %}
-        <form method="POST" action="{{ pack_url_prefix }}/avatar/activate/{{ av.id }}" style="flex:1;">
+        <form method="POST" action="/avatar/activate/{{ av.id }}" style="flex:1;">
           <button type="submit" class="avatar-btn" style="width:100%;">Equip</button>
         </form>
         {% endif %}
-        <form method="POST" action="{{ pack_url_prefix }}/avatar/delete/{{ av.id }}" style="flex:1;"
+        <form method="POST" action="/avatar/delete/{{ av.id }}" style="flex:1;"
           onsubmit="return confirm('Delete this avatar?');">
           <button type="submit" class="avatar-btn danger" style="width:100%;">Delete</button>
         </form>
@@ -117,7 +117,7 @@
     <div class="empty-icon">🎨</div>
     <h2 style="color:var(--text-bright);margin-top:1rem;">No Avatars Yet</h2>
     <p class="empty-text">Create your first AI-generated avatar with Nano Banana.</p>
-    <a href="{{ pack_url_prefix }}/avatar" class="btn-create" style="margin-top:1.5rem;">✨ Create Avatar</a>
+    <a href="/avatar" class="btn-create" style="margin-top:1.5rem;">✨ Create Avatar</a>
   </div>
   {% endif %}
 

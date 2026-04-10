@@ -67,6 +67,26 @@ LANDING_HERO = {
     "prompt": "epic fantasy RPG gaming landscape, multiple character silhouettes on hilltop, magical sky with aurora, fantasy worlds in distance, cinematic composition, concept art masterpiece"
 }
 
+# Backgrounds / illustrations for the onboarding flow
+ONBOARDING_ART = [
+    {"id": "welcome_hero", "prompt": "Wide cinematic panorama of a fantasy world gateway, multiple portals to different realms (castle, jungle, city, neon cyberpunk), heroic silhouette standing at the threshold, golden hour lighting, concept art masterpiece, no text"},
+    {"id": "prefs_bg", "prompt": "soft atmospheric fantasy tapestry pattern, muted teal and gold, open grimoire with glowing runes, warm mystical mood, subtle vignette, no text, backdrop illustration"},
+    {"id": "age_kids", "prompt": "cute cartoon child hero character holding a glowing wand, big friendly eyes, bright primary colors, Pixar style, whimsical background, no text"},
+    {"id": "age_teen", "prompt": "stylized anime teenager hero with hoodie and headphones, glowing phone screen, vibrant urban neon backdrop, shounen concept art, no text"},
+    {"id": "age_adult", "prompt": "mature warrior scholar with armor and spellbook, grounded realism, dim candlelit study, oil-painting style, no text"},
+    {"id": "type_rpg", "prompt": "classic fantasy RPG adventuring party silhouette walking toward an epic castle, sunset hues, painterly style, no text"},
+    {"id": "type_trivia", "prompt": "glowing question mark orb floating above an open book of knowledge, purple and cyan lights, arcade / game show aesthetic, no text"},
+    {"id": "type_study", "prompt": "minimalist zen study space, tea, candle, stack of books, warm amber lighting, peaceful productive mood, no text"},
+    {"id": "style_chill", "prompt": "hammock between two palm trees under starry galaxy sky, calm ocean below, pastel colors, dreamy vaporwave mood, no text"},
+    {"id": "style_balanced", "prompt": "yin yang balanced energy orb glowing between two hands, cool teal and warm orange, symmetrical composition, mystical fantasy art, no text"},
+    {"id": "style_intense", "prompt": "lightning bolt striking a mountain peak, dramatic stormy sky, volcanic energy, red and electric blue, heroic pose silhouette, epic fantasy art, no text"},
+    # Learning-path illustrations for pick-course paths
+    {"id": "path_languages", "prompt": "globe surrounded by floating speech bubbles with different alphabets (Chinese, Arabic, Cyrillic, Japanese), warm golden light, travel journal aesthetic, no text"},
+    {"id": "path_tech", "prompt": "glowing circuit board landscape with cyberpunk code streams, holographic terminal, purple and green neon, tech fantasy art, no text"},
+    {"id": "path_kids", "prompt": "whimsical rainbow treehouse with friendly creatures, storybook illustration style, pastel colors, magical and safe feeling, no text"},
+    {"id": "path_creative", "prompt": "painter's palette exploding into musical notes, cooking utensils, and camera lens, vibrant creative chaos, warm earth tones, no text"},
+]
+
 
 def save_data_url(data_url: str, filepath: Path) -> bool:
     """Extract base64 from data URL and save as file."""
@@ -122,6 +142,13 @@ def generate_landing():
     generate_one(LANDING_HERO, style="fantasy")
 
 
+def generate_onboarding():
+    print("🎛️ Generating onboarding flow art...")
+    for asset in ONBOARDING_ART:
+        generate_one(asset, style="fantasy")
+        time.sleep(2)
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "all"
 
@@ -137,6 +164,8 @@ def main():
         generate_classes()
     if cmd in ("landing", "all"):
         generate_landing()
+    if cmd in ("onboarding", "all"):
+        generate_onboarding()
 
     print("\n✅ Done!")
 

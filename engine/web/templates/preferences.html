@@ -10,7 +10,16 @@
 <link rel="stylesheet" href="/static/themes.css">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0a0e1a; color: #c8d8e8; font-family: 'Nunito', system-ui, sans-serif; min-height: 100vh; }
+  body {
+    background-color: #0a0e1a; color: #c8d8e8; font-family: 'Nunito', system-ui, sans-serif;
+    min-height: 100vh; position: relative;
+    background-image: url('/static/generated/prefs_bg.webp');
+    background-size: cover; background-position: center; background-attachment: fixed;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: -1;
+    background: linear-gradient(180deg, rgba(10,14,26,0.88), rgba(10,14,26,0.95));
+  }
   a { color: #00e5a0; text-decoration: none; }
   button { font-family: inherit; cursor: pointer; }
 
@@ -30,17 +39,37 @@
   .choice-grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 
   .choice {
-    position: relative; padding: 1.1rem 1rem; background: rgba(255,255,255,0.03);
+    position: relative; padding: 1.1rem 1rem; background-color: rgba(255,255,255,0.03);
+    background-size: cover; background-position: center;
     border: 2px solid rgba(255,255,255,0.08); border-radius: 14px;
     transition: all 0.15s; cursor: pointer; text-align: center;
+    overflow: hidden;
   }
+  .choice::before {
+    content: ''; position: absolute; inset: 0; z-index: 0;
+    background: linear-gradient(180deg, rgba(10,14,26,0.4) 0%, rgba(10,14,26,0.85) 100%);
+    transition: background 0.15s;
+  }
+  .choice > * { position: relative; z-index: 1; }
   .choice:hover { border-color: rgba(0,229,160,0.4); transform: translateY(-2px); }
+  .choice:hover::before { background: linear-gradient(180deg, rgba(10,14,26,0.3) 0%, rgba(10,14,26,0.8) 100%); }
   .choice input { position: absolute; opacity: 0; pointer-events: none; }
   .choice input:checked + .choice-inner { color: #00e5a0; }
-  .choice:has(input:checked) { border-color: #00e5a0; background: rgba(0,229,160,0.08); box-shadow: 0 0 20px rgba(0,229,160,0.15); }
+  .choice:has(input:checked) { border-color: #00e5a0; box-shadow: 0 0 24px rgba(0,229,160,0.25); }
+  .choice:has(input:checked)::before { background: linear-gradient(180deg, rgba(0,229,160,0.15) 0%, rgba(10,14,26,0.8) 100%); }
   .choice-icon { font-size: 1.8rem; display: block; margin-bottom: 0.4rem; }
-  .choice-name { font-weight: 700; color: #e8f4ff; font-size: 0.95rem; }
-  .choice-desc { font-size: 0.72rem; color: rgba(200,216,232,0.55); margin-top: 0.25rem; line-height: 1.35; }
+  .choice-name { font-weight: 700; color: #e8f4ff; font-size: 0.95rem; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
+  .choice-desc { font-size: 0.72rem; color: rgba(200,216,232,0.75); margin-top: 0.25rem; line-height: 1.35; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+
+  .bg-kids { background-image: url('/static/generated/age_kids.webp'); }
+  .bg-teen { background-image: url('/static/generated/age_teen.webp'); }
+  .bg-adult { background-image: url('/static/generated/age_adult.webp'); }
+  .bg-rpg { background-image: url('/static/generated/type_rpg.webp'); }
+  .bg-trivia { background-image: url('/static/generated/type_trivia.webp'); }
+  .bg-study { background-image: url('/static/generated/type_study.webp'); }
+  .bg-chill { background-image: url('/static/generated/style_chill.webp'); }
+  .bg-balanced { background-image: url('/static/generated/style_balanced.webp'); }
+  .bg-intense { background-image: url('/static/generated/style_intense.webp'); }
 
   .interest-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .tag {
@@ -91,7 +120,7 @@
       <h2>Age Level</h2>
       <p class="hint">Choose the content level that fits you best.</p>
       <div class="choice-grid cols-3">
-        <label class="choice">
+        <label class="choice bg-kids">
           <input type="radio" name="age_level" value="kids" {% if existing.age_level == 'kids' %}checked{% endif %}>
           <div class="choice-inner">
             <span class="choice-icon">🧒</span>
@@ -99,7 +128,7 @@
             <div class="choice-desc">Ages 5-12 · simple, playful</div>
           </div>
         </label>
-        <label class="choice">
+        <label class="choice bg-teen">
           <input type="radio" name="age_level" value="teen" {% if existing.age_level == 'teen' %}checked{% endif %}>
           <div class="choice-inner">
             <span class="choice-icon">🧑‍🎓</span>
@@ -107,7 +136,7 @@
             <div class="choice-desc">Ages 13-17 · challenging</div>
           </div>
         </label>
-        <label class="choice">
+        <label class="choice bg-adult">
           <input type="radio" name="age_level" value="adult" {% if not existing.age_level or existing.age_level == 'adult' %}checked{% endif %}>
           <div class="choice-inner">
             <span class="choice-icon">👩‍💻</span>
@@ -122,7 +151,7 @@
       <h2>Game Type</h2>
       <p class="hint">What kind of learning experience do you want?</p>
       <div class="choice-grid cols-3">
-        <label class="choice">
+        <label class="choice bg-rpg">
           <input type="radio" name="game_type" value="rpg" {% if not existing.game_type or existing.game_type == 'rpg' %}checked{% endif %}>
           <div class="choice-inner">
             <span class="choice-icon">⚔️</span>
@@ -130,7 +159,7 @@
             <div class="choice-desc">Full story, classes, levels</div>
           </div>
         </label>
-        <label class="choice">
+        <label class="choice bg-trivia">
           <input type="radio" name="game_type" value="trivia" {% if existing.game_type == 'trivia' %}checked{% endif %}>
           <div class="choice-inner">
             <span class="choice-icon">🎯</span>
@@ -138,7 +167,7 @@
             <div class="choice-desc">Bite-sized challenges</div>
           </div>
         </label>
-        <label class="choice">
+        <label class="choice bg-study">
           <input type="radio" name="game_type" value="study" {% if existing.game_type == 'study' %}checked{% endif %}>
           <div class="choice-inner">
             <span class="choice-icon">📚</span>
@@ -153,7 +182,7 @@
       <h2>Play Style</h2>
       <p class="hint">How do you like to learn?</p>
       <div class="choice-grid cols-3">
-        <label class="choice">
+        <label class="choice bg-chill">
           <input type="radio" name="play_style" value="chill" {% if existing.play_style == 'chill' %}checked{% endif %}>
           <div class="choice-inner">
             <span class="choice-icon">🌿</span>
@@ -161,7 +190,7 @@
             <div class="choice-desc">Take your time, no rush</div>
           </div>
         </label>
-        <label class="choice">
+        <label class="choice bg-balanced">
           <input type="radio" name="play_style" value="balanced" {% if not existing.play_style or existing.play_style == 'balanced' %}checked{% endif %}>
           <div class="choice-inner">
             <span class="choice-icon">⚖️</span>
@@ -169,7 +198,7 @@
             <div class="choice-desc">Mix of challenge &amp; fun</div>
           </div>
         </label>
-        <label class="choice">
+        <label class="choice bg-intense">
           <input type="radio" name="play_style" value="intense" {% if existing.play_style == 'intense' %}checked{% endif %}>
           <div class="choice-inner">
             <span class="choice-icon">🔥</span>

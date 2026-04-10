@@ -21,15 +21,6 @@
   .class-desc { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem; }
   .class-bonus { font-size: 0.65rem; color: var(--primary); margin-top: 0.3rem; font-weight: 600; }
 
-  .avatar-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1rem 0; }
-  .avatar-option {
-    font-size: 2.2rem; padding: 0.4rem; border: 3px solid transparent;
-    border-radius: var(--radius-lg); cursor: pointer; transition: all 0.15s;
-    background: var(--bg-raised);
-  }
-  .avatar-option:hover { transform: scale(1.15); }
-  .avatar-option.selected { border-color: var(--primary); box-shadow: 0 0 12px rgba(0,229,160,0.3); }
-
   .stat-preview {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
     margin: 1rem 0; padding: 1rem; background: var(--bg-surface);
@@ -112,26 +103,8 @@
     </div>
   </div>
 
-  <!-- Step 2: Customize avatar -->
+  <!-- Step 2: Choose Alignment -->
   <div class="cc-step" id="cc-step-1">
-    <h1 class="cc-title">Your Avatar</h1>
-    <p class="cc-subtitle">Pick a character that represents you</p>
-
-    <div class="avatar-grid" id="avatar-grid">
-      {% for emoji in ["🧙","🧙‍♀️","🦊","🐱","🐶","🦁","🐼","🦄","🐲","🤖","👾","🥷","🧑‍🚀","🧑‍💻","🧝","🧝‍♀️","🧛","🧞","🦸","🦸‍♀️","🎭","🌟","🔮","💎","🗡️","🛡️","⚔️","🏹"] %}
-      <button type="button" class="avatar-option" onclick="selectAvatar(this, '{{ emoji }}')"
-        {% if loop.first %}style="border-color:var(--primary);" class="avatar-option selected"{% endif %}>{{ emoji }}</button>
-      {% endfor %}
-    </div>
-
-    <div class="cc-nav">
-      <button class="btn btn-ghost" onclick="ccPrev()">← Back</button>
-      <button class="btn btn-primary btn-lg" onclick="ccNext()">Next →</button>
-    </div>
-  </div>
-
-  <!-- Step 3: Choose Alignment -->
-  <div class="cc-step" id="cc-step-2">
     <h1 class="cc-title">Choose Your Path</h1>
     <p class="cc-subtitle">Your alignment shapes how the world sees you</p>
 
@@ -162,8 +135,8 @@
     </div>
   </div>
 
-  <!-- Step 4: Choose Narrative Tone -->
-  <div class="cc-step" id="cc-step-3">
+  <!-- Step 3: Choose Narrative Tone -->
+  <div class="cc-step" id="cc-step-2">
     <h1 class="cc-title">How Should Your Story Sound?</h1>
     <p class="cc-subtitle">This changes ALL the narration in your game</p>
 
@@ -200,14 +173,23 @@
     </div>
   </div>
 
-  <!-- Step 5: Name + Preview -->
-  <div class="cc-step" id="cc-step-4">
+  <!-- Step 4: Name + Preview -->
+  <div class="cc-step" id="cc-step-3">
     <h1 class="cc-title">Your Character</h1>
 
     <div class="char-preview" id="char-preview">
-      <div class="char-avatar" id="preview-avatar">🧙</div>
-      <div class="char-name" id="preview-name">Adventurer</div>
+      {% if active_avatar_url %}
+      <img src="{{ active_avatar_url }}" alt="Your avatar" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);box-shadow:0 0 32px rgba(0,229,160,0.4);">
+      {% else %}
+      <div class="char-avatar" id="preview-avatar">📚</div>
+      {% endif %}
+      <div class="char-name" id="preview-name">{{ current_user.display_name if current_user else 'Adventurer' }}</div>
       <div class="char-class" id="preview-class">Scholar</div>
+      {% if not active_avatar_url %}
+      <div style="margin-top:0.6rem;">
+        <a href="/avatar" style="font-size:0.7rem;color:var(--primary);text-decoration:none;">🎨 Create your AI avatar next →</a>
+      </div>
+      {% endif %}
     </div>
 
     {% if not current_user %}
@@ -256,7 +238,6 @@
     <form method="POST" action="{% if pack_url_prefix %}{{ pack_url_prefix }}/new-game{% else %}/character/save{% endif %}" style="text-align:center;">
       <input type="hidden" name="player_name" id="form-name" value="{{ current_user.display_name if current_user else '' }}">
       <input type="hidden" name="player_class" id="form-class" value="scholar">
-      <input type="hidden" name="player_avatar" id="form-avatar" value="🧙">
       <input type="hidden" name="player_alignment" id="form-alignment" value="hero">
       <input type="hidden" name="player_tone" id="form-tone" value="epic">
       <button type="submit" class="btn btn-primary btn-lg" style="width:100%;max-width:400px;font-size:1.1rem;padding:0.8rem 2rem;">
@@ -274,14 +255,13 @@
     <div class="cc-dot" id="cc-dot-1"></div>
     <div class="cc-dot" id="cc-dot-2"></div>
     <div class="cc-dot" id="cc-dot-3"></div>
-    <div class="cc-dot" id="cc-dot-4"></div>
   </div>
 
 </div>
 
 <script>
-var ccStep = 0, maxStep = 4;
-var charClass = '', charAvatar = '🧙', charAlignment = '', charTone = '';
+var ccStep = 0, maxStep = 3;
+var charClass = '', charAlignment = '', charTone = '';
 
 var classStats = {
   scholar:     {int:8, wis:7, spd:4, end:5, cha:5, lck:4},
@@ -304,17 +284,6 @@ function selectClass(el, cls) {
   document.getElementById('btn-class').disabled = false;
   document.getElementById('btn-class').style.opacity = '1';
   updateStats(cls);
-}
-
-function selectAvatar(el, emoji) {
-  document.querySelectorAll('.avatar-option').forEach(function(a) {
-    a.classList.remove('selected'); a.style.borderColor = 'transparent';
-  });
-  el.classList.add('selected');
-  el.style.borderColor = 'var(--primary)';
-  charAvatar = emoji;
-  document.getElementById('form-avatar').value = emoji;
-  document.getElementById('preview-avatar').textContent = emoji;
 }
 
 function updateStats(cls) {
@@ -356,7 +325,7 @@ function ccShow(n) {
   document.getElementById('cc-step-' + n).classList.add('active');
   document.getElementById('cc-dot-' + n).classList.add('active');
   ccStep = n;
-  if (n === 4) {
+  if (n === 3) {
     var nameInput = document.getElementById('char-name-input');
     if (nameInput) {
       document.getElementById('form-name').value = nameInput.value || 'Adventurer';
