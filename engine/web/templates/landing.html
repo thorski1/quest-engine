@@ -134,33 +134,37 @@
     text-decoration: none; color: #fff; transition: transform 0.2s, box-shadow 0.2s;
     min-height: 160px; display: flex; flex-direction: column; justify-content: flex-end;
   }
-  .realm:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+  .realm:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+  .realm {
+    background-size: cover; background-position: center center;
+  }
   .realm::before {
-    content: ''; position: absolute; inset: 0; background: inherit;
-    filter: brightness(0.7); z-index: 0;
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.75) 100%);
+    z-index: 0;
   }
   .realm > * { position: relative; z-index: 1; }
-  .realm-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-  .realm-name { font-size: 1.2rem; font-weight: 800; }
-  .realm-desc { font-size: 0.78rem; opacity: 0.85; margin-top: 0.15rem; }
-  .realm-meta { font-size: 0.65rem; opacity: 0.5; margin-top: 0.5rem; font-family: 'JetBrains Mono', monospace; }
+  .realm-icon { font-size: 2.5rem; margin-bottom: 0.5rem; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+  .realm-name { font-size: 1.25rem; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+  .realm-desc { font-size: 0.78rem; opacity: 0.95; margin-top: 0.15rem; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+  .realm-meta { font-size: 0.65rem; opacity: 0.75; margin-top: 0.5rem; font-family: 'JetBrains Mono', monospace; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
 
-  .r-kids { background: linear-gradient(135deg, #6c5ce7, #a29bfe, #fd79a8); }
-  .r-devops { background: linear-gradient(135deg, #00b894, #00cec9, #0984e3); }
-  .r-ai { background: linear-gradient(135deg, #a855f7, #ec4899, #f472b6); }
-  .r-chinese { background: linear-gradient(135deg, #e17055, #d63031, #fdcb6e); }
-  .r-spanish { background: linear-gradient(135deg, #f39c12, #e74c3c, #fd79a8); }
-  .r-japanese { background: linear-gradient(135deg, #0984e3, #00b4d8, #6c5ce7); }
-  .r-korean { background: linear-gradient(135deg, #6366f1, #818cf8, #a5b4fc); }
-  .r-french { background: linear-gradient(135deg, #c084fc, #e879f9, #f0abfc); }
-  .r-german { background: linear-gradient(135deg, #78716c, #a8a29e, #fbbf24); }
-  .r-italian { background: linear-gradient(135deg, #16a34a, #f0fdf4, #dc2626); }
-  .r-cyber { background: linear-gradient(135deg, #00ff41, #0a3a0a, #00cc33); }
-  .r-data { background: linear-gradient(135deg, #3b82f6, #8b5cf6, #06b6d4); }
-  .r-webdev { background: linear-gradient(135deg, #f97316, #eab308, #84cc16); }
-  .r-finance { background: linear-gradient(135deg, #d4a030, #fbbf24, #92400e); }
-  .r-psych { background: linear-gradient(135deg, #7c6cf0, #c084fc, #e879f9); }
-  .r-cooking { background: linear-gradient(135deg, #ea580c, #dc2626, #fbbf24); }
+  .r-kids { background-color: #6c5ce7; background-image: url('/static/generated/kids.webp'); }
+  .r-devops { background-color: #00b894; background-image: url('/static/generated/devops.webp'); }
+  .r-ai { background-color: #a855f7; background-image: url('/static/generated/ai.webp'); }
+  .r-chinese { background-color: #e17055; background-image: url('/static/generated/chinese.webp'); }
+  .r-spanish { background-color: #f39c12; background-image: url('/static/generated/spanish.webp'); }
+  .r-japanese { background-color: #0984e3; background-image: url('/static/generated/japanese.webp'); }
+  .r-korean { background-color: #6366f1; background-image: url('/static/generated/korean.webp'); }
+  .r-french { background-color: #c084fc; background-image: url('/static/generated/french.webp'); }
+  .r-german { background-color: #78716c; background-image: url('/static/generated/german.webp'); }
+  .r-italian { background-color: #16a34a; background-image: url('/static/generated/italian.webp'); }
+  .r-cyber { background-color: #00cc33; background-image: url('/static/generated/cyber.webp'); }
+  .r-data { background-color: #3b82f6; background-image: url('/static/generated/data.webp'); }
+  .r-webdev { background-color: #f97316; background-image: url('/static/generated/webdev.webp'); }
+  .r-finance { background-color: #d4a030; background-image: url('/static/generated/finance.webp'); }
+  .r-psych { background-color: #7c6cf0; background-image: url('/static/generated/psych.webp'); }
+  .r-cooking { background-color: #ea580c; background-image: url('/static/generated/cooking.webp'); }
 
   /* ── FEATURES ──────────────────────────────────────────────── */
   .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; margin: 2rem 0; }

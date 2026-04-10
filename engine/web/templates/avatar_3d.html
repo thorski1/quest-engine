@@ -3,418 +3,586 @@
 {% block extra_head %}
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 <style>
-  .avatar-page { max-width: 960px; margin: 0 auto; padding: 0 1rem; }
-  .avatar-header { text-align: center; margin-bottom: 1.5rem; }
-  .avatar-title { font-size: 1.8rem; font-weight: 800; color: var(--text-bright); }
-  .avatar-title span { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .avatar-sub { color: var(--text-dim); font-size: 0.85rem; margin-top: 0.3rem; }
-  .free-badge { display: inline-block; padding: 0.15rem 0.5rem; background: rgba(0,229,160,0.12); color: var(--primary); border-radius: 100px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-left: 0.4rem; }
+  .av-page { max-width: 1000px; margin: 0 auto; padding: 0 1rem; }
+  .av-header { text-align: center; margin-bottom: 1rem; }
+  .av-title { font-size: 1.6rem; font-weight: 800; color: var(--text-bright); }
+  .av-title span { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .av-sub { color: var(--text-dim); font-size: 0.8rem; margin-top: 0.2rem; }
 
-  .avatar-layout { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
-  @media (min-width: 768px) { .avatar-layout { grid-template-columns: 1.1fr 1fr; } }
+  /* Wizard progress */
+  .wizard-steps {
+    display: flex; justify-content: center; gap: 0.25rem; margin-bottom: 1rem;
+  }
+  .ws-dot {
+    width: 28px; height: 4px; background: var(--border); border-radius: 2px;
+    transition: all 0.3s;
+  }
+  .ws-dot.active { background: linear-gradient(90deg, var(--primary), var(--secondary)); }
+  .ws-dot.done { background: var(--primary); }
+
+  /* Layout */
+  .av-layout { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+  @media (min-width: 900px) { .av-layout { grid-template-columns: 1fr 1.1fr; } }
 
   /* Viewer */
-  .viewer-section { position: sticky; top: 1rem; align-self: start; }
-  .avatar-viewer {
+  .viewer-wrap { position: sticky; top: 1rem; align-self: start; }
+  .av-viewer {
     width: 100%; aspect-ratio: 1;
-    background: radial-gradient(circle at center, rgba(0,229,160,0.1), var(--bg-surface));
-    border: 2px solid var(--border); border-radius: 20px; overflow: hidden; position: relative;
+    background: radial-gradient(circle at center, rgba(0,229,160,0.08), var(--bg-surface));
+    border: 2px solid var(--border); border-radius: 20px;
+    overflow: hidden; position: relative;
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
-  model-viewer { width: 100%; height: 100%; }
-  #avatar-image-preview { width: 100%; height: 100%; object-fit: contain; display: none; }
-  .viewer-placeholder {
+  .av-viewer img, .av-viewer model-viewer { width: 100%; height: 100%; object-fit: cover; }
+  .viewer-empty {
     position: absolute; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; color: var(--text-dim);
-    font-family: var(--font); gap: 0.5rem;
+    align-items: center; justify-content: center; color: var(--text-dim); gap: 0.5rem;
   }
-  .viewer-placeholder-icon { font-size: 4rem; opacity: 0.3; }
-  .viewer-controls { display: flex; gap: 0.4rem; margin-top: 0.75rem; justify-content: center; flex-wrap: wrap; }
-  .viewer-btn {
-    padding: 0.4rem 0.75rem; background: var(--bg-surface); border: 1px solid var(--border);
-    border-radius: var(--radius); color: var(--text); cursor: pointer; font-size: 0.7rem;
-    transition: all 0.15s; font-family: var(--font);
+  .viewer-empty-icon { font-size: 4rem; opacity: 0.3; }
+  .viewer-empty-text { font-size: 0.8rem; text-align: center; padding: 0 1rem; }
+
+  /* Wizard panel */
+  .wizard-panel {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.25rem;
   }
-  .viewer-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .wizard-step { display: none; animation: slide-in 0.3s ease; }
+  .wizard-step.active { display: block; }
+  @keyframes slide-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
-  .mode-label {
-    font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
-    color: var(--text-dim); text-align: center; margin-top: 0.5rem;
+  .step-label {
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.25rem;
   }
+  .step-title { font-size: 1.1rem; font-weight: 800; color: var(--text-bright); margin-bottom: 0.25rem; }
+  .step-desc { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 1rem; }
 
-  /* Tabs */
-  .tabs { display: flex; gap: 0.2rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); overflow-x: auto; }
-  .tab {
-    padding: 0.6rem 0.9rem; background: none; border: none; color: var(--text-dim);
-    cursor: pointer; font-size: 0.8rem; font-weight: 600; font-family: var(--font);
-    border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s;
-    white-space: nowrap;
+  /* Choice grid */
+  .choice-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;
   }
-  .tab:hover { color: var(--text); }
-  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
-
-  .tab-content { display: none; }
-  .tab-content.active { display: block; animation: fade 0.2s; }
-  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-
-  /* Presets */
-  .preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.5rem; }
-  .preset-card {
-    padding: 0.7rem; background: var(--bg-surface); border: 2px solid var(--border);
+  .choice-grid.tight { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 0.4rem; }
+  .choice {
+    padding: 0.75rem 0.5rem; background: var(--bg-raised); border: 2px solid var(--border);
     border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.15s;
+    font-family: var(--font);
   }
-  .preset-card:hover { transform: translateY(-2px); border-color: var(--primary); }
-  .preset-card.selected { border-color: var(--primary); box-shadow: 0 0 16px rgba(0,229,160,0.3); background: rgba(0,229,160,0.05); }
-  .preset-emoji { font-size: 1.8rem; }
-  .preset-name { font-weight: 700; font-size: 0.75rem; color: var(--text-bright); margin-top: 0.15rem; }
-  .preset-desc { font-size: 0.58rem; color: var(--text-dim); margin-top: 0.1rem; line-height: 1.2; }
+  .choice:hover { transform: translateY(-2px); border-color: var(--primary); }
+  .choice.selected { border-color: var(--primary); background: rgba(0,229,160,0.08); box-shadow: 0 0 12px rgba(0,229,160,0.2); }
+  .choice-icon { font-size: 1.5rem; display: block; margin-bottom: 0.2rem; }
+  .choice-name { font-weight: 700; font-size: 0.75rem; color: var(--text-bright); }
+  .choice-desc { font-size: 0.6rem; color: var(--text-dim); margin-top: 0.15rem; line-height: 1.3; }
 
-  /* Custom gen */
-  .custom-gen { padding: 1rem; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; }
-  .custom-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); display: block; margin-bottom: 0.4rem; }
-  .custom-input, .custom-textarea {
-    width: 100%; padding: 0.65rem 0.9rem; background: var(--bg-raised);
-    border: 1px solid var(--border-bright); border-radius: var(--radius);
+  /* Text input */
+  .text-input-label { font-size: 0.7rem; font-weight: 700; color: var(--text-dim); margin-bottom: 0.4rem; display: block; }
+  .text-input {
+    width: 100%; padding: 0.7rem 1rem; background: var(--bg-raised);
+    border: 1px solid var(--border-bright); border-radius: 8px;
     color: var(--text-bright); font-family: var(--font); font-size: 0.85rem; outline: none;
-    transition: border-color 0.15s;
   }
-  .custom-textarea { min-height: 60px; resize: vertical; }
-  .custom-input:focus, .custom-textarea:focus { border-color: var(--primary); }
+  .text-input:focus { border-color: var(--primary); }
 
-  /* Style picker */
-  .style-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.35rem; }
-  @media (max-width: 500px) { .style-grid { grid-template-columns: repeat(3, 1fr); } }
-  .style-btn {
-    padding: 0.5rem 0.3rem; background: var(--bg-raised); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text); font-size: 0.65rem; cursor: pointer;
-    transition: all 0.15s; text-align: center; font-family: var(--font);
+  /* Navigation */
+  .wiz-nav {
+    display: flex; gap: 0.5rem; margin-top: 1rem;
+    padding-top: 1rem; border-top: 1px solid var(--border);
   }
-  .style-btn:hover { border-color: var(--primary); }
-  .style-btn.selected { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 700; }
-  .style-icon { font-size: 1rem; display: block; margin-bottom: 0.1rem; }
-
-  /* Buttons */
-  .gen-btn {
-    width: 100%; padding: 0.85rem; margin-top: 0.75rem;
+  .wiz-btn {
+    padding: 0.7rem 1.2rem; background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-weight: 700; cursor: pointer;
+    font-family: var(--font); font-size: 0.85rem; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .wiz-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+  .wiz-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .wiz-btn.primary {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: #000; border: none; border-radius: var(--radius-lg);
-    font-weight: 700; font-size: 0.9rem; cursor: pointer;
-    font-family: var(--font); transition: transform 0.1s, box-shadow 0.15s;
+    color: #000; border: none; flex: 1; justify-content: center;
   }
-  .gen-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,229,160,0.3); }
-  .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .gen-btn.secondary { background: var(--bg-raised); color: var(--text); border: 1px solid var(--border); }
-  .gen-btn.secondary:hover { border-color: var(--primary); color: var(--primary); }
+  .wiz-btn.primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,229,160,0.3); color: #000; }
 
   /* Status */
   .gen-status {
-    margin-top: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.72rem;
-    display: none; align-items: center; gap: 0.5rem;
+    margin-top: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px;
+    font-size: 0.72rem; display: none; align-items: center; gap: 0.5rem;
   }
   .gen-status.visible { display: flex; }
   .gen-status.info { background: rgba(0,180,216,0.1); color: var(--secondary); }
-  .gen-status.success { background: rgba(0,229,160,0.1); color: var(--primary); }
+  .gen-status.success { background: rgba(0,229,160,0.12); color: var(--primary); }
   .gen-status.error { background: rgba(239,68,68,0.1); color: #ef4444; }
-  .spinner { width: 14px; height: 14px; border: 2px solid rgba(0,180,216,0.3); border-top-color: var(--secondary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid rgba(0,180,216,0.3);
+    border-top-color: var(--secondary); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .upgrade-note {
-    margin-top: 0.75rem; padding: 0.6rem 0.8rem; background: rgba(168,85,247,0.06);
-    border: 1px solid rgba(168,85,247,0.2); border-radius: 8px; font-size: 0.68rem; color: var(--text);
-  }
-  .upgrade-note strong { color: #a855f7; }
+  /* Summary */
+  .summary { font-size: 0.75rem; line-height: 1.7; color: var(--text); }
+  .summary strong { color: var(--text-bright); }
+  .summary-row { display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px solid var(--border); }
 
-  .save-section { margin-top: 1.5rem; text-align: center; }
-  .save-btn {
-    padding: 0.8rem 2rem; background: var(--primary); color: #000;
-    border: none; border-radius: var(--radius-lg); font-weight: 700;
-    font-size: 1rem; cursor: pointer; font-family: var(--font);
+  /* Advanced mode toggle */
+  .mode-toggle {
+    display: flex; gap: 0.3rem; margin-bottom: 1rem;
+    padding: 0.25rem; background: var(--bg-raised); border-radius: 8px;
   }
-  .save-btn:hover { opacity: 0.9; }
+  .mode-btn {
+    flex: 1; padding: 0.5rem; background: transparent; border: none;
+    color: var(--text-dim); font-size: 0.75rem; font-weight: 700;
+    cursor: pointer; border-radius: 6px; transition: all 0.15s; font-family: var(--font);
+  }
+  .mode-btn.active { background: var(--primary); color: #000; }
 
-  .info-banner {
-    padding: 0.6rem 0.8rem; background: rgba(0,229,160,0.06); border: 1px solid rgba(0,229,160,0.15);
-    border-radius: 8px; font-size: 0.7rem; color: var(--text); margin-bottom: 0.75rem;
+  .gallery-link {
+    text-align: center; margin-top: 1rem; font-size: 0.8rem;
   }
+  .gallery-link a { color: var(--primary); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="avatar-page">
+<div class="av-page">
 
-  <div class="avatar-header">
-    <h1 class="avatar-title">Your <span>Avatar</span></h1>
-    <p class="avatar-sub">
-      AI-powered character creator
-      {% if gemini_available %}<span class="free-badge">🍌 Nano Banana · Free</span>{% endif %}
-      {% if trellis_available %}<span class="free-badge" style="background:rgba(168,85,247,0.12);color:#a855f7;">3D Ready</span>{% endif %}
+  <div class="av-header">
+    <h1 class="av-title">Create Your <span>Avatar</span></h1>
+    <p class="av-sub">
+      {% if gemini_available %}✨ Powered by Nano Banana · Free 500/day{% else %}Presets mode (set GEMINI_API_KEY to enable AI){% endif %}
     </p>
   </div>
 
-  <div class="avatar-layout">
+  <!-- Wizard progress dots -->
+  <div class="wizard-steps" id="wizard-dots">
+    <div class="ws-dot active"></div>
+    <div class="ws-dot"></div>
+    <div class="ws-dot"></div>
+    <div class="ws-dot"></div>
+    <div class="ws-dot"></div>
+  </div>
 
-    <!-- VIEWER -->
-    <div class="viewer-section">
-      <div class="avatar-viewer" id="viewer">
-        <div class="viewer-placeholder" id="viewer-placeholder">
-          <div class="viewer-placeholder-icon">🧙</div>
-          <div>Select or generate an avatar</div>
+  <div class="av-layout">
+
+    <!-- LEFT: Viewer -->
+    <div class="viewer-wrap">
+      <div class="av-viewer" id="viewer">
+        <div class="viewer-empty" id="viewer-empty">
+          <div class="viewer-empty-icon">🎭</div>
+          <div class="viewer-empty-text">Complete the wizard<br>to generate your character</div>
         </div>
-        <img id="avatar-image-preview" alt="Avatar preview">
-        <model-viewer id="model-viewer" alt="3D avatar" auto-rotate camera-controls ar
-          shadow-intensity="1.2" environment-image="neutral" exposure="1.1"
-          style="background-color: transparent; display: none;"></model-viewer>
+        <img id="preview-img" alt="Avatar" style="display:none;">
       </div>
-      <div class="mode-label" id="mode-label">2D Preview</div>
-      <div class="viewer-controls">
-        <button class="viewer-btn" onclick="resetView()">↺ Reset</button>
-        <button class="viewer-btn" id="rotate-btn" onclick="toggleRotate()">⏸ Rotate</button>
-        <button class="viewer-btn" onclick="downloadAvatar()">⬇ Download</button>
+      <div style="text-align:center;margin-top:0.75rem;font-size:0.7rem;color:var(--text-dim);">
+        Live preview updates as you make choices
+      </div>
+
+      <!-- Quick mode selector -->
+      <div class="mode-toggle" style="margin-top:1rem;">
+        <button type="button" class="mode-btn active" onclick="setMode('wizard')">🧙 Wizard</button>
+        <button type="button" class="mode-btn" onclick="setMode('freeform')">✨ Freeform</button>
+        <button type="button" class="mode-btn" onclick="setMode('presets')">🎭 Presets</button>
       </div>
     </div>
 
-    <!-- CONTROLS -->
-    <div>
-      <div class="tabs">
-        <button class="tab active" onclick="showTab('presets', this)">Presets</button>
-        <button class="tab" onclick="showTab('create', this)">✨ Create</button>
-        <button class="tab" onclick="showTab('edit', this)">🎨 Edit</button>
+    <!-- RIGHT: Wizard Panel -->
+    <div class="wizard-panel" id="wizard-panel">
+
+      <!-- STEP 1: Archetype -->
+      <div class="wizard-step active" data-step="1">
+        <div class="step-label">Step 1 of 5</div>
+        <div class="step-title">Choose Your Archetype</div>
+        <div class="step-desc">What kind of character are you playing as?</div>
+        <div class="choice-grid">
+          <div class="choice selected" data-val="warrior" onclick="pick(this, 'archetype', 'warrior')">
+            <span class="choice-icon">⚔️</span>
+            <div class="choice-name">Warrior</div>
+            <div class="choice-desc">Strong and brave</div>
+          </div>
+          <div class="choice" data-val="mage" onclick="pick(this, 'archetype', 'mage')">
+            <span class="choice-icon">🧙</span>
+            <div class="choice-name">Mage</div>
+            <div class="choice-desc">Arcane power</div>
+          </div>
+          <div class="choice" data-val="rogue" onclick="pick(this, 'archetype', 'rogue')">
+            <span class="choice-icon">🗡️</span>
+            <div class="choice-name">Rogue</div>
+            <div class="choice-desc">Stealth and cunning</div>
+          </div>
+          <div class="choice" data-val="healer" onclick="pick(this, 'archetype', 'healer')">
+            <span class="choice-icon">🌿</span>
+            <div class="choice-name">Healer</div>
+            <div class="choice-desc">Wisdom and care</div>
+          </div>
+          <div class="choice" data-val="ranger" onclick="pick(this, 'archetype', 'ranger')">
+            <span class="choice-icon">🏹</span>
+            <div class="choice-name">Ranger</div>
+            <div class="choice-desc">Wild and free</div>
+          </div>
+          <div class="choice" data-val="paladin" onclick="pick(this, 'archetype', 'paladin')">
+            <span class="choice-icon">🛡️</span>
+            <div class="choice-name">Paladin</div>
+            <div class="choice-desc">Holy protector</div>
+          </div>
+          <div class="choice" data-val="cyborg" onclick="pick(this, 'archetype', 'cyborg')">
+            <span class="choice-icon">🤖</span>
+            <div class="choice-name">Cyborg</div>
+            <div class="choice-desc">Tech-enhanced</div>
+          </div>
+          <div class="choice" data-val="scholar" onclick="pick(this, 'archetype', 'scholar')">
+            <span class="choice-icon">📚</span>
+            <div class="choice-name">Scholar</div>
+            <div class="choice-desc">Seeker of wisdom</div>
+          </div>
+        </div>
       </div>
 
-      <!-- PRESETS TAB -->
-      <div class="tab-content active" id="tab-presets">
-        <div class="info-banner">Pick a character and click Generate. Uses Google's Nano Banana (free 500/day).</div>
-        <div class="preset-grid">
-          {% for avatar in presets %}
-          <div class="preset-card {% if loop.first %}selected{% endif %}"
-               data-id="{{ avatar.id }}"
-               data-prompt="{{ avatar.prompt | default(avatar.desc) | e }}"
-               onclick="selectPreset(this)">
-            <div class="preset-emoji">{{ avatar.preview }}</div>
-            <div class="preset-name">{{ avatar.name }}</div>
-            <div class="preset-desc">{{ avatar.desc }}</div>
+      <!-- STEP 2: Art Style -->
+      <div class="wizard-step" data-step="2">
+        <div class="step-label">Step 2 of 5</div>
+        <div class="step-title">Art Style</div>
+        <div class="step-desc">How should your character look?</div>
+        <div class="choice-grid">
+          <div class="choice selected" data-val="fantasy" onclick="pick(this, 'style', 'fantasy')">
+            <span class="choice-icon">🏰</span>
+            <div class="choice-name">Fantasy</div>
+            <div class="choice-desc">Classic RPG</div>
+          </div>
+          <div class="choice" data-val="cyberpunk" onclick="pick(this, 'style', 'cyberpunk')">
+            <span class="choice-icon">⚡</span>
+            <div class="choice-name">Cyberpunk</div>
+            <div class="choice-desc">Neon future</div>
+          </div>
+          <div class="choice" data-val="anime" onclick="pick(this, 'style', 'anime')">
+            <span class="choice-icon">🌸</span>
+            <div class="choice-name">Anime</div>
+            <div class="choice-desc">Japanese style</div>
+          </div>
+          <div class="choice" data-val="cute" onclick="pick(this, 'style', 'cute')">
+            <span class="choice-icon">🦄</span>
+            <div class="choice-name">Cute</div>
+            <div class="choice-desc">Chibi/kawaii</div>
+          </div>
+          <div class="choice" data-val="realistic" onclick="pick(this, 'style', 'realistic')">
+            <span class="choice-icon">📸</span>
+            <div class="choice-name">Realistic</div>
+            <div class="choice-desc">Photo-like</div>
+          </div>
+          <div class="choice" data-val="pixel" onclick="pick(this, 'style', 'pixel')">
+            <span class="choice-icon">🎮</span>
+            <div class="choice-name">Pixel Art</div>
+            <div class="choice-desc">Retro 16-bit</div>
+          </div>
+          <div class="choice" data-val="steampunk" onclick="pick(this, 'style', 'steampunk')">
+            <span class="choice-icon">⚙️</span>
+            <div class="choice-name">Steampunk</div>
+            <div class="choice-desc">Brass & gears</div>
+          </div>
+          <div class="choice" data-val="dark" onclick="pick(this, 'style', 'dark')">
+            <span class="choice-icon">💀</span>
+            <div class="choice-name">Dark</div>
+            <div class="choice-desc">Gothic horror</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Mood/Vibe -->
+      <div class="wizard-step" data-step="3">
+        <div class="step-label">Step 3 of 5</div>
+        <div class="step-title">Mood & Vibe</div>
+        <div class="step-desc">What energy does your character radiate?</div>
+        <div class="choice-grid">
+          <div class="choice selected" data-val="heroic" onclick="pick(this, 'mood', 'heroic')">
+            <span class="choice-icon">⭐</span>
+            <div class="choice-name">Heroic</div>
+            <div class="choice-desc">Noble and bright</div>
+          </div>
+          <div class="choice" data-val="mysterious" onclick="pick(this, 'mood', 'mysterious')">
+            <span class="choice-icon">🌑</span>
+            <div class="choice-name">Mysterious</div>
+            <div class="choice-desc">Dark and hidden</div>
+          </div>
+          <div class="choice" data-val="playful" onclick="pick(this, 'mood', 'playful')">
+            <span class="choice-icon">🎪</span>
+            <div class="choice-name">Playful</div>
+            <div class="choice-desc">Fun and light</div>
+          </div>
+          <div class="choice" data-val="fierce" onclick="pick(this, 'mood', 'fierce')">
+            <span class="choice-icon">🔥</span>
+            <div class="choice-name">Fierce</div>
+            <div class="choice-desc">Bold and wild</div>
+          </div>
+          <div class="choice" data-val="serene" onclick="pick(this, 'mood', 'serene')">
+            <span class="choice-icon">🌊</span>
+            <div class="choice-name">Serene</div>
+            <div class="choice-desc">Calm and wise</div>
+          </div>
+          <div class="choice" data-val="mystical" onclick="pick(this, 'mood', 'mystical')">
+            <span class="choice-icon">🔮</span>
+            <div class="choice-name">Mystical</div>
+            <div class="choice-desc">Magical and rare</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: Color Palette -->
+      <div class="wizard-step" data-step="4">
+        <div class="step-label">Step 4 of 5</div>
+        <div class="step-title">Color Palette</div>
+        <div class="step-desc">What colors define your character?</div>
+        <div class="choice-grid tight">
+          <div class="choice selected" data-val="blue" onclick="pick(this, 'color', 'blue')"><span class="choice-icon" style="color:#3b82f6;">●</span><div class="choice-name">Blue</div></div>
+          <div class="choice" data-val="red" onclick="pick(this, 'color', 'red')"><span class="choice-icon" style="color:#ef4444;">●</span><div class="choice-name">Red</div></div>
+          <div class="choice" data-val="green" onclick="pick(this, 'color', 'green')"><span class="choice-icon" style="color:#22c55e;">●</span><div class="choice-name">Green</div></div>
+          <div class="choice" data-val="purple" onclick="pick(this, 'color', 'purple')"><span class="choice-icon" style="color:#a855f7;">●</span><div class="choice-name">Purple</div></div>
+          <div class="choice" data-val="gold" onclick="pick(this, 'color', 'gold')"><span class="choice-icon" style="color:#f59e0b;">●</span><div class="choice-name">Gold</div></div>
+          <div class="choice" data-val="silver" onclick="pick(this, 'color', 'silver')"><span class="choice-icon" style="color:#cbd5e1;">●</span><div class="choice-name">Silver</div></div>
+          <div class="choice" data-val="black" onclick="pick(this, 'color', 'black')"><span class="choice-icon" style="color:#374151;">●</span><div class="choice-name">Black</div></div>
+          <div class="choice" data-val="white" onclick="pick(this, 'color', 'white')"><span class="choice-icon" style="color:#f1f5f9;">●</span><div class="choice-name">White</div></div>
+          <div class="choice" data-val="neon" onclick="pick(this, 'color', 'neon')"><span class="choice-icon" style="color:#00ff41;">●</span><div class="choice-name">Neon</div></div>
+        </div>
+      </div>
+
+      <!-- STEP 5: Extra Details + Generate -->
+      <div class="wizard-step" data-step="5">
+        <div class="step-label">Step 5 of 5</div>
+        <div class="step-title">Final Details</div>
+        <div class="step-desc">Add any extra details (optional)</div>
+
+        <label class="text-input-label">Extra features (weapon, gear, background...)</label>
+        <input type="text" id="extra-details" class="text-input"
+          placeholder="e.g. 'glowing sword, red cape, mountain background'"
+          oninput="updatePrompt()">
+
+        <div style="margin-top:1rem;padding:0.75rem;background:var(--bg-raised);border-radius:8px;">
+          <div class="step-label" style="margin-bottom:0.4rem;">Summary</div>
+          <div class="summary" id="summary">
+            <div class="summary-row"><span>Archetype:</span><strong id="sum-archetype">warrior</strong></div>
+            <div class="summary-row"><span>Style:</span><strong id="sum-style">fantasy</strong></div>
+            <div class="summary-row"><span>Mood:</span><strong id="sum-mood">heroic</strong></div>
+            <div class="summary-row"><span>Color:</span><strong id="sum-color">blue</strong></div>
+          </div>
+        </div>
+
+        {% if gemini_available %}
+        <button class="wiz-btn primary" onclick="generateAvatar()" style="margin-top:1rem;width:100%;">
+          ✨ Generate My Avatar
+        </button>
+        {% else %}
+        <div class="gen-status visible info" style="margin-top:1rem;">
+          Set GEMINI_API_KEY env var to enable generation
+        </div>
+        {% endif %}
+
+        <div class="gen-status" id="gen-status"></div>
+      </div>
+
+      <!-- FREEFORM MODE -->
+      <div class="wizard-step" data-step="freeform">
+        <div class="step-label">Custom Prompt</div>
+        <div class="step-title">Describe Your Character</div>
+        <div class="step-desc">Write exactly what you want</div>
+
+        <label class="text-input-label">Full Description</label>
+        <textarea id="freeform-prompt" class="text-input" rows="4"
+          placeholder="e.g. 'a fierce dragon knight with blue armor, glowing sword, riding a white wolf'"
+          style="min-height:100px;resize:vertical;"></textarea>
+
+        <label class="text-input-label" style="margin-top:0.75rem;">Art Style</label>
+        <select id="freeform-style" class="text-input">
+          <option value="fantasy">🏰 Fantasy</option>
+          <option value="cyberpunk">⚡ Cyberpunk</option>
+          <option value="anime">🌸 Anime</option>
+          <option value="cute">🦄 Cute</option>
+          <option value="realistic">📸 Realistic</option>
+          <option value="pixel">🎮 Pixel Art</option>
+          <option value="steampunk">⚙️ Steampunk</option>
+          <option value="dark">💀 Dark</option>
+          <option value="watercolor">🎨 Watercolor</option>
+          <option value="comic">💥 Comic</option>
+        </select>
+
+        {% if gemini_available %}
+        <button class="wiz-btn primary" onclick="generateFreeform()" style="margin-top:1rem;width:100%;">
+          ✨ Generate Avatar
+        </button>
+        {% endif %}
+        <div class="gen-status" id="freeform-status"></div>
+      </div>
+
+      <!-- PRESETS MODE -->
+      <div class="wizard-step" data-step="presets">
+        <div class="step-label">Quick Start</div>
+        <div class="step-title">Pick a Preset</div>
+        <div class="step-desc">Click any character to generate</div>
+
+        <div class="choice-grid">
+          {% for av in presets %}
+          <div class="choice" onclick="generateFromPreset(this, '{{ av.prompt | default(av.desc) | e }}')">
+            <span class="choice-icon">{{ av.preview }}</span>
+            <div class="choice-name">{{ av.name }}</div>
+            <div class="choice-desc">{{ av.desc }}</div>
           </div>
           {% endfor %}
         </div>
-        {% if gemini_available %}
-        <button class="gen-btn" onclick="generateFromPreset()">✨ Generate Avatar from Preset</button>
         <div class="gen-status" id="preset-status"></div>
-        {% endif %}
       </div>
 
-      <!-- CREATE TAB -->
-      <div class="tab-content" id="tab-create">
-        {% if gemini_available %}
-        <div class="custom-gen">
-          <label class="custom-label">Describe Your Character</label>
-          <textarea id="custom-prompt" class="custom-textarea"
-            placeholder="e.g. 'a fierce dragon knight with blue armor, glowing sword, and a red cape'"></textarea>
-
-          <label class="custom-label" style="margin-top:0.9rem;">Art Style</label>
-          <div class="style-grid">
-            {% for style, label in [
-              ('fantasy', '🏰 Fantasy'),
-              ('cyberpunk', '⚡ Cyber'),
-              ('cute', '🦄 Cute'),
-              ('realistic', '📸 Real'),
-              ('anime', '🌸 Anime'),
-              ('pixel', '🎮 Pixel'),
-              ('steampunk', '⚙️ Steam'),
-              ('dark', '💀 Dark'),
-              ('watercolor', '🎨 Water'),
-              ('comic', '💥 Comic'),
-            ] %}
-            <button type="button" class="style-btn {% if loop.first %}selected{% endif %}"
-              onclick="selectStyle(this, '{{ style }}')">{{ label }}</button>
-            {% endfor %}
-          </div>
-
-          <button class="gen-btn" onclick="generateCustom()">✨ Generate 2D Avatar</button>
-          <div class="gen-status" id="create-status"></div>
-
-          {% if trellis_available %}
-          <button class="gen-btn secondary" onclick="convertTo3D()" id="to-3d-btn" disabled style="margin-top:0.4rem;">
-            🎭 Convert to 3D
-          </button>
-          {% else %}
-          <div class="upgrade-note">
-            <strong>Want 3D?</strong> Add <code>REPLICATE_API_TOKEN</code> and fund Replicate for 3D GLB meshes via TRELLIS.
-          </div>
-          {% endif %}
-        </div>
-        {% else %}
-        <div class="info-banner" style="border-color:var(--warn);color:var(--warn);">
-          🔑 Set <code>GEMINI_API_KEY</code> to enable free image generation. Get one at
-          <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--primary);">aistudio.google.com/apikey</a>
-        </div>
-        {% endif %}
+      <!-- Navigation -->
+      <div class="wiz-nav" id="wiz-nav">
+        <button class="wiz-btn" id="btn-back" onclick="prevStep()" disabled>← Back</button>
+        <button class="wiz-btn primary" id="btn-next" onclick="nextStep()">Next →</button>
       </div>
 
-      <!-- EDIT TAB -->
-      <div class="tab-content" id="tab-edit">
-        {% if gemini_available %}
-        <div class="custom-gen">
-          <div class="info-banner">Nano Banana's superpower: edit your generated avatar with text. Generate first, then describe changes.</div>
-          <label class="custom-label">What to change?</label>
-          <textarea id="edit-prompt" class="custom-textarea"
-            placeholder="e.g. 'make the armor blue and add golden wings'"></textarea>
-          <button class="gen-btn" onclick="editAvatar()" id="edit-btn">🎨 Apply Edit</button>
-          <div class="gen-status" id="edit-status"></div>
-        </div>
-        {% else %}
-        <div class="info-banner">Set GEMINI_API_KEY to enable image editing.</div>
-        {% endif %}
+      <div class="gallery-link">
+        <a href="{{ pack_url_prefix }}/avatar/gallery">📚 View your avatar gallery →</a>
       </div>
-
     </div>
   </div>
 
-  <!-- SAVE -->
-  <div class="save-section">
-    <form method="POST" action="{{ pack_url_prefix }}/avatar/save">
-      <input type="hidden" name="avatar_id" id="form-avatar-id" value="wizard">
-      <input type="hidden" name="avatar_url" id="form-avatar-url" value="">
-      <input type="hidden" name="avatar_image" id="form-avatar-image" value="">
-      <button type="submit" class="save-btn">Save Avatar →</button>
-    </form>
-  </div>
+  <!-- Save form -->
+  <form method="POST" action="{{ pack_url_prefix }}/avatar/save" id="save-form" style="display:none;">
+    <input type="hidden" name="avatar_id" id="form-avatar-id" value="custom">
+    <input type="hidden" name="avatar_image" id="form-avatar-image" value="">
+    <input type="hidden" name="prompt" id="form-prompt" value="">
+    <input type="hidden" name="style" id="form-style" value="fantasy">
+  </form>
 </div>
 
 <script>
-var selectedStyle = 'fantasy';
-var selectedPresetPrompt = "{{ presets[0].prompt | default(presets[0].desc) | e }}";
-var mv = document.getElementById('model-viewer');
-var imgPreview = document.getElementById('avatar-image-preview');
-var placeholder = document.getElementById('viewer-placeholder');
-var modeLabel = document.getElementById('mode-label');
-var currentImageDataUrl = '';
-var autoRotate = true;
+var wiz = { archetype: 'warrior', style: 'fantasy', mood: 'heroic', color: 'blue', extra: '' };
+var currentStep = 1;
+var maxStep = 5;
+var currentImage = '';
+var currentMode = 'wizard';
 
-function loadImage(dataUrl) {
-  currentImageDataUrl = dataUrl;
-  imgPreview.src = dataUrl;
-  imgPreview.style.display = 'block';
-  placeholder.style.display = 'none';
-  mv.style.display = 'none';
-  modeLabel.textContent = '2D Preview · Powered by Nano Banana';
-  document.getElementById('form-avatar-image').value = dataUrl;
-  var btn = document.getElementById('to-3d-btn');
-  if (btn) btn.disabled = false;
-}
-
-function loadModel(url) {
-  mv.src = url;
-  mv.style.display = 'block';
-  imgPreview.style.display = 'none';
-  placeholder.style.display = 'none';
-  modeLabel.textContent = '3D Model · Powered by TRELLIS';
-  document.getElementById('form-avatar-url').value = url;
-}
-
-function selectPreset(el) {
-  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
+function pick(el, key, val) {
+  el.parentElement.querySelectorAll('.choice').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
-  document.getElementById('form-avatar-id').value = el.dataset.id;
-  selectedPresetPrompt = el.dataset.prompt;
+  wiz[key] = val;
+  updateSummary();
 }
 
-function selectStyle(el, style) {
-  document.querySelectorAll('#tab-create .style-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedStyle = style;
+function updateSummary() {
+  ['archetype', 'style', 'mood', 'color'].forEach(k => {
+    var el = document.getElementById('sum-' + k);
+    if (el) el.textContent = wiz[k];
+  });
 }
 
-function showTab(name, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
+function updatePrompt() { wiz.extra = document.getElementById('extra-details').value; }
+
+function buildPrompt() {
+  var parts = [
+    wiz.mood + ' ' + wiz.archetype,
+    'with ' + wiz.color + ' color scheme',
+  ];
+  if (wiz.extra) parts.push(wiz.extra);
+  return parts.join(', ');
 }
 
-function setStatus(elId, type, msg, spinner) {
-  var el = document.getElementById(elId);
+function goToStep(n) {
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  var target = document.querySelector('[data-step="' + n + '"]');
+  if (target) target.classList.add('active');
+  currentStep = n;
+
+  // Update dots
+  if (typeof n === 'number') {
+    var dots = document.querySelectorAll('.ws-dot');
+    dots.forEach((d, i) => {
+      d.classList.remove('active', 'done');
+      if (i + 1 < n) d.classList.add('done');
+      else if (i + 1 === n) d.classList.add('active');
+    });
+  }
+
+  // Update nav buttons
+  var back = document.getElementById('btn-back');
+  var next = document.getElementById('btn-next');
+  if (typeof n === 'number') {
+    back.disabled = n === 1;
+    next.style.display = n < maxStep ? 'inline-flex' : 'none';
+  } else {
+    document.getElementById('wiz-nav').style.display = 'none';
+  }
+}
+
+function nextStep() { if (currentStep < maxStep) goToStep(currentStep + 1); }
+function prevStep() { if (currentStep > 1) goToStep(currentStep - 1); }
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('wizard-dots').style.display = mode === 'wizard' ? 'flex' : 'none';
+  document.getElementById('wiz-nav').style.display = mode === 'wizard' ? 'flex' : 'none';
+
+  if (mode === 'wizard') goToStep(1);
+  else if (mode === 'freeform') goToStep('freeform');
+  else if (mode === 'presets') goToStep('presets');
+}
+
+function setStatus(id, type, msg, spinner) {
+  var el = document.getElementById(id);
   el.className = 'gen-status visible ' + type;
   el.innerHTML = (spinner ? '<div class="spinner"></div>' : '') + '<span>' + msg + '</span>';
 }
 
-function generate2D(prompt, statusId) {
-  if (!prompt) { setStatus(statusId, 'error', 'Enter a description', false); return; }
+function loadPreview(dataUrl) {
+  currentImage = dataUrl;
+  var img = document.getElementById('preview-img');
+  img.src = dataUrl;
+  img.style.display = 'block';
+  document.getElementById('viewer-empty').style.display = 'none';
+  document.getElementById('form-avatar-image').value = dataUrl;
+}
+
+function doGenerate(prompt, style, statusId) {
+  if (!prompt) { setStatus(statusId, 'error', 'Please provide a description', false); return; }
   setStatus(statusId, 'info', '🍌 Generating with Nano Banana...', true);
+  document.getElementById('form-prompt').value = prompt;
+  document.getElementById('form-style').value = style;
+
   fetch('/api/generate-2d', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({prompt: prompt, style: selectedStyle}),
+    body: JSON.stringify({prompt: prompt, style: style})
   })
     .then(r => r.json())
     .then(data => {
       if (data.ok && data.image_data_url) {
-        loadImage(data.image_data_url);
-        setStatus(statusId, 'success', '✅ Avatar generated!', false);
+        loadPreview(data.image_data_url);
+        setStatus(statusId, 'success', '✅ Generated! Click "Save" to keep it.', false);
+        showSaveBtn();
       } else {
-        var err = data.error || 'Generation failed';
-        if (err.includes('quota') || err.includes('rate')) err = '⏳ Rate limit hit. Try again in a moment.';
-        setStatus(statusId, 'error', err, false);
+        setStatus(statusId, 'error', data.error || 'Failed', false);
       }
     })
     .catch(e => setStatus(statusId, 'error', 'Network error: ' + e.message, false));
 }
 
-function generateCustom() { generate2D(document.getElementById('custom-prompt').value.trim(), 'create-status'); }
-function generateFromPreset() { generate2D(selectedPresetPrompt, 'preset-status'); }
-
-function editAvatar() {
-  var prompt = document.getElementById('edit-prompt').value.trim();
-  if (!prompt) { setStatus('edit-status', 'error', 'Describe what to change', false); return; }
-  if (!currentImageDataUrl) { setStatus('edit-status', 'error', 'Generate an avatar first', false); return; }
-  setStatus('edit-status', 'info', '🎨 Editing image...', true);
-  fetch('/api/edit-2d', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({image_data_url: currentImageDataUrl, prompt: prompt}),
-  })
-    .then(r => r.json())
-    .then(data => {
-      if (data.ok) {
-        loadImage(data.image_data_url);
-        setStatus('edit-status', 'success', '✅ Edit applied!', false);
-      } else {
-        setStatus('edit-status', 'error', data.error || 'Edit failed', false);
-      }
-    })
-    .catch(e => setStatus('edit-status', 'error', e.message, false));
+function generateAvatar() { doGenerate(buildPrompt(), wiz.style, 'gen-status'); }
+function generateFreeform() {
+  var p = document.getElementById('freeform-prompt').value.trim();
+  var s = document.getElementById('freeform-style').value;
+  doGenerate(p, s, 'freeform-status');
+}
+function generateFromPreset(el, prompt) {
+  document.querySelectorAll('#tab-presets .choice, .wizard-step[data-step="presets"] .choice').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  doGenerate(prompt, 'fantasy', 'preset-status');
 }
 
-function convertTo3D() {
-  if (!currentImageDataUrl) { setStatus('create-status', 'error', 'Generate a 2D image first', false); return; }
-  setStatus('create-status', 'info', '🎭 Converting to 3D (30-60s)...', true);
-  fetch('/api/image-to-3d?url=' + encodeURIComponent(currentImageDataUrl))
-    .then(r => r.json())
-    .then(data => {
-      if (data.ok) {
-        loadModel(data.glb_url);
-        setStatus('create-status', 'success', '✅ 3D model ready!', false);
-      } else {
-        setStatus('create-status', 'error', data.error || '3D conversion failed', false);
-      }
-    });
-}
+function showSaveBtn() {
+  if (document.getElementById('dynamic-save-btn')) return;
+  var btn = document.createElement('button');
+  btn.id = 'dynamic-save-btn';
+  btn.className = 'wiz-btn primary';
+  btn.style.marginTop = '0.5rem';
+  btn.style.width = '100%';
+  btn.textContent = '💾 Save to Gallery';
+  btn.onclick = () => document.getElementById('save-form').submit();
 
-function resetView() {
-  if (mv.style.display !== 'none') mv.cameraOrbit = '0deg 75deg 105%';
-}
-function toggleRotate() {
-  autoRotate = !autoRotate;
-  if (autoRotate) mv.setAttribute('auto-rotate', '');
-  else mv.removeAttribute('auto-rotate');
-  document.getElementById('rotate-btn').textContent = autoRotate ? '⏸ Rotate' : '▶ Rotate';
-}
-function downloadAvatar() {
-  var url = mv.style.display !== 'none' ? mv.src : currentImageDataUrl;
-  if (!url) return;
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = mv.style.display !== 'none' ? 'avatar.glb' : 'avatar.png';
-  a.click();
+  var statusEl = document.querySelector('.gen-status.visible');
+  if (statusEl && statusEl.parentElement) statusEl.parentElement.appendChild(btn);
 }
 </script>
 {% endblock %}

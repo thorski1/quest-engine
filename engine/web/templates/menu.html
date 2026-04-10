@@ -76,15 +76,15 @@
   {% endif %}
 
   <!-- ── Quick links ──────────────────────────────────────────────────── -->
-  {% if has_progress %}
   <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+    <a href="{{ pack_url_prefix }}/avatar" class="menu-quick-link" style="background:linear-gradient(135deg,rgba(0,229,160,0.15),rgba(168,85,247,0.15));border-color:var(--primary);">🎨 Create Avatar ✨</a>
+    <a href="{{ pack_url_prefix }}/profile" class="menu-quick-link">⚔️ Character Sheet</a>
     <a href="{{ pack_url_prefix }}/stats" class="menu-quick-link">📊 Stats</a>
     <a href="{{ pack_url_prefix }}/leaderboard" class="menu-quick-link">🏆 {% if theme == 'playful' %}Heroes{% else %}Ranks{% endif %}</a>
     <a href="{{ pack_url_prefix }}/achievements" class="menu-quick-link">🎖️ Achievements</a>
-    <a href="{{ pack_url_prefix }}/smart-review" class="menu-quick-link">🔄 Smart Review</a>
-    <a href="{{ pack_url_prefix }}/settings" class="menu-quick-link">🎨 Customize (8 themes!)</a>
+    <a href="{{ pack_url_prefix }}/quest-log" class="menu-quick-link">📜 Quest Log</a>
+    <a href="{{ pack_url_prefix }}/settings" class="menu-quick-link">⚙️ Settings</a>
   </div>
-  {% endif %}
 
   <!-- ── Zones ─────────────────────────────────────────────────────────── -->
   <!-- ── Getting Started Banner (for new users with 0 completed zones) ── -->
