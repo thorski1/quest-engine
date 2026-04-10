@@ -27,7 +27,43 @@
 | [Learn Spanish](https://github.com/thorski1/learn-spanish) | Language learners | 11 | 413 | Basics, Greetings, Numbers, Food, Family, Travel, Daily Life, Culture, Colors & Clothing, Weather |
 | [Learn Japanese](https://github.com/thorski1/learn-japanese) | Language learners | 11 | 424 | Hiragana, Katakana, Greetings, Numbers, Food, Daily Life, Travel, Culture, Colors, Shopping |
 
-**6 games. 178 chapters, 7,800+ challenges. One engine.**
+**20 games. 190+ chapters, 8,400+ challenges. One engine.**
+
+---
+
+## 🎨 AI-Powered Avatar System
+
+Quest Engine includes a full avatar creation pipeline powered by **Google's Gemini 2.5 Flash Image (Nano Banana)** and **Microsoft TRELLIS**:
+
+### Free 2D Generation — Nano Banana
+- **500 images/day** on the free tier
+- Text → fantasy/cyberpunk/anime/pixel avatars
+- **Image editing** via text prompts ("make the armor blue")
+- Get a free API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- Set `GEMINI_API_KEY` env var
+
+### Optional 3D Upgrade — TRELLIS
+- Convert 2D avatars → 3D GLB meshes
+- Interactive 3D viewer with WebXR/AR support
+- Powered by [Microsoft TRELLIS](https://github.com/microsoft/TRELLIS) via Replicate
+- Set `REPLICATE_API_TOKEN` env var (pay-per-generation, ~$0.02/avatar)
+
+### Avatar Gallery
+- Persistent avatar history in Postgres
+- Equip/unequip avatars
+- Shown in header, character sheet, quest log
+- Available at `/{pack}/avatar/gallery`
+
+### UX Flow
+1. **Create Account** → Google OAuth or email/password
+2. **Character Creation** → Pick class, alignment, tone
+3. **Avatar Creator** → `/{pack}/avatar`
+   - **Presets tab**: 12 curated characters with one-click generation
+   - **✨ Create tab**: Custom prompt + 10 art styles
+   - **🎨 Edit tab**: Refine with text prompts (Nano Banana's superpower)
+4. **Save** → Persists to your gallery, shows in header everywhere
+5. **Gallery** → View/equip/delete at `/{pack}/avatar/gallery`
+6. **Optional**: Convert any 2D avatar to 3D GLB mesh with TRELLIS
 
 ---
 
