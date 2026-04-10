@@ -202,6 +202,55 @@ def generate_characters():
             time.sleep(2)
 
 
+def generate_rosters():
+    """Generate per-game character rosters from engine.web.rosters.ROSTERS.
+
+    For each character in every game, generates 3 key expressions first
+    (neutral, happy, surprised) so every character is usable even if a
+    later expression generation fails mid-run. Subsequent calls fill in
+    the rest.
+    """
+    from engine.web.rosters import ROSTERS
+    char_dir = ASSETS_DIR / "characters"
+    char_dir.mkdir(parents=True, exist_ok=True)
+
+    # Order expressions so the most useful ones are generated first.
+    ordered_expressions = [
+        ("neutral",   "calm neutral expression"),
+        ("happy",     "broad happy smile, eyes bright with joy"),
+        ("surprised", "wide-eyed surprised expression, mouth slightly open"),
+        ("thinking",  "thoughtful expression, one eyebrow slightly raised"),
+        ("concerned", "concerned worried expression, furrowed brow"),
+        ("excited",   "excited grinning expression, eyes sparkling"),
+    ]
+
+    total_chars = sum(len(roster) for roster in ROSTERS.values())
+    total_imgs = total_chars * len(ordered_expressions)
+    print(f"🎭 Generating {len(ROSTERS)} games × {total_chars} characters × {len(ordered_expressions)} expressions = {total_imgs} total")
+
+    for category, roster in ROSTERS.items():
+        print(f"\n── {category} ──")
+        for role, char in roster.items():
+            for exp_id, exp_desc in ordered_expressions:
+                asset_id = f"{char['id']}_{exp_id}"
+                filepath = char_dir / f"{asset_id}.png"
+                webp_path = char_dir / f"{asset_id}.webp"
+                if filepath.exists() or webp_path.exists():
+                    continue
+                prompt = f"{char['prompt']}, {exp_desc}, centered headshot portrait bust, character art, 1:1 square, simple background"
+                print(f"  → {asset_id}...")
+                result = generate_image_from_prompt(prompt, "fantasy")
+                if not result.get("ok"):
+                    err = str(result.get('error', 'unknown'))[:80]
+                    print(f"  ✗ {asset_id}: {err}")
+                    time.sleep(3)
+                    continue
+                if save_data_url(result["image_data_url"], filepath):
+                    size_kb = filepath.stat().st_size // 1024
+                    print(f"  ✓ {asset_id}.png ({size_kb}KB)")
+                time.sleep(2)
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "all"
 
@@ -221,6 +270,8 @@ def main():
         generate_onboarding()
     if cmd in ("characters", "all"):
         generate_characters()
+    if cmd in ("rosters", "all"):
+        generate_rosters()
 
     print("\n✅ Done!")
 

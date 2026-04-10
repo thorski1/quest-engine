@@ -1288,13 +1288,26 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         }
 
     def _boss_config_for_zone(zone_id: str) -> dict:
-        """Pick a boss character for a zone based on the pack theme."""
-        base = _BOSS_BY_THEME.get(theme, {"id": "boss_shadow", "name": "The Adversary"})
+        """Pick a boss character for a zone. Prefers the pack's category
+        roster boss; falls back to the theme-based _BOSS_BY_THEME lookup.
+        """
+        # Try the category roster first
+        boss_char = None
+        try:
+            from .rosters import get_roster
+            roster = get_roster(skill_pack.category or "")
+            if roster and "boss" in roster:
+                boss_char = roster["boss"]
+        except Exception:
+            boss_char = None
+        if boss_char:
+            base = {"id": boss_char["id"], "name": boss_char["name"]}
+        else:
+            base = _BOSS_BY_THEME.get(theme, {"id": "boss_shadow", "name": "The Adversary"})
         zone = skill_pack.zones.get(zone_id, {})
         zone_name = zone.get("name", "Boss")
-        # HP scales with number of challenges: more challenges = tougher boss
         n = len(zone.get("challenges", []))
-        hp_max = max(100, 40 * n)  # 8 challenges × 40 = 320 HP
+        hp_max = max(100, 40 * n)
         return {
             "id": base["id"],
             "name": base["name"],
@@ -1453,12 +1466,13 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         "narrator": "a mysterious fantasy storyteller guiding the learner through the realm",
     }
 
-    def _intro_to_dialogue(raw: str, theme_name: str, zone_id: str, zone_name: str, is_boss: bool, character: dict | None = None) -> list[dict]:
+    def _intro_to_dialogue(raw: str, theme_name: str, zone_id: str, zone_name: str, is_boss: bool, character: dict | None = None, pack_category: str = "", zone_index: int = 0, total_zones: int = 1) -> list[dict]:
         """Produce a two-sided chat dialogue for a zone intro.
 
         Preferred path: ask Gemini to rewrite the intro as a contextual
-        teaching dialogue between a specific narrator character and the
-        player's character. Cached on disk.
+        teaching dialogue between a specific narrator character (chosen
+        from the pack's category roster) and the player's character.
+        Cached on disk.
 
         Fallback: split the intro into paragraphs and interleave generic
         class/tone player responses (useful when the API is unavailable).
@@ -1468,14 +1482,30 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         if not clean:
             return []
 
-        speaker_info = (
-            _BOSS_BY_THEME.get(theme_name, {"id": "boss_shadow", "name": "Adversary"})
-            if is_boss
-            else _NARRATOR_BY_THEME.get(theme_name, {"id": "narrator", "name": "Narrator"})
-        )
-        character_id = speaker_info["id"]
-        character_name = speaker_info["name"]
-        character_role = _NARRATOR_ROLES.get(character_id, "a guide teaching the learner")
+        # First try the per-category roster (unique characters per game).
+        roster_character = None
+        try:
+            from .rosters import pick_character_for_zone
+            roster_character = pick_character_for_zone(
+                pack_category or "", zone_index, total_zones, is_boss
+            )
+        except Exception:
+            roster_character = None
+
+        if roster_character:
+            character_id = roster_character["id"]
+            character_name = roster_character["name"]
+            character_role = roster_character["role"]
+        else:
+            # Legacy theme-based fallback
+            speaker_info = (
+                _BOSS_BY_THEME.get(theme_name, {"id": "boss_shadow", "name": "Adversary"})
+                if is_boss
+                else _NARRATOR_BY_THEME.get(theme_name, {"id": "narrator", "name": "Narrator"})
+            )
+            character_id = speaker_info["id"]
+            character_name = speaker_info["name"]
+            character_role = _NARRATOR_ROLES.get(character_id, "a guide teaching the learner")
         if is_boss:
             character_role = f"{character_role}, standing as the final adversary of this zone"
 
@@ -1605,8 +1635,20 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         except Exception:
             _character = {}
 
+        # Compute zone index for roster rotation
+        try:
+            _zone_index = skill_pack.zone_order.index(zone_id)
+        except ValueError:
+            _zone_index = 0
+        _total_zones = len(skill_pack.zone_order)
+
         # Build chat-style dialogue from the intro text
-        dialogue = _intro_to_dialogue(intro_text, theme, zone_id, zone.get("name", ""), is_boss, _character)
+        dialogue = _intro_to_dialogue(
+            intro_text, theme, zone_id, zone.get("name", ""), is_boss, _character,
+            pack_category=skill_pack.category or "",
+            zone_index=_zone_index,
+            total_zones=_total_zones,
+        )
 
         return templates.TemplateResponse(request, "zone_intro.html", _ctx(
             request, zone=zone_with_image, zone_id=zone_id,
