@@ -1441,21 +1441,94 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
                 return PLAYER_RESPONSES[alt]
         return ["Tell me more.", "I'm listening.", "And then?", "Go on.", "Got it."]
 
-    def _intro_to_dialogue(raw: str, theme_name: str, zone_name: str, is_boss: bool, character: dict | None = None) -> list[dict]:
-        """Split a narrative intro into a two-sided chat conversation between
-        the narrator/boss and the player.
+    _NARRATOR_ROLES = {
+        "cipher":   "a cyberpunk hacker guide who leads recruits through the NEXUS corp's data vaults",
+        "aria":     "a serene AI assistant hologram teaching students the fundamentals of intelligence",
+        "puck":     "a playful fairy mentor in a magical storybook world, guiding young adventurers",
+        "longlong": "a young Chinese dragon master teaching language and lore",
+        "sofia":    "a warm Spanish teacher with Mediterranean charm, guiding students through the language",
+        "umi":      "a thoughtful Japanese calligraphy master, patient and poetic",
+        "sage":     "an ancient sage with cosmic wisdom and serene patience",
+        "chef":     "a boisterous chef teaching culinary skills from a sunlit kitchen",
+        "narrator": "a mysterious fantasy storyteller guiding the learner through the realm",
+    }
 
-        Strategy:
-        1. Split the narrative into paragraphs (or sentence chunks).
-        2. Alternate: narrator paragraph → player reaction (pulled from a
-           class/tone-aware bank) → narrator paragraph → ...
-        3. Each narrator bubble rotates its expression for visual variety.
+    def _intro_to_dialogue(raw: str, theme_name: str, zone_id: str, zone_name: str, is_boss: bool, character: dict | None = None) -> list[dict]:
+        """Produce a two-sided chat dialogue for a zone intro.
+
+        Preferred path: ask Gemini to rewrite the intro as a contextual
+        teaching dialogue between a specific narrator character and the
+        player's character. Cached on disk.
+
+        Fallback: split the intro into paragraphs and interleave generic
+        class/tone player responses (useful when the API is unavailable).
         """
         import re as _re
         clean = _re.sub(r'\[/?[^\]]+\]', '', raw or '').strip()
         if not clean:
             return []
 
+        speaker_info = (
+            _BOSS_BY_THEME.get(theme_name, {"id": "boss_shadow", "name": "Adversary"})
+            if is_boss
+            else _NARRATOR_BY_THEME.get(theme_name, {"id": "narrator", "name": "Narrator"})
+        )
+        character_id = speaker_info["id"]
+        character_name = speaker_info["name"]
+        character_role = _NARRATOR_ROLES.get(character_id, "a guide teaching the learner")
+        if is_boss:
+            character_role = f"{character_role}, standing as the final adversary of this zone"
+
+        char = character or {}
+        player_name = char.get("name", "You") or "You"
+        player_class = char.get("class", "scholar")
+        alignment = char.get("alignment", "hero")
+        tone = char.get("tone", "epic")
+
+        # Try AI-generated dialogue first
+        try:
+            from .dialogue import generate_dialogue
+            ai_turns = generate_dialogue(
+                zone_id=zone_id,
+                zone_name=zone_name or zone_id,
+                intro_text=raw,
+                character_id=character_id,
+                character_name=character_name,
+                character_role=character_role,
+                player_name=player_name,
+                player_class=player_class,
+                alignment=alignment,
+                tone=tone,
+            )
+        except Exception:
+            ai_turns = None
+
+        expressions = ["neutral", "excited", "thinking", "happy", "surprised", "concerned"]
+
+        if ai_turns:
+            dialogue = []
+            n_count = 0
+            for turn in ai_turns:
+                if turn["speaker"] == "narrator":
+                    dialogue.append({
+                        "speaker": "narrator",
+                        "speaker_id": character_id,
+                        "speaker_name": character_name,
+                        "expression": expressions[n_count % len(expressions)],
+                        "text": turn["text"],
+                    })
+                    n_count += 1
+                else:
+                    dialogue.append({
+                        "speaker": "player",
+                        "speaker_id": "player",
+                        "speaker_name": player_name,
+                        "expression": "neutral",
+                        "text": turn["text"],
+                    })
+            return dialogue
+
+        # ── Fallback: old paragraph split + canned responses ──────────────
         paragraphs = [p.strip() for p in _re.split(r'\n\s*\n', clean) if p.strip()]
         if len(paragraphs) < 2:
             sentences = _re.split(r'(?<=[.!?])\s+', clean)
@@ -1469,21 +1542,9 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             if buf:
                 paragraphs.append(' '.join(buf))
 
-        speaker_info = (
-            _BOSS_BY_THEME.get(theme_name, {"id": "boss_shadow", "name": "Adversary"})
-            if is_boss
-            else _NARRATOR_BY_THEME.get(theme_name, {"id": "narrator", "name": "Narrator"})
-        )
-        expressions = ["neutral", "excited", "thinking", "happy", "surprised", "concerned"]
-
-        # Pull a class/tone-appropriate response bank for the player
-        char = character or {}
-        player_responses = _player_response_bank(char.get("class", "scholar"), char.get("tone", "epic"))
-
-        # Deterministic but varied selection so the player doesn't see the
-        # exact same replies every zone.
+        player_responses = _player_response_bank(player_class, tone)
         import hashlib as _hashlib
-        seed = int(_hashlib.md5(zone_name.encode() if zone_name else b'').hexdigest()[:8], 16)
+        seed = int(_hashlib.md5((zone_name or "").encode()).hexdigest()[:8], 16)
         def _pick(i: int) -> str:
             return player_responses[(seed + i * 7) % len(player_responses)]
 
@@ -1492,18 +1553,16 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         for i, text in enumerate(paragraphs):
             dialogue.append({
                 "speaker": "narrator",
-                "speaker_id": speaker_info["id"],
-                "speaker_name": speaker_info["name"],
+                "speaker_id": character_id,
+                "speaker_name": character_name,
                 "expression": expressions[i % len(expressions)],
                 "text": text,
             })
-            # Insert a player reaction after every narrator line except the
-            # very last one (player gets the "ready to begin" feeling at end).
             if i < last_idx:
                 dialogue.append({
                     "speaker": "player",
                     "speaker_id": "player",
-                    "speaker_name": char.get("name", "You"),
+                    "speaker_name": player_name,
                     "expression": "neutral",
                     "text": _pick(i),
                 })
@@ -1547,7 +1606,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             _character = {}
 
         # Build chat-style dialogue from the intro text
-        dialogue = _intro_to_dialogue(intro_text, theme, zone.get("name", ""), is_boss, _character)
+        dialogue = _intro_to_dialogue(intro_text, theme, zone_id, zone.get("name", ""), is_boss, _character)
 
         return templates.TemplateResponse(request, "zone_intro.html", _ctx(
             request, zone=zone_with_image, zone_id=zone_id,
