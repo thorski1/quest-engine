@@ -219,7 +219,14 @@
     <div class="mc-logo">🎮 Quest <span>Platform</span></div>
     <nav class="mc-nav">
       {% if current_user %}
-      <span style="color:rgba(200,216,232,0.6);font-size:0.75rem;">{{ current_user.display_name }}</span>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        {% if active_avatar_url %}
+        <a href="/avatar" title="Your avatar"><img src="{{ active_avatar_url }}" alt="Your avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #00e5a0;"></a>
+        {% elif character and character.avatar_emoji %}
+        <a href="/avatar" title="Your avatar" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:rgba(255,255,255,0.05);border:2px solid #00e5a0;text-decoration:none;">{{ character.avatar_emoji }}</a>
+        {% endif %}
+        <span style="color:rgba(200,216,232,0.7);font-size:0.75rem;">{{ character.name if character.name else current_user.display_name }}</span>
+      </div>
       {% else %}
       <a href="/{{ first_pack_id }}/auth/login">Sign In</a>
       <a href="/{{ first_pack_id }}/auth/register" style="color:#00e5a0;font-weight:700;">Create Account</a>
@@ -229,8 +236,13 @@
 
   {% if current_user %}
   <div class="logged-in-bar">
-    <span>Welcome back, {{ current_user.display_name }}!</span>
-    <span style="font-size:0.75rem;color:rgba(200,216,232,0.5);">{{ user_chapters_started }} courses started · {{ user_total_xp }} XP</span>
+    {% if active_avatar_url %}
+    <img src="{{ active_avatar_url }}" alt="Your avatar" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #00e5a0;box-shadow:0 0 12px rgba(0,229,160,0.3);">
+    {% elif character and character.avatar_emoji %}
+    <div style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;background:rgba(0,229,160,0.1);border:2px solid #00e5a0;">{{ character.avatar_emoji }}</div>
+    {% endif %}
+    <span>Welcome back, {{ character.name if character.name else current_user.display_name }}!</span>
+    <span style="font-size:0.75rem;color:rgba(200,216,232,0.5);">{% if character.class %}{{ character.class|capitalize }} · {% endif %}{{ user_chapters_started }} courses started · {{ user_total_xp }} XP</span>
     {% for pack in packs if pack.has_progress and pack.completed_zones < pack.total_zones %}
       {% if loop.first %}
       <a href="/{{ pack.id }}/challenge" class="btn" style="background:#00e5a0;color:#0a0e1a;border-radius:8px;font-weight:700;">Continue Playing →</a>
@@ -241,7 +253,22 @@
 
   <div class="mc-hero">
     <h1>Choose Your <span>World</span></h1>
-    <p>{{ total_packs }} courses · {{ total_challenges }} challenges · 6 worlds · Free forever</p>
+    <p>{{ total_packs }} courses · {{ total_challenges }} challenges · {{ realm_count }} worlds · Free forever</p>
+
+    {% if not current_user %}
+    <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1.25rem;flex-wrap:wrap;">
+      <a href="/{{ first_pack_id }}/auth/register" style="padding:0.9rem 2rem;background:linear-gradient(135deg,#00e5a0,#00b4d8);color:#0a0e1a;border-radius:12px;font-weight:800;font-size:1rem;text-decoration:none;box-shadow:0 6px 24px rgba(0,229,160,0.3);">🚀 Start Your Quest</a>
+      <a href="/{{ first_pack_id }}/auth/login" style="padding:0.9rem 1.5rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#c8d8e8;border-radius:12px;font-weight:700;text-decoration:none;">Sign In</a>
+    </div>
+    <div style="margin-top:0.75rem;font-size:0.7rem;color:rgba(200,216,232,0.4);">
+      New here? We'll guide you through character creation in 2 minutes.
+    </div>
+    {% else %}
+    <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1.25rem;flex-wrap:wrap;">
+      <a href="/pick-course" style="padding:0.9rem 2rem;background:linear-gradient(135deg,#00e5a0,#00b4d8);color:#0a0e1a;border-radius:12px;font-weight:800;font-size:1rem;text-decoration:none;">⚔️ Start Playing</a>
+      <a href="/avatar" style="padding:0.9rem 1.5rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#c8d8e8;border-radius:12px;font-weight:700;text-decoration:none;">🎨 My Avatar</a>
+    </div>
+    {% endif %}
   </div>
 
   <div class="mc-stats">

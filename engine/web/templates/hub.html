@@ -211,10 +211,21 @@ if (t) document.documentElement.dataset.theme = t;
 <main class="site-main">
   <div class="hub-page">
     {% if current_user %}
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;margin-bottom:1rem;background:linear-gradient(135deg,var(--bg-raised),var(--bg-surface));border:1px solid var(--border);border-radius:var(--radius-lg);">
-      <div>
-        <span style="font-size:1rem;font-weight:700;color:var(--text-bright);">Welcome back, {{ current_user.display_name }}!</span>
-        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.15rem;">{{ user_chapters_started }} chapters started · {{ user_total_xp }} total XP</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;margin-bottom:1rem;background:linear-gradient(135deg,var(--bg-raised),var(--bg-surface));border:1px solid var(--border);border-radius:var(--radius-lg);gap:0.75rem;">
+      <div style="display:flex;align-items:center;gap:0.9rem;min-width:0;">
+        {% if active_avatar_url %}
+        <a href="/avatar" style="flex-shrink:0;">
+          <img src="{{ active_avatar_url }}" alt="Your avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--primary);box-shadow:0 0 12px rgba(0,229,160,0.3);">
+        </a>
+        {% elif character and character.avatar_emoji %}
+        <a href="/avatar" style="flex-shrink:0;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:var(--bg-raised);border:2px solid var(--primary);">{{ character.avatar_emoji }}</a>
+        {% endif %}
+        <div style="min-width:0;">
+          <span style="font-size:1rem;font-weight:700;color:var(--text-bright);">Welcome back, {{ (character.name if character.name else current_user.display_name) }}!</span>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.15rem;">
+            {% if character.class %}{{ character.class|capitalize }} · {% endif %}{{ user_chapters_started }} chapters started · {{ user_total_xp }} total XP
+          </div>
+        </div>
       </div>
       <div style="display:flex;gap:0.5rem;align-items:center;">
         {% for pack in packs if pack.has_progress and pack.completed_zones < pack.total_zones %}

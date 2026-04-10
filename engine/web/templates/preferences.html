@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberpunk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Preferences — Quest Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/themes.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0e1a; color: #c8d8e8; font-family: 'Nunito', system-ui, sans-serif; min-height: 100vh; }
+  a { color: #00e5a0; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  .prefs-page { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .prefs-header { text-align: center; margin-bottom: 2rem; }
+  .step-label { font-size: 0.75rem; color: #00e5a0; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; margin-bottom: 0.5rem; }
+  .prefs-title { font-size: 2rem; font-weight: 800; color: #e8f4ff; }
+  .prefs-title span { background: linear-gradient(135deg, #00e5a0, #00b4d8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .prefs-sub { color: rgba(200,216,232,0.65); font-size: 0.95rem; margin-top: 0.5rem; }
+
+  .section { margin-bottom: 1.8rem; }
+  .section h2 { font-size: 1rem; font-weight: 800; color: #e8f4ff; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section p.hint { font-size: 0.8rem; color: rgba(200,216,232,0.5); margin-bottom: 0.75rem; }
+
+  .choice-grid { display: grid; gap: 0.6rem; }
+  .choice-grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .choice-grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+  .choice {
+    position: relative; padding: 1.1rem 1rem; background: rgba(255,255,255,0.03);
+    border: 2px solid rgba(255,255,255,0.08); border-radius: 14px;
+    transition: all 0.15s; cursor: pointer; text-align: center;
+  }
+  .choice:hover { border-color: rgba(0,229,160,0.4); transform: translateY(-2px); }
+  .choice input { position: absolute; opacity: 0; pointer-events: none; }
+  .choice input:checked + .choice-inner { color: #00e5a0; }
+  .choice:has(input:checked) { border-color: #00e5a0; background: rgba(0,229,160,0.08); box-shadow: 0 0 20px rgba(0,229,160,0.15); }
+  .choice-icon { font-size: 1.8rem; display: block; margin-bottom: 0.4rem; }
+  .choice-name { font-weight: 700; color: #e8f4ff; font-size: 0.95rem; }
+  .choice-desc { font-size: 0.72rem; color: rgba(200,216,232,0.55); margin-top: 0.25rem; line-height: 1.35; }
+
+  .interest-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .tag {
+    position: relative; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1); border-radius: 100px;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    color: rgba(200,216,232,0.8);
+  }
+  .tag:hover { border-color: rgba(0,229,160,0.5); color: #e8f4ff; }
+  .tag input { position: absolute; opacity: 0; pointer-events: none; }
+  .tag:has(input:checked) { background: rgba(0,229,160,0.15); border-color: #00e5a0; color: #00e5a0; }
+
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); }
+  .btn {
+    padding: 0.85rem 1.8rem; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 800;
+    background: linear-gradient(135deg, #00e5a0, #00b4d8); color: #0a0e1a;
+    box-shadow: 0 4px 16px rgba(0,229,160,0.25); transition: all 0.15s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,229,160,0.4); }
+  .btn-back { background: none; color: rgba(200,216,232,0.55); box-shadow: none; padding: 0.85rem 1.2rem; font-weight: 600; }
+  .btn-back:hover { color: #e8f4ff; transform: none; }
+</style>
+</head>
+<body>
+
+<div class="prefs-page">
+
+  <div class="prefs-header">
+    <div class="step-label">Step 2 of 5 · Tell Us About You</div>
+    <h1 class="prefs-title">Set Your <span>Preferences</span></h1>
+    <p class="prefs-sub">We'll tailor your quest experience — and you can always change this later.</p>
+  </div>
+
+  <form method="POST" action="/preferences/save">
+
+    <div class="section">
+      <h2>Age Level</h2>
+      <p class="hint">Choose the content level that fits you best.</p>
+      <div class="choice-grid cols-3">
+        <label class="choice">
+          <input type="radio" name="age_level" value="kids" {% if existing.age_level == 'kids' %}checked{% endif %}>
+          <div class="choice-inner">
+            <span class="choice-icon">🧒</span>
+            <div class="choice-name">Kids</div>
+            <div class="choice-desc">Ages 5-12 · simple, playful</div>
+          </div>
+        </label>
+        <label class="choice">
+          <input type="radio" name="age_level" value="teen" {% if existing.age_level == 'teen' %}checked{% endif %}>
+          <div class="choice-inner">
+            <span class="choice-icon">🧑‍🎓</span>
+            <div class="choice-name">Teen</div>
+            <div class="choice-desc">Ages 13-17 · challenging</div>
+          </div>
+        </label>
+        <label class="choice">
+          <input type="radio" name="age_level" value="adult" {% if not existing.age_level or existing.age_level == 'adult' %}checked{% endif %}>
+          <div class="choice-inner">
+            <span class="choice-icon">👩‍💻</span>
+            <div class="choice-name">Adult</div>
+            <div class="choice-desc">18+ · full depth</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Game Type</h2>
+      <p class="hint">What kind of learning experience do you want?</p>
+      <div class="choice-grid cols-3">
+        <label class="choice">
+          <input type="radio" name="game_type" value="rpg" {% if not existing.game_type or existing.game_type == 'rpg' %}checked{% endif %}>
+          <div class="choice-inner">
+            <span class="choice-icon">⚔️</span>
+            <div class="choice-name">RPG Adventure</div>
+            <div class="choice-desc">Full story, classes, levels</div>
+          </div>
+        </label>
+        <label class="choice">
+          <input type="radio" name="game_type" value="trivia" {% if existing.game_type == 'trivia' %}checked{% endif %}>
+          <div class="choice-inner">
+            <span class="choice-icon">🎯</span>
+            <div class="choice-name">Quick Trivia</div>
+            <div class="choice-desc">Bite-sized challenges</div>
+          </div>
+        </label>
+        <label class="choice">
+          <input type="radio" name="game_type" value="study" {% if existing.game_type == 'study' %}checked{% endif %}>
+          <div class="choice-inner">
+            <span class="choice-icon">📚</span>
+            <div class="choice-name">Focused Study</div>
+            <div class="choice-desc">Structured lessons</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Play Style</h2>
+      <p class="hint">How do you like to learn?</p>
+      <div class="choice-grid cols-3">
+        <label class="choice">
+          <input type="radio" name="play_style" value="chill" {% if existing.play_style == 'chill' %}checked{% endif %}>
+          <div class="choice-inner">
+            <span class="choice-icon">🌿</span>
+            <div class="choice-name">Chill</div>
+            <div class="choice-desc">Take your time, no rush</div>
+          </div>
+        </label>
+        <label class="choice">
+          <input type="radio" name="play_style" value="balanced" {% if not existing.play_style or existing.play_style == 'balanced' %}checked{% endif %}>
+          <div class="choice-inner">
+            <span class="choice-icon">⚖️</span>
+            <div class="choice-name">Balanced</div>
+            <div class="choice-desc">Mix of challenge &amp; fun</div>
+          </div>
+        </label>
+        <label class="choice">
+          <input type="radio" name="play_style" value="intense" {% if existing.play_style == 'intense' %}checked{% endif %}>
+          <div class="choice-inner">
+            <span class="choice-icon">🔥</span>
+            <div class="choice-name">Intense</div>
+            <div class="choice-desc">Push hard, maximize XP</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>What Interests You?</h2>
+      <p class="hint">Pick any that sound fun — we'll highlight matching courses later.</p>
+      <div class="interest-tags">
+        {% for cat in categories %}
+        <label class="tag">
+          <input type="checkbox" name="interest_{{ loop.index }}" value="{{ cat }}"
+            {% if cat in (existing.interests or []) %}checked{% endif %}>
+          {{ cat }}
+        </label>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="interests" id="interests-hidden" value="">
+    </div>
+
+    <div class="actions">
+      <a href="/welcome" class="btn btn-back">← Back</a>
+      <button type="submit" class="btn">Next: Character →</button>
+    </div>
+
+  </form>
+
+</div>
+
+<script>
+  // Collect checked interest tags into a single hidden field before submit
+  document.querySelector('form').addEventListener('submit', function() {
+    var tags = [];
+    document.querySelectorAll('.tag input:checked').forEach(function(cb) { tags.push(cb.value); });
+    document.getElementById('interests-hidden').value = tags.join(',');
+  });
+</script>
+
+</body>
+</html>

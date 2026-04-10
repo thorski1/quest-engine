@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberpunk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome — Quest Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/themes.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0e1a; color: #c8d8e8; font-family: 'Nunito', system-ui, sans-serif;
+    min-height: 100vh; background-image: url('/static/generated/landing_hero.webp');
+    background-size: cover; background-position: center; background-attachment: fixed;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0;
+    background: linear-gradient(180deg, rgba(10,14,26,0.7) 0%, rgba(10,14,26,0.92) 100%);
+  }
+  a { color: #00e5a0; text-decoration: none; }
+
+  .welcome {
+    max-width: 700px; margin: 0 auto; padding: 3rem 1.5rem;
+    position: relative; z-index: 1; text-align: center;
+  }
+  .hello { font-size: 0.9rem; color: rgba(200,216,232,0.6); text-transform: uppercase; letter-spacing: 0.12em; }
+  .name {
+    font-size: 2.5rem; font-weight: 800; margin-top: 0.5rem;
+    background: linear-gradient(135deg, #00e5a0, #00b4d8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .tagline {
+    color: rgba(200,216,232,0.8); font-size: 1.05rem; margin-top: 0.5rem; max-width: 500px; margin-left: auto; margin-right: auto;
+  }
+
+  .steps {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem; margin: 2.5rem 0;
+  }
+  .step {
+    padding: 1.25rem 0.75rem; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
+    backdrop-filter: blur(10px); position: relative;
+    transition: all 0.2s;
+  }
+  .step:hover { transform: translateY(-3px); border-color: rgba(0,229,160,0.4); }
+  .step-num {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 24px; background: #00e5a0; color: #000;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.75rem;
+  }
+  .step-icon { font-size: 2rem; margin-bottom: 0.4rem; display: block; }
+  .step-name { font-weight: 700; color: #e8f4ff; font-size: 0.9rem; }
+  .step-desc { font-size: 0.7rem; color: rgba(200,216,232,0.5); margin-top: 0.2rem; line-height: 1.4; }
+
+  .cta {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 1rem 2.5rem; background: linear-gradient(135deg, #00e5a0, #00b4d8);
+    color: #0a0e1a; border: none; border-radius: 12px;
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1.05rem;
+    cursor: pointer; text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(0,229,160,0.3);
+  }
+  .cta:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,229,160,0.5); color: #0a0e1a; }
+
+  .stats { display: flex; justify-content: center; gap: 2rem; margin: 1.5rem 0; flex-wrap: wrap; }
+  .stat-v { font-size: 1.5rem; font-weight: 800; color: #00e5a0; }
+  .stat-l { font-size: 0.65rem; color: rgba(200,216,232,0.5); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .skip { display: block; margin-top: 1.5rem; font-size: 0.75rem; color: rgba(200,216,232,0.4); }
+  .skip:hover { color: rgba(200,216,232,0.8); }
+</style>
+</head>
+<body>
+
+<div class="welcome">
+
+  {% if active_avatar_url %}
+  <div style="margin-bottom:1rem;">
+    <img src="{{ active_avatar_url }}" alt="Your avatar" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #00e5a0;box-shadow:0 0 32px rgba(0,229,160,0.4);">
+  </div>
+  {% elif character and character.avatar_emoji %}
+  <div style="font-size:4rem;margin-bottom:0.5rem;">{{ character.avatar_emoji }}</div>
+  {% endif %}
+
+  <div class="hello">Welcome, traveler</div>
+  <h1 class="name">{{ character.name if character and character.name else (current_user.display_name if current_user else 'Adventurer') }}</h1>
+  <p class="tagline">Before you begin your first quest, let's set up your character and avatar. It takes 2 minutes.</p>
+
+  <div class="stats">
+    <div><div class="stat-v">{{ total_packs }}</div><div class="stat-l">Courses</div></div>
+    <div><div class="stat-v">{{ total_challenges }}</div><div class="stat-l">Challenges</div></div>
+    <div><div class="stat-v">Free</div><div class="stat-l">Forever</div></div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <span class="step-icon">🎛️</span>
+      <div class="step-name">Preferences</div>
+      <div class="step-desc">Age, game type, play style</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <span class="step-icon">⚔️</span>
+      <div class="step-name">Character</div>
+      <div class="step-desc">Class, alignment, story tone</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <span class="step-icon">🎨</span>
+      <div class="step-name">Avatar</div>
+      <div class="step-desc">AI-generated with Nano Banana</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <span class="step-icon">📚</span>
+      <div class="step-name">Pick Course</div>
+      <div class="step-desc">Choose a path to start</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <span class="step-icon">🚀</span>
+      <div class="step-name">Begin Quest</div>
+      <div class="step-desc">Drop into your first zone</div>
+    </div>
+  </div>
+
+  <a href="/preferences" class="cta">Let's Begin →</a>
+  <a href="/browse" class="skip">Skip straight to browsing courses ›</a>
+
+</div>
+
+</body>
+</html>

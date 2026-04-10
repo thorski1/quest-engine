@@ -249,6 +249,8 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
                 "user_chapters_started": user_chapters_started,
                 "user_total_xp": user_total_xp,
                 "packs": pack_cards,
+                "active_avatar_url": _get_active_avatar_url(current_user),
+                "character": _get_platform_character(request),
             })
 
         # Single-game mode: show hub grid
@@ -262,6 +264,8 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "current_user": current_user,
             "user_total_xp": user_total_xp,
             "user_chapters_started": user_chapters_started,
+            "active_avatar_url": _get_active_avatar_url(current_user),
+            "character": _get_platform_character(request),
         })
 
     # ── Browse all courses (with search/filter/pagination) ────────────────
@@ -301,6 +305,330 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "category_counts": dict(sorted(category_counts.items())),
             "current_user": current_user,
             "first_pack_id": skill_packs[0].id if skill_packs else "letters",
+            "active_avatar_url": _get_active_avatar_url(current_user),
+            "character": _get_platform_character(request),
+        })
+
+    # ═══ PLATFORM-LEVEL ONBOARDING FLOW ═══════════════════════════════════
+    # Global routes that aren't tied to a specific course.
+
+    def _get_current_user_hub(request: Request) -> dict | None:
+        """Helper to get current user at hub level."""
+        try:
+            from .auth import AuthManager, SESSION_COOKIE
+            from ..storage import get_store
+            store = get_store()
+            if hasattr(store, 'create_user'):
+                sid = request.cookies.get(SESSION_COOKIE, "")
+                if sid:
+                    return AuthManager(store).get_user_from_session(sid)
+        except Exception:
+            pass
+        return None
+
+    # Platform-level character + preferences are stored in a cookie so
+    # they persist across individual courses without needing a DB migration.
+    CHARACTER_COOKIE = "quest_character"
+    PREFERENCES_COOKIE = "quest_preferences"
+
+    def _get_platform_character(request: Request) -> dict:
+        """Read platform-level character (class/alignment/tone/avatar) from cookie."""
+        try:
+            raw = request.cookies.get(CHARACTER_COOKIE, "")
+            if raw:
+                return json.loads(raw)
+        except Exception:
+            pass
+        return {}
+
+    def _get_platform_preferences(request: Request) -> dict:
+        """Read onboarding preferences (age/game-type/style) from cookie."""
+        try:
+            raw = request.cookies.get(PREFERENCES_COOKIE, "")
+            if raw:
+                return json.loads(raw)
+        except Exception:
+            pass
+        return {}
+
+    def _get_active_avatar_url(user: dict | None) -> str:
+        """Return the currently active avatar image URL for a user, or empty."""
+        if not user:
+            return ""
+        try:
+            from ..storage import get_store
+            store = get_store()
+            if hasattr(store, 'get_user_avatars'):
+                avatars = store.get_user_avatars(user["id"])
+                for a in avatars:
+                    if a.get("is_active"):
+                        return a.get("image_data_url", "")
+                if avatars:
+                    return avatars[0].get("image_data_url", "")
+        except Exception:
+            pass
+        return ""
+
+    @hub.get("/welcome", response_class=HTMLResponse)
+    async def welcome_page(request: Request):
+        """First stop after sign-up. Explains the flow."""
+        user = _get_current_user_hub(request)
+        return templates.TemplateResponse(request, "welcome.html", {
+            "request": request, "current_user": user,
+            "total_packs": len(skill_packs),
+            "total_challenges": sum(sum(len(z.get("challenges", [])) for z in p.zones.values()) for p in skill_packs),
+            "active_avatar_url": _get_active_avatar_url(user),
+            "character": _get_platform_character(request),
+        })
+
+    def _platform_base_ctx(request: Request, user: dict | None) -> dict:
+        """Default context for platform-level pages that extend base.html."""
+        # Use first pack as a visual placeholder for header rendering.
+        placeholder = skill_packs[0] if skill_packs else None
+        return {
+            "request": request,
+            "current_user": user,
+            "theme": "cyberpunk",
+            "pack_url_prefix": "",
+            "pack": placeholder,
+            "streak": 0,
+            "level": 1,
+            "level_progress_pct": 0,
+            "total_xp": 0,
+            "pack_image": "",
+            "active_avatar_url": _get_active_avatar_url(user),
+        }
+
+    @hub.get("/character", response_class=HTMLResponse)
+    async def platform_character(request: Request):
+        """Platform-level character creation (global, not per-course)."""
+        user = _get_current_user_hub(request)
+        existing = _get_platform_character(request)
+        ctx = _platform_base_ctx(request, user)
+        ctx["existing_character"] = existing
+        return templates.TemplateResponse(request, "character_create.html", ctx)
+
+    @hub.post("/character/save")
+    async def platform_character_save(request: Request,
+                                      player_name: str = Form(default=""),
+                                      player_class: str = Form(default="scholar"),
+                                      player_avatar: str = Form(default="🧙"),
+                                      player_alignment: str = Form(default="hero"),
+                                      player_tone: str = Form(default="epic")):
+        """Save platform-level character and move to avatar step."""
+        char = {
+            "name": player_name or "Adventurer",
+            "class": player_class,
+            "avatar_emoji": player_avatar,
+            "alignment": player_alignment,
+            "tone": player_tone,
+        }
+        resp = RedirectResponse("/avatar", status_code=303)
+        resp.set_cookie(
+            CHARACTER_COOKIE,
+            json.dumps(char),
+            max_age=60 * 60 * 24 * 365,  # 1 year
+            httponly=False,
+            samesite="lax",
+            path="/",
+        )
+        return resp
+
+    @hub.get("/preferences", response_class=HTMLResponse)
+    async def platform_preferences(request: Request):
+        """Collect onboarding preferences: age level, game type, play style."""
+        user = _get_current_user_hub(request)
+        existing = _get_platform_preferences(request)
+        # Collect available categories for interest selection
+        cats = sorted({p.category for p in skill_packs if p.category})
+        return templates.TemplateResponse(request, "preferences.html", {
+            "request": request, "current_user": user,
+            "existing": existing, "categories": cats,
+        })
+
+    @hub.post("/preferences/save")
+    async def platform_preferences_save(request: Request,
+                                        age_level: str = Form(default="adult"),
+                                        game_type: str = Form(default="rpg"),
+                                        play_style: str = Form(default="balanced"),
+                                        interests: str = Form(default="")):
+        """Persist preferences and continue to character creation."""
+        prefs = {
+            "age_level": age_level,
+            "game_type": game_type,
+            "play_style": play_style,
+            "interests": [i.strip() for i in interests.split(",") if i.strip()],
+        }
+        resp = RedirectResponse("/character", status_code=303)
+        resp.set_cookie(
+            PREFERENCES_COOKIE,
+            json.dumps(prefs),
+            max_age=60 * 60 * 24 * 365,
+            httponly=False,
+            samesite="lax",
+            path="/",
+        )
+        return resp
+
+    @hub.get("/avatar", response_class=HTMLResponse)
+    async def platform_avatar(request: Request):
+        """Platform-level avatar creation."""
+        from .trellis_3d import get_preset_avatars, is_available as trellis_ok
+        from .gemini_image import is_available as gemini_ok
+        user = _get_current_user_hub(request)
+        ctx = _platform_base_ctx(request, user)
+        ctx.update({
+            "presets": get_preset_avatars(),
+            "trellis_available": trellis_ok(),
+            "gemini_available": gemini_ok(),
+        })
+        return templates.TemplateResponse(request, "avatar_3d.html", ctx)
+
+    @hub.post("/avatar/save", response_class=HTMLResponse)
+    async def platform_save_avatar(request: Request,
+                                   avatar_id: str = Form(default=""),
+                                   avatar_url: str = Form(default=""),
+                                   avatar_image: str = Form(default=""),
+                                   prompt: str = Form(default=""),
+                                   style: str = Form(default="")):
+        """Save an avatar at the platform level."""
+        from ..storage import get_store
+        store = get_store()
+        user = _get_current_user_hub(request)
+        if user and hasattr(store, 'save_avatar') and avatar_image:
+            source = "gemini" if avatar_image.startswith("data:") else "preset"
+            new_id = store.save_avatar(
+                user_id=user["id"], image_data_url=avatar_image,
+                glb_url=avatar_url if avatar_url.endswith(".glb") else "",
+                prompt=prompt, style=style, source=source,
+            )
+            if new_id:
+                store.set_active_avatar(user["id"], new_id)
+        # Next step: course picker
+        return RedirectResponse("/pick-course", status_code=303)
+
+    @hub.get("/avatar/gallery", response_class=HTMLResponse)
+    async def platform_avatar_gallery(request: Request):
+        from ..storage import get_store
+        store = get_store()
+        user = _get_current_user_hub(request)
+        avatars = []
+        if user and hasattr(store, 'get_user_avatars'):
+            avatars = store.get_user_avatars(user["id"])
+        ctx = _platform_base_ctx(request, user)
+        ctx["avatars"] = avatars
+        return templates.TemplateResponse(request, "avatar_gallery.html", ctx)
+
+    # Higher-level learning "paths" — groups of related categories.
+    # Order matters: first match wins. Category substrings are matched
+    # case-insensitively against pack.category.
+    LEARNING_PATHS = [
+        {
+            "id": "languages",
+            "name": "Languages",
+            "icon": "🗣️",
+            "color": "#00b4d8",
+            "desc": "Speak a new tongue — Mandarin, Spanish, Japanese, and more",
+            "keywords": ["chinese", "spanish", "japanese", "korean", "french", "german", "italian", "language"],
+        },
+        {
+            "id": "tech",
+            "name": "Tech & Code",
+            "icon": "💻",
+            "color": "#00e5a0",
+            "desc": "Programming, DevOps, cybersecurity, web development",
+            "keywords": ["devops", "code", "programming", "web", "cyber", "data", "ai", "machine"],
+        },
+        {
+            "id": "kids",
+            "name": "Kids Zone",
+            "icon": "🧒",
+            "color": "#ffd93d",
+            "desc": "Playful learning for young adventurers (ages 5-12)",
+            "keywords": ["kids", "learn", "age"],
+        },
+        {
+            "id": "creative",
+            "name": "Creative & Life",
+            "icon": "🎨",
+            "color": "#a855f7",
+            "desc": "Art, cooking, finance, psychology — skills for living well",
+            "keywords": ["cooking", "finance", "psych", "art", "music", "creative", "life"],
+        },
+    ]
+
+    def _assign_path(category: str) -> str:
+        cat_lower = (category or "").lower()
+        for path in LEARNING_PATHS:
+            for kw in path["keywords"]:
+                if kw in cat_lower:
+                    return path["id"]
+        return "other"
+
+    @hub.get("/pick-course", response_class=HTMLResponse)
+    async def pick_course(request: Request):
+        """Let user pick their first course. Grouped into high-level paths."""
+        user = _get_current_user_hub(request)
+        prefs = _get_platform_preferences(request)
+        interests = set(prefs.get("interests", []))
+
+        # Build list of all courses with metadata
+        all_courses = []
+        for p in skill_packs:
+            cat = p.category or "Other"
+            path_id = _assign_path(cat)
+            session = _sessions[p.id]
+            all_courses.append({
+                "id": p.id,
+                "title": p.title,
+                "subtitle": (p.subtitle or "").replace("◈", "").strip(),
+                "category": cat,
+                "path_id": path_id,
+                "total_zones": len(p.zone_order),
+                "has_progress": session.has_progress(),
+                "is_recommended": cat in interests,
+                "theme": p.theme or ("playful" if p.kids_mode else "cyberpunk"),
+            })
+
+        # Group by path
+        paths_with_courses = []
+        for path in LEARNING_PATHS:
+            courses = [c for c in all_courses if c["path_id"] == path["id"]]
+            if courses:
+                # Recommended courses first
+                courses.sort(key=lambda c: (not c["is_recommended"], c["title"]))
+                paths_with_courses.append({
+                    **path,
+                    "courses": courses,
+                    "count": len(courses),
+                })
+
+        # "Other" catch-all
+        other_courses = [c for c in all_courses if c["path_id"] == "other"]
+        if other_courses:
+            paths_with_courses.append({
+                "id": "other",
+                "name": "More Courses",
+                "icon": "✨",
+                "color": "#ff6b6b",
+                "desc": "Everything else",
+                "courses": sorted(other_courses, key=lambda c: c["title"]),
+                "count": len(other_courses),
+            })
+
+        # Featured: top 3 recommended or first 3
+        recommended = [c for c in all_courses if c["is_recommended"]][:6]
+        if not recommended:
+            recommended = all_courses[:6]
+
+        return templates.TemplateResponse(request, "pick_course.html", {
+            "request": request, "current_user": user,
+            "paths": paths_with_courses,
+            "recommended": recommended,
+            "preferences": prefs,
+            "character": _get_platform_character(request),
+            "active_avatar_url": _get_active_avatar_url(user),
+            "total_courses": len(all_courses),
         })
 
     # ── Admin analytics (hub-level, cross-game) ────────────────────────────────
@@ -673,7 +1001,8 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             pass
 
         if login_result.get("ok"):
-            response = RedirectResponse(f"{prefix}/", status_code=303)
+            # New user: send to /welcome for full onboarding
+            response = RedirectResponse("/welcome", status_code=303)
             response.set_cookie("quest_session", login_result["session_id"], max_age=60*60*24*90, httponly=True, samesite="lax", path="/")
             return response
         return RedirectResponse(f"{prefix}/auth/login", status_code=303)
@@ -692,7 +1021,8 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
                 "request": request, "theme": theme, "mode": "login",
                 "prefix": prefix, "error": result["error"], "form_username": username,
             })
-        response = RedirectResponse(f"{prefix}/", status_code=303)
+        # Returning users go back to the landing page (shows "Continue Playing")
+        response = RedirectResponse("/", status_code=303)
         response.set_cookie("quest_session", result["session_id"], max_age=60*60*24*90, httponly=True, samesite="lax", path="/")
         return response
 

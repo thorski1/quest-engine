@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberpunk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choose Your First Quest — Quest Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/themes.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0e1a; color: #c8d8e8; font-family: 'Nunito', system-ui, sans-serif; min-height: 100vh; }
+  a { color: #00e5a0; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ── Header with avatar ─────────────────────────────────────── */
+  .player-header {
+    display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; margin-bottom: 2rem; backdrop-filter: blur(10px);
+  }
+  .player-avatar {
+    width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #00e5a0, #00b4d8);
+    display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+    border: 2px solid rgba(0,229,160,0.4); overflow: hidden; flex-shrink: 0;
+  }
+  .player-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .player-info { flex: 1; min-width: 0; }
+  .player-name { font-weight: 800; color: #e8f4ff; font-size: 1.1rem; }
+  .player-traits { font-size: 0.75rem; color: rgba(200,216,232,0.6); }
+  .player-traits span { color: #00e5a0; }
+
+  .pick-header { text-align: center; margin-bottom: 2rem; }
+  .step-label {
+    font-size: 0.75rem; color: #00e5a0; text-transform: uppercase; letter-spacing: 0.12em;
+    font-weight: 700; margin-bottom: 0.5rem;
+  }
+  .pick-title { font-size: 2.2rem; font-weight: 800; color: #e8f4ff; }
+  .pick-title span {
+    background: linear-gradient(135deg, #00e5a0, #00b4d8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .pick-sub { color: rgba(200,216,232,0.6); font-size: 0.95rem; margin-top: 0.5rem; }
+
+  /* ── Recommended row ─────────────────────────────────────── */
+  .section-label {
+    font-size: 0.8rem; color: #e8f4ff; text-transform: uppercase; letter-spacing: 0.1em;
+    font-weight: 800; margin: 2rem 0 1rem; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-label::before { content: ''; width: 3px; height: 16px; background: #00e5a0; border-radius: 2px; }
+
+  .rec-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; }
+  .rec-card {
+    padding: 1rem; background: linear-gradient(135deg, rgba(0,229,160,0.08), rgba(0,180,216,0.06));
+    border: 1px solid rgba(0,229,160,0.2); border-radius: 12px;
+    transition: all 0.15s; text-decoration: none; color: inherit; display: block;
+  }
+  .rec-card:hover { transform: translateY(-3px); border-color: #00e5a0; box-shadow: 0 8px 24px rgba(0,229,160,0.2); color: inherit; }
+  .rec-cat { font-size: 0.65rem; color: #00e5a0; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+  .rec-title { font-weight: 800; color: #e8f4ff; font-size: 0.95rem; margin: 0.3rem 0; }
+  .rec-sub { font-size: 0.75rem; color: rgba(200,216,232,0.55); line-height: 1.4; }
+
+  /* ── Path accordions ─────────────────────────────────────── */
+  .paths { display: flex; flex-direction: column; gap: 0.75rem; }
+  .path-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; overflow: hidden; transition: all 0.2s;
+  }
+  .path-card.open { border-color: rgba(0,229,160,0.3); }
+
+  .path-head {
+    display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem;
+    cursor: pointer; transition: background 0.15s; user-select: none;
+  }
+  .path-head:hover { background: rgba(255,255,255,0.02); }
+  .path-icon {
+    width: 52px; height: 52px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+  .path-meta { flex: 1; min-width: 0; }
+  .path-name { font-weight: 800; color: #e8f4ff; font-size: 1.1rem; }
+  .path-desc { font-size: 0.8rem; color: rgba(200,216,232,0.55); margin-top: 0.2rem; }
+  .path-count {
+    padding: 0.35rem 0.9rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px; font-size: 0.7rem; font-weight: 700; color: rgba(200,216,232,0.7);
+    white-space: nowrap;
+  }
+  .path-chev {
+    font-size: 1.2rem; color: rgba(200,216,232,0.5); transition: transform 0.2s;
+    margin-left: 0.5rem;
+  }
+  .path-card.open .path-chev { transform: rotate(180deg); }
+
+  .path-body {
+    max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .path-card.open .path-body { max-height: 2000px; }
+  .path-body-inner { padding: 1rem 1.5rem 1.5rem; }
+
+  .course-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.6rem; }
+  .course-item {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; transition: all 0.15s; text-decoration: none; color: inherit;
+  }
+  .course-item:hover {
+    background: rgba(0,229,160,0.06); border-color: rgba(0,229,160,0.3);
+    color: inherit; transform: translateX(3px);
+  }
+  .course-dot { width: 8px; height: 8px; border-radius: 50%; background: #00e5a0; flex-shrink: 0; }
+  .course-content { flex: 1; min-width: 0; }
+  .course-title { font-weight: 700; color: #e8f4ff; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .course-sub { font-size: 0.7rem; color: rgba(200,216,232,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .course-badge {
+    font-size: 0.6rem; padding: 0.15rem 0.5rem; border-radius: 100px;
+    background: rgba(0,229,160,0.15); color: #00e5a0; font-weight: 700;
+  }
+  .course-arrow { color: rgba(200,216,232,0.3); font-size: 1rem; }
+  .course-item:hover .course-arrow { color: #00e5a0; }
+
+  .footer-nav {
+    display: flex; justify-content: center; gap: 1rem;
+    margin-top: 2.5rem; padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .footer-nav a { color: rgba(200,216,232,0.5); font-size: 0.8rem; }
+  .footer-nav a:hover { color: #00e5a0; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  {% if character or active_avatar_url %}
+  <div class="player-header">
+    <div class="player-avatar">
+      {% if active_avatar_url %}
+        <img src="{{ active_avatar_url }}" alt="Your avatar">
+      {% else %}
+        {{ character.avatar_emoji or '🧙' }}
+      {% endif %}
+    </div>
+    <div class="player-info">
+      <div class="player-name">{% if character.name %}{{ character.name }}{% elif current_user %}{{ current_user.display_name }}{% else %}Adventurer{% endif %}</div>
+      <div class="player-traits">
+        {% if character.class %}<span>{{ character.class|capitalize }}</span>{% endif %}
+        {% if character.alignment %} · <span>{{ character.alignment|capitalize }}</span>{% endif %}
+        {% if preferences.age_level %} · {{ preferences.age_level|capitalize }}{% endif %}
+        {% if preferences.play_style %} · {{ preferences.play_style|capitalize }}{% endif %}
+      </div>
+    </div>
+    <a href="/avatar" style="font-size:0.75rem;color:#00e5a0;">Edit →</a>
+  </div>
+  {% endif %}
+
+  <div class="pick-header">
+    <div class="step-label">Step 4 of 5 · Pick Your First Quest</div>
+    <h1 class="pick-title">Choose Your <span>Path</span></h1>
+    <p class="pick-sub">{{ total_courses }} courses across {{ paths|length }} paths. Expand any path to browse — click a course to begin.</p>
+  </div>
+
+  {% if recommended %}
+  <div class="section-label">Recommended for you</div>
+  <div class="rec-row">
+    {% for c in recommended %}
+    <a href="/{{ c.id }}/" class="rec-card">
+      <div class="rec-cat">{{ c.category }}</div>
+      <div class="rec-title">{{ c.title }}</div>
+      <div class="rec-sub">{{ c.total_zones }} zone{{ 's' if c.total_zones != 1 else '' }}{% if c.has_progress %} · in progress{% endif %}</div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="section-label">Browse by path</div>
+  <div class="paths">
+    {% for path in paths %}
+    <div class="path-card{% if loop.first %} open{% endif %}" data-path="{{ path.id }}">
+      <div class="path-head" onclick="togglePath(this.parentElement)">
+        <div class="path-icon" style="background: {{ path.color }}22; color: {{ path.color }};">
+          {{ path.icon }}
+        </div>
+        <div class="path-meta">
+          <div class="path-name">{{ path.name }}</div>
+          <div class="path-desc">{{ path.desc }}</div>
+        </div>
+        <div class="path-count">{{ path.count }} course{{ 's' if path.count != 1 else '' }}</div>
+        <div class="path-chev">▾</div>
+      </div>
+      <div class="path-body">
+        <div class="path-body-inner">
+          <div class="course-list">
+            {% for c in path.courses %}
+            <a href="/{{ c.id }}/" class="course-item">
+              <div class="course-dot" style="background: {{ path.color }};"></div>
+              <div class="course-content">
+                <div class="course-title">{{ c.title }}</div>
+                <div class="course-sub">{{ c.subtitle or c.category }}</div>
+              </div>
+              {% if c.is_recommended %}<span class="course-badge">MATCH</span>{% endif %}
+              {% if c.has_progress %}<span class="course-badge" style="background:rgba(255,217,61,0.15);color:#ffd93d;">RESUME</span>{% endif %}
+              <span class="course-arrow">→</span>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="footer-nav">
+    <a href="/avatar">← Back to Avatar</a>
+    <a href="/browse">Browse all courses</a>
+    <a href="/preferences">Change preferences</a>
+  </div>
+
+</div>
+
+<script>
+  function togglePath(el) { el.classList.toggle('open'); }
+</script>
+
+</body>
+</html>
