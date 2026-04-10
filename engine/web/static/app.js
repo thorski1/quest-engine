@@ -13,11 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initKeyboardShortcuts();
   initScrollToResult();
   initTypewriter();
+  initAnswerAnimations();
   initConfetti();
   initSoundTriggers();
   initTimer();
   initOptionHoverEffects();
   focusAnswerInput();
+  initCardParallax();
+  initHeaderPulse();
+  initFloatingHelp();
 });
 
 // ── Page transition ─────────────────────────────────────────────────────────
@@ -170,6 +174,216 @@ function initTypewriter() {
 
   for (const child of temp.childNodes) {
     revealNode(child, narrativeEl);
+  }
+}
+
+// ── Card hover parallax (subtle 3D tilt) ──────────────────────────────────
+
+function initCardParallax() {
+  var targets = document.querySelectorAll('.class-card, .rec-card, .cat-card, .realm, .path-head, .hub-card');
+  if (!targets.length) return;
+  // Respect reduced motion
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  targets.forEach(function(el) {
+    el.style.transformStyle = 'preserve-3d';
+    el.addEventListener('mousemove', function(e) {
+      var rect = el.getBoundingClientRect();
+      var x = (e.clientX - rect.left) / rect.width;
+      var y = (e.clientY - rect.top) / rect.height;
+      var rx = (0.5 - y) * 6;
+      var ry = (x - 0.5) * 6;
+      el.style.transform = 'perspective(800px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) translateY(-2px)';
+    });
+    el.addEventListener('mouseleave', function() {
+      el.style.transform = '';
+    });
+  });
+}
+
+// ── Header pulse for streak and level ─────────────────────────────────────
+
+function initFloatingHelp() {
+  // Only render on pages that actually have keyboard shortcuts (challenge)
+  if (!document.querySelector('.challenge-card')) return;
+  if (document.getElementById('floating-help-btn')) return;
+
+  var btn = document.createElement('button');
+  btn.id = 'floating-help-btn';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'Keyboard shortcuts');
+  btn.title = 'Keyboard shortcuts (press ?)';
+  btn.textContent = '?';
+  btn.style.cssText = [
+    'position: fixed', 'bottom: 1rem', 'right: 1rem',
+    'width: 40px', 'height: 40px', 'border-radius: 50%',
+    'background: rgba(255,255,255,0.05)',
+    'border: 1.5px solid rgba(255,255,255,0.12)',
+    'color: #c8d8e8', 'font-weight: 800', 'font-size: 1.1rem',
+    'cursor: pointer', 'z-index: 900',
+    'backdrop-filter: blur(10px)',
+    'transition: all 0.15s',
+  ].join(';');
+  btn.onmouseover = function() {
+    btn.style.background = 'rgba(0,229,160,0.15)';
+    btn.style.borderColor = '#00e5a0';
+    btn.style.color = '#00e5a0';
+  };
+  btn.onmouseout = function() {
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.borderColor = 'rgba(255,255,255,0.12)';
+    btn.style.color = '#c8d8e8';
+  };
+
+  var panel = document.createElement('div');
+  panel.id = 'floating-help-panel';
+  panel.style.cssText = [
+    'position: fixed', 'bottom: 4rem', 'right: 1rem',
+    'padding: 1rem 1.25rem', 'border-radius: 12px',
+    'background: rgba(18, 24, 36, 0.96)',
+    'border: 1px solid rgba(255,255,255,0.1)',
+    'color: #e8f4ff', 'font-size: 0.82rem',
+    'min-width: 220px', 'z-index: 900',
+    'box-shadow: 0 12px 36px rgba(0,0,0,0.5)',
+    'backdrop-filter: blur(12px)',
+    'opacity: 0', 'visibility: hidden',
+    'transform: translateY(6px)',
+    'transition: opacity 0.15s, transform 0.15s, visibility 0.15s',
+  ].join(';');
+  panel.innerHTML = [
+    '<div style="font-size:0.68rem;font-weight:800;color:#00e5a0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem;">Keyboard Shortcuts</div>',
+    '<div style="display:grid;grid-template-columns:auto 1fr;gap:0.35rem 0.7rem;">',
+    '<kbd class="fh-k">A B C D</kbd><span>Choose answer</span>',
+    '<kbd class="fh-k">1–4</kbd><span>Choose answer</span>',
+    '<kbd class="fh-k">H</kbd><span>Hint</span>',
+    '<kbd class="fh-k">S</kbd><span>Skip</span>',
+    '<kbd class="fh-k">Enter</kbd><span>Next / Submit</span>',
+    '<kbd class="fh-k">?</kbd><span>Toggle this panel</span>',
+    '<kbd class="fh-k">Esc</kbd><span>Close</span>',
+    '</div>',
+  ].join('');
+  // Add kbd style
+  var kbdStyle = document.createElement('style');
+  kbdStyle.textContent = '.fh-k { display:inline-block;padding:0.15rem 0.5rem;background:rgba(0,229,160,0.12);border:1px solid rgba(0,229,160,0.3);border-radius:6px;color:#00e5a0;font-weight:700;font-family:var(--font-mono,monospace);font-size:0.72rem;text-align:center;min-width:28px; }';
+  document.head.appendChild(kbdStyle);
+
+  document.body.appendChild(btn);
+  document.body.appendChild(panel);
+
+  function togglePanel() {
+    var open = panel.style.visibility !== 'visible';
+    panel.style.visibility = open ? 'visible' : 'hidden';
+    panel.style.opacity = open ? '1' : '0';
+    panel.style.transform = open ? 'translateY(0)' : 'translateY(6px)';
+  }
+  btn.addEventListener('click', togglePanel);
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === '?') { e.preventDefault(); togglePanel(); }
+    if (e.key === 'Escape' && panel.style.visibility === 'visible') togglePanel();
+  });
+  document.addEventListener('click', function(e) {
+    if (e.target !== btn && !panel.contains(e.target) && panel.style.visibility === 'visible') {
+      togglePanel();
+    }
+  });
+}
+
+function initHeaderPulse() {
+  if (!document.getElementById('header-pulse-style')) {
+    var s = document.createElement('style');
+    s.id = 'header-pulse-style';
+    s.textContent = [
+      '@keyframes streak-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }',
+      '@keyframes glow-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,160,0.3); } 50% { box-shadow: 0 0 0 6px rgba(0,229,160,0); } }',
+      '.stat-streak { animation: streak-pulse 1.6s ease-in-out infinite; display: inline-block; }',
+      '.xp-bar-fill { position: relative; }',
+      '.xp-bar-fill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); background-size: 50% 100%; background-repeat: no-repeat; animation: xp-shimmer 2.5s linear infinite; }',
+      '@keyframes xp-shimmer { 0% { background-position: -50% 0; } 100% { background-position: 150% 0; } }',
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+}
+
+// ── Answer feedback animations (+XP pop-up, shake, pulse) ─────────────────
+
+function initAnswerAnimations() {
+  // Inject animation keyframes once
+  if (!document.getElementById('answer-fx-style')) {
+    var style = document.createElement('style');
+    style.id = 'answer-fx-style';
+    style.textContent = [
+      '@keyframes xp-float { 0% { opacity: 0; transform: translate(-50%, 0) scale(0.8); }',
+      '  15% { opacity: 1; transform: translate(-50%, -8px) scale(1.1); }',
+      '  100% { opacity: 0; transform: translate(-50%, -70px) scale(1); } }',
+      '@keyframes shake-fx { 0%, 100% { transform: translateX(0); }',
+      '  20% { transform: translateX(-10px); } 40% { transform: translateX(10px); }',
+      '  60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }',
+      '@keyframes correct-pulse { 0% { box-shadow: 0 0 0 0 rgba(0,229,160,0.6); }',
+      '  70% { box-shadow: 0 0 0 20px rgba(0,229,160,0); }',
+      '  100% { box-shadow: 0 0 0 0 rgba(0,229,160,0); } }',
+      '@keyframes levelup-burst { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }',
+      '  50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }',
+      '  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }',
+      '.xp-popup { position: fixed; top: 35%; left: 50%;',
+      '  font-size: 2.2rem; font-weight: 900; color: #00e5a0;',
+      '  text-shadow: 0 2px 20px rgba(0,229,160,0.6), 0 0 40px rgba(0,229,160,0.4);',
+      '  z-index: 9999; pointer-events: none; animation: xp-float 1.8s ease-out both; font-family: var(--font); }',
+      '.challenge-card.shake-fx { animation: shake-fx 0.4s; border-color: #ff6b6b !important; }',
+      '.challenge-card.correct-fx { animation: correct-pulse 0.8s ease-out; border-color: #00e5a0 !important; }',
+      '.level-up-modal { position: fixed; top: 50%; left: 50%;',
+      '  padding: 2rem 2.5rem; border-radius: 24px; z-index: 9999;',
+      '  background: linear-gradient(135deg, #00e5a0, #00b4d8); color: #0a0e1a;',
+      '  font-weight: 900; text-align: center; box-shadow: 0 0 80px rgba(0,229,160,0.6);',
+      '  animation: levelup-burst 0.5s ease-out both; pointer-events: none; }',
+      '.level-up-modal .lu-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.15em; }',
+      '.level-up-modal .lu-num { font-size: 3rem; line-height: 1; margin: 0.35rem 0; }',
+      '.level-up-modal .lu-sub { font-size: 0.95rem; opacity: 0.85; }',
+    ].join('\n');
+    document.head.appendChild(style);
+  }
+
+  var card = document.querySelector('.challenge-card');
+  if (!card) return;
+
+  // Correct answer: +XP pop-up, pulse, possibly level-up modal
+  var correct = document.querySelector('.result-correct');
+  if (correct) {
+    card.classList.add('correct-fx');
+    var xp = document.querySelector('.xp-gained');
+    if (xp) {
+      var pop = document.createElement('div');
+      pop.className = 'xp-popup';
+      pop.textContent = xp.textContent.trim();
+      document.body.appendChild(pop);
+      setTimeout(function() { pop.remove(); }, 2000);
+    }
+    var lu = document.querySelector('.level-up-badge');
+    if (lu) {
+      // Parse "🎉 Level Up! 5 — Title"
+      var match = lu.textContent.match(/Level Up!\s*(\d+)\s*[—-]\s*(.+)/);
+      if (match) {
+        var modal = document.createElement('div');
+        modal.className = 'level-up-modal';
+        modal.innerHTML =
+          '<div class="lu-title">Level Up!</div>' +
+          '<div class="lu-num">' + match[1] + '</div>' +
+          '<div class="lu-sub">' + match[2] + '</div>';
+        document.body.appendChild(modal);
+        setTimeout(function() {
+          modal.style.transition = 'opacity 0.4s';
+          modal.style.opacity = '0';
+          setTimeout(function() { modal.remove(); }, 400);
+        }, 2200);
+      }
+    }
+  }
+
+  // Wrong answer: shake
+  var wrong = document.querySelector('.result-wrong');
+  if (wrong) {
+    card.classList.add('shake-fx');
+    setTimeout(function() { card.classList.remove('shake-fx'); }, 500);
   }
 }
 
