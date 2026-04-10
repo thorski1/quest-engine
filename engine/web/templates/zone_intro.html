@@ -44,6 +44,114 @@
     margin-bottom: 0.5rem;
   }
 
+  /* ── Chat shell ────────────────────────────────────────── */
+  .chat-shell {
+    margin: 0.75rem 0 0.5rem;
+    padding: 1rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    max-height: 500px;
+    overflow-y: auto;
+    animation: fade-in-up 0.5s ease 0.15s both;
+  }
+  .chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .chat-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.55rem;
+    animation: fade-in-up 0.3s ease both;
+  }
+  .chat-row-player {
+    flex-direction: row-reverse;
+  }
+  .chat-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--bg-raised);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .chat-row-narrator .chat-avatar { border-color: var(--secondary); }
+  .chat-row-player .chat-avatar { border-color: var(--primary); }
+  .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .chat-avatar-emoji { font-size: 1.4rem; }
+
+  .chat-body {
+    max-width: 75%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .chat-row-player .chat-body { align-items: flex-end; }
+  .chat-name {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0 0.6rem;
+  }
+  .chat-bubble {
+    padding: 0.7rem 0.95rem;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-bright);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    word-wrap: break-word;
+    position: relative;
+  }
+  .chat-row-narrator .chat-bubble {
+    border-bottom-left-radius: 4px;
+    background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(34,211,238,0.02));
+    border-color: rgba(34,211,238,0.25);
+  }
+  .chat-row-player .chat-bubble {
+    border-bottom-right-radius: 4px;
+    background: linear-gradient(135deg, rgba(0,229,160,0.12), rgba(0,229,160,0.04));
+    border-color: rgba(0,229,160,0.35);
+  }
+
+  .typing-dots { display: flex; gap: 4px; padding: 0.85rem 1rem; min-width: 48px; }
+  .typing-dots span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim);
+    animation: typing-bounce 1.2s infinite ease-in-out;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  .chat-controls {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--border);
+  }
+  .chat-skip {
+    background: none; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.35rem 0.75rem; font-size: 0.75rem; color: var(--text-dim);
+    cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .chat-skip:hover { color: var(--primary); border-color: var(--primary); }
+
   .intro-actions {
     display: flex;
     gap: 0.75rem;
@@ -104,11 +212,151 @@
       {% endif %}
     </div>
 
-    {% if intro_html %}
-    <div class="intro-narrative narrative-text typewriter-target">
+    {% if intro_dialogue and intro_dialogue|length > 0 %}
+    <div class="chat-shell">
+      <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
+      <div class="chat-controls">
+        <button type="button" class="chat-skip" onclick="chatSkipAll()">Skip ahead ⏭</button>
+        <button class="tts-btn" onclick="playTTS(this)" data-text="{{ zone_intros_raw | default('', true) | e }}" title="Listen"
+          style="background:none;border:1px solid var(--border);border-radius:var(--radius);padding:0.35rem 0.75rem;cursor:pointer;font-size:0.8rem;color:var(--text-dim);">🔊 Listen</button>
+      </div>
+    </div>
+
+    <script type="application/json" id="chat-data">{{ intro_dialogue | tojson }}</script>
+    <script>
+      (function() {
+        var data = JSON.parse(document.getElementById('chat-data').textContent);
+        var container = document.getElementById('chat-messages');
+        var playerAvatar = {{ (active_avatar_url or '') | tojson }};
+        var playerEmoji = {{ (platform_character.avatar_emoji if platform_character.avatar_emoji else '🧙') | tojson }};
+        var playerName = {{ (platform_character.name if platform_character.name else 'You') | tojson }};
+        var idx = 0;
+        var skipped = false;
+
+        function renderMessage(msg, animate) {
+          var row = document.createElement('div');
+          row.className = 'chat-row chat-row-' + (msg.speaker === 'player' ? 'player' : 'narrator');
+
+          var avatar = document.createElement('div');
+          avatar.className = 'chat-avatar';
+          if (msg.speaker === 'player') {
+            if (playerAvatar) {
+              var img = document.createElement('img');
+              img.src = playerAvatar;
+              img.alt = playerName;
+              avatar.appendChild(img);
+            } else {
+              avatar.textContent = playerEmoji;
+              avatar.classList.add('chat-avatar-emoji');
+            }
+          } else {
+            var img = document.createElement('img');
+            img.src = '/static/generated/characters/' + msg.speaker_id + '_' + msg.expression + '.webp';
+            img.alt = msg.speaker_name;
+            img.onerror = function() {
+              // Fallback: try neutral expression
+              if (!img.dataset.fallback1) {
+                img.dataset.fallback1 = '1';
+                img.src = '/static/generated/characters/' + msg.speaker_id + '_neutral.webp';
+              } else if (!img.dataset.fallback2) {
+                img.dataset.fallback2 = '1';
+                img.src = '/static/generated/characters/narrator_neutral.webp';
+              } else {
+                img.style.display = 'none';
+                avatar.textContent = '📖';
+                avatar.classList.add('chat-avatar-emoji');
+              }
+            };
+            avatar.appendChild(img);
+          }
+
+          var body = document.createElement('div');
+          body.className = 'chat-body';
+
+          var name = document.createElement('div');
+          name.className = 'chat-name';
+          name.textContent = msg.speaker === 'player' ? playerName : msg.speaker_name;
+          body.appendChild(name);
+
+          var bubble = document.createElement('div');
+          bubble.className = 'chat-bubble';
+          bubble.textContent = '';
+          body.appendChild(bubble);
+
+          row.appendChild(avatar);
+          row.appendChild(body);
+          container.appendChild(row);
+
+          // Scroll into view
+          row.scrollIntoView({behavior: 'smooth', block: 'end'});
+
+          if (!animate) {
+            bubble.textContent = msg.text;
+            return Promise.resolve();
+          }
+
+          // Typewriter effect
+          return new Promise(function(resolve) {
+            var i = 0;
+            var txt = msg.text;
+            var tick = function() {
+              if (skipped) {
+                bubble.textContent = txt;
+                resolve();
+                return;
+              }
+              if (i < txt.length) {
+                bubble.textContent = txt.substring(0, i + 1);
+                i += Math.max(1, Math.ceil(txt.length / 180));
+                setTimeout(tick, 18);
+              } else {
+                bubble.textContent = txt;
+                resolve();
+              }
+            };
+            tick();
+          });
+        }
+
+        function addTypingIndicator(msg) {
+          var row = document.createElement('div');
+          row.className = 'chat-row chat-row-narrator chat-typing';
+          row.innerHTML = '<div class="chat-avatar"><img src="/static/generated/characters/' + msg.speaker_id + '_neutral.webp" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'📖\';"></div><div class="chat-body"><div class="chat-name">' + msg.speaker_name + '</div><div class="chat-bubble typing-dots"><span></span><span></span><span></span></div></div>';
+          container.appendChild(row);
+          row.scrollIntoView({behavior: 'smooth', block: 'end'});
+          return row;
+        }
+
+        async function playNext() {
+          if (idx >= data.length) return;
+          var msg = data[idx++];
+          if (msg.speaker !== 'player' && !skipped) {
+            var typing = addTypingIndicator(msg);
+            await new Promise(function(r) { setTimeout(r, 600); });
+            typing.remove();
+          }
+          await renderMessage(msg, !skipped);
+          if (!skipped) await new Promise(function(r) { setTimeout(r, 350); });
+          playNext();
+        }
+
+        window.chatSkipAll = function() {
+          skipped = true;
+          // Render any remaining messages instantly
+          while (idx < data.length) {
+            var msg = data[idx++];
+            renderMessage(msg, false);
+          }
+        };
+
+        playNext();
+      })();
+    </script>
+    {% elif intro_html %}
+    <div class="intro-narrative narrative-text">
       {{ intro_html | safe }}
       <div style="margin-top:0.75rem;">
-        <button class="tts-btn" onclick="playTTS(this)" data-text="{{ zone_intros_raw | default('', true) | e }}" title="Listen to intro" style="background:none;border:1px solid var(--border);border-radius:var(--radius);padding:0.35rem 0.75rem;cursor:pointer;font-size:0.8rem;color:var(--text-dim);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">🔊 Listen</button>
+        <button class="tts-btn" onclick="playTTS(this)" data-text="{{ zone_intros_raw | default('', true) | e }}" title="Listen to intro" style="background:none;border:1px solid var(--border);border-radius:var(--radius);padding:0.35rem 0.75rem;cursor:pointer;font-size:0.8rem;color:var(--text-dim);">🔊 Listen</button>
       </div>
     </div>
     {% endif %}

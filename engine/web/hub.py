@@ -1249,6 +1249,75 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             return RedirectResponse(f"{prefix}/", status_code=303)
         return RedirectResponse(f"{prefix}/challenge", status_code=303)
 
+    # ── Narrator character mapping by theme ─────────────────────────────
+    # Each pack theme maps to a primary narrator + optional boss adversary.
+    _NARRATOR_BY_THEME = {
+        "playful":    {"id": "puck",     "name": "Puck"},
+        "neural":     {"id": "aria",     "name": "ARIA"},
+        "cyberpunk":  {"id": "cipher",   "name": "CIPHER"},
+        "medieval":   {"id": "longlong", "name": "龙龙"},
+        "sunset":     {"id": "sofia",    "name": "Sofia"},
+        "ocean":      {"id": "umi",      "name": "Umi"},
+        "forest":     {"id": "sage",     "name": "Sage"},
+        "volcanic":   {"id": "chef",     "name": "Chef"},
+    }
+    _BOSS_BY_THEME = {
+        "cyberpunk":  {"id": "boss_glitch", "name": "The Glitch"},
+        "neural":     {"id": "boss_glitch", "name": "Null-0"},
+        "medieval":   {"id": "boss_dragon", "name": "Jade Wyrm"},
+        "playful":    {"id": "boss_shadow", "name": "Shade"},
+    }
+
+    def _intro_to_dialogue(raw: str, theme_name: str, zone_name: str, is_boss: bool) -> list[dict]:
+        """Split a narrative intro into alternating chat messages between
+        the narrator/boss and the player.
+
+        Strategy: split paragraphs; alternate speakers starting with narrator.
+        If there are no paragraphs, fall back to sentence-level splits.
+        Each message gets a rotating "expression" based on position.
+        """
+        import re as _re
+        # Strip rich markup
+        clean = _re.sub(r'\[/?[^\]]+\]', '', raw or '').strip()
+        if not clean:
+            return []
+
+        # Split by double-newline first, then fall back to sentence splits
+        paragraphs = [p.strip() for p in _re.split(r'\n\s*\n', clean) if p.strip()]
+        if len(paragraphs) < 2:
+            # Sentence split
+            sentences = _re.split(r'(?<=[.!?])\s+', clean)
+            # Group sentences into chunks of ~2-3 per bubble
+            paragraphs = []
+            buf = []
+            for s in sentences:
+                buf.append(s)
+                if len(' '.join(buf)) > 140:
+                    paragraphs.append(' '.join(buf))
+                    buf = []
+            if buf:
+                paragraphs.append(' '.join(buf))
+
+        speaker_info = (
+            _BOSS_BY_THEME.get(theme_name, {"id": "boss_shadow", "name": "Adversary"})
+            if is_boss
+            else _NARRATOR_BY_THEME.get(theme_name, {"id": "narrator", "name": "Narrator"})
+        )
+
+        # Expression rotation for narrator bubbles
+        expressions = ["neutral", "excited", "thinking", "happy", "surprised", "concerned"]
+
+        dialogue = []
+        for i, text in enumerate(paragraphs):
+            dialogue.append({
+                "speaker": "narrator",
+                "speaker_id": speaker_info["id"],
+                "speaker_name": speaker_info["name"],
+                "expression": expressions[i % len(expressions)],
+                "text": text,
+            })
+        return dialogue
+
     @hub.get(f"{prefix}/zone/{{zone_id}}/intro", response_class=HTMLResponse)
     async def zone_intro(request: Request, zone_id: str, _pid: str = pack_id):
         zone = skill_pack.get_zone(zone_id)
@@ -1275,10 +1344,17 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         if zone_image:
             zone_with_image["image_url"] = zone_image
 
+        # Detect boss zones heuristically (name contains "boss" or "final")
+        is_boss = "boss" in (zone.get("name", "") + " " + zone_id).lower() or "final" in zone_id.lower()
+
+        # Build chat-style dialogue from the intro text
+        dialogue = _intro_to_dialogue(intro_text, theme, zone.get("name", ""), is_boss)
+
         return templates.TemplateResponse(request, "zone_intro.html", _ctx(
             request, zone=zone_with_image, zone_id=zone_id,
             intro_html=rich_to_html(intro_text) if intro_text else "",
             zone_intros_raw=intro_text,
+            intro_dialogue=dialogue,
             challenge_count=len(challenges),
             zone_xp=zone_xp,
             zone_progress=zone_progress,

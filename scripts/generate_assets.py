@@ -67,6 +67,34 @@ LANDING_HERO = {
     "prompt": "epic fantasy RPG gaming landscape, multiple character silhouettes on hilltop, magical sky with aurora, fantasy worlds in distance, cinematic composition, concept art masterpiece"
 }
 
+# Narrator characters with expression variants.
+# Each entry renders as "{id}.webp" in /static/generated/characters/
+# Expression suffix convention: character_id + "_" + expression
+CHARACTER_ROSTER = [
+    {"id": "narrator",    "base": "A friendly androgynous fantasy storyteller with deep green hooded cloak and warm lantern glow, magical aura, centered headshot portrait, expressive face"},
+    {"id": "puck",        "base": "A cute fairy child with sparkly purple hair, pointed ears, big expressive eyes, whimsical children's book illustration style, magical glow, centered headshot portrait"},
+    {"id": "cipher",      "base": "A cyberpunk hacker guide with neon green hood covering eyes and glowing visor, matrix code reflections, centered headshot portrait, moody lighting"},
+    {"id": "aria",        "base": "An AI assistant hologram with translucent blue-purple crystalline face, glowing eyes and serene expression, futuristic tech HUD, centered headshot portrait"},
+    {"id": "longlong",    "base": "A young Chinese dragon-kin guide with red scales, golden horns, friendly smile, traditional Chinese ink-wash painting style, centered headshot portrait"},
+    {"id": "sofia",       "base": "A warm Spanish teacher character with flowing dark hair, flamenco-red outfit, bright smile, Mediterranean sunset lighting, centered headshot portrait"},
+    {"id": "umi",         "base": "A kind Japanese calligraphy master character with long dark hair tied back, kimono, thoughtful gaze, ukiyo-e art style, centered headshot portrait"},
+    {"id": "sage",        "base": "A wise elder sage with long white beard, star-flecked robes, kind crinkled eyes, cosmic background, painterly fantasy art, centered headshot portrait"},
+    {"id": "chef",        "base": "A jovial chef character with tall white toque and apron, warm kitchen lighting, hearty laugh lines, centered headshot portrait"},
+    # Adversaries / bosses
+    {"id": "boss_shadow", "base": "Menacing shadow sorcerer villain with purple smoke swirling around hooded face, glowing red eyes, dark fantasy concept art, centered headshot portrait"},
+    {"id": "boss_glitch", "base": "Corrupted AI entity boss with fragmented red holographic face, broken pixels, cybernetic horror, dark cyberpunk art, centered headshot portrait"},
+    {"id": "boss_dragon", "base": "Fierce ancient dragon character with jade scales and burning yellow eyes, fire flickering from nostrils, Chinese fantasy art, centered headshot portrait"},
+]
+
+EXPRESSIONS = [
+    ("neutral",   "calm neutral expression"),
+    ("happy",     "broad happy smile, eyes bright with joy"),
+    ("surprised", "wide-eyed surprised expression, mouth slightly open"),
+    ("thinking",  "thoughtful expression, one eyebrow slightly raised"),
+    ("concerned", "concerned worried expression, furrowed brow"),
+    ("excited",   "excited grinning expression, eyes sparkling"),
+]
+
 # Backgrounds / illustrations for the onboarding flow
 ONBOARDING_ART = [
     {"id": "welcome_hero", "prompt": "Wide cinematic panorama of a fantasy world gateway, multiple portals to different realms (castle, jungle, city, neon cyberpunk), heroic silhouette standing at the threshold, golden hour lighting, concept art masterpiece, no text"},
@@ -149,6 +177,31 @@ def generate_onboarding():
         time.sleep(2)
 
 
+def generate_characters():
+    """Generate every (character × expression) combination as headshots."""
+    char_dir = ASSETS_DIR / "characters"
+    char_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"🎭 Generating {len(CHARACTER_ROSTER)} characters × {len(EXPRESSIONS)} expressions = {len(CHARACTER_ROSTER) * len(EXPRESSIONS)} total...")
+    for char in CHARACTER_ROSTER:
+        for exp_id, exp_desc in EXPRESSIONS:
+            asset_id = f"{char['id']}_{exp_id}"
+            filepath = char_dir / f"{asset_id}.png"
+            if filepath.exists():
+                print(f"  ⊙ {asset_id}.png already exists, skipping")
+                continue
+            prompt = f"{char['base']}, {exp_desc}, transparent background, character portrait bust, 1:1 square"
+            print(f"  → {asset_id}...")
+            result = generate_image_from_prompt(prompt, "fantasy")
+            if not result.get("ok"):
+                print(f"  ✗ {asset_id}: {result.get('error', 'unknown')}")
+                continue
+            if save_data_url(result["image_data_url"], filepath):
+                size_kb = filepath.stat().st_size // 1024
+                print(f"  ✓ {asset_id}.png ({size_kb}KB)")
+            time.sleep(2)
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "all"
 
@@ -166,6 +219,8 @@ def main():
         generate_landing()
     if cmd in ("onboarding", "all"):
         generate_onboarding()
+    if cmd in ("characters", "all"):
+        generate_characters()
 
     print("\n✅ Done!")
 
