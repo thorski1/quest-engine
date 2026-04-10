@@ -1,0 +1,168 @@
+{#
+  Shared platform-level top nav component. Include from a standalone
+  template (not one that extends base.html).
+
+  Expects context vars (any may be missing):
+    current_user, active_avatar_url, platform_character, first_pack_id
+#}
+<header class="platform-nav">
+  <a href="/" class="platform-logo">⚡ Quest <span>Platform</span></a>
+
+  <nav class="platform-nav-links" aria-label="Primary">
+    <a href="/pick-course">Courses</a>
+    <a href="/browse">Browse All</a>
+  </nav>
+
+  <div class="platform-nav-right">
+    <div class="user-menu" id="platform-user-menu">
+      <button class="user-menu-trigger" onclick="togglePlatformMenu()" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
+        {% if active_avatar_url %}
+          <img src="{{ active_avatar_url }}" alt="Your avatar" class="user-avatar-img">
+        {% elif platform_character and platform_character.avatar_emoji %}
+          <span class="user-avatar-emoji">{{ platform_character.avatar_emoji }}</span>
+        {% else %}
+          <span class="user-avatar-emoji">🧙</span>
+        {% endif %}
+        <span class="user-menu-name">
+          {% if platform_character and platform_character.name %}{{ platform_character.name[:12] }}
+          {%- elif current_user %}{{ current_user.display_name[:12] }}
+          {%- else %}Menu{% endif %}
+        </span>
+        <span class="user-menu-chev">▾</span>
+      </button>
+      <div class="user-menu-drop" role="menu">
+        {% if current_user %}
+        <div class="user-menu-header">
+          {% if platform_character and platform_character.class %}
+          <div class="user-menu-class">{{ platform_character.class|capitalize }}{% if platform_character.alignment %} · {{ platform_character.alignment|capitalize }}{% endif %}</div>
+          {% endif %}
+          <div class="user-menu-email">{{ current_user.display_name }}</div>
+        </div>
+        {% endif %}
+        <a href="/avatar" class="user-menu-link">🎨 Change Avatar</a>
+        <a href="/avatar/gallery" class="user-menu-link">🖼️ Avatar Gallery</a>
+        <a href="/character" class="user-menu-link">⚔️ Edit Character</a>
+        <a href="/preferences" class="user-menu-link">🎛️ Preferences</a>
+        <div class="user-menu-sep"></div>
+        <a href="/pick-course" class="user-menu-link">📚 All Courses</a>
+        <a href="/browse" class="user-menu-link">🔍 Browse / Search</a>
+        <div class="user-menu-sep"></div>
+        {% if current_user %}
+        <a href="/{{ first_pack_id or 'letters' }}/auth/logout" class="user-menu-link user-menu-logout">🚪 Sign Out</a>
+        {% else %}
+        <a href="/{{ first_pack_id or 'letters' }}/auth/login" class="user-menu-link">🔐 Sign In</a>
+        <a href="/{{ first_pack_id or 'letters' }}/auth/register" class="user-menu-link">✨ Create Account</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  .platform-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.9rem 1.5rem; max-width: 1200px; margin: 0 auto 0.5rem;
+    gap: 1rem; position: relative; z-index: 50;
+  }
+  .platform-logo {
+    font-size: 1.05rem; font-weight: 800; color: #e8f4ff;
+    text-decoration: none; white-space: nowrap;
+  }
+  .platform-logo span {
+    background: linear-gradient(135deg, #00e5a0, #00b4d8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .platform-nav-links {
+    display: flex; gap: 1.25rem; flex: 1; justify-content: center;
+  }
+  .platform-nav-links a {
+    color: rgba(200,216,232,0.65); font-size: 0.85rem; font-weight: 700;
+    text-decoration: none; transition: color 0.15s;
+  }
+  .platform-nav-links a:hover { color: #00e5a0; }
+  .platform-nav-right { display: flex; align-items: center; }
+
+  /* Scoped user-menu styles so standalone pages (which don't load themes.css
+     class scopes) still render the dropdown correctly. themes.css already
+     defines .user-menu-* classes — this block only overrides positioning. */
+  .platform-nav .user-menu { position: relative; }
+  .platform-nav .user-menu-trigger {
+    display: flex; align-items: center; gap: 0.45rem;
+    padding: 0.35rem 0.8rem 0.35rem 0.4rem;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px; cursor: pointer; font-family: 'Nunito', sans-serif;
+    font-size: 0.82rem; color: #e8f4ff; transition: all 0.15s;
+  }
+  .platform-nav .user-menu-trigger:hover { border-color: #00e5a0; }
+  .platform-nav .user-menu.open .user-menu-trigger { border-color: #00e5a0; background: rgba(0,229,160,0.06); }
+  .platform-nav .user-avatar-img {
+    width: 28px; height: 28px; border-radius: 50%; object-fit: cover;
+    border: 2px solid #00e5a0; box-shadow: 0 0 6px rgba(0,229,160,0.3);
+  }
+  .platform-nav .user-avatar-emoji {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem; background: rgba(255,255,255,0.05); border: 2px solid #00e5a0;
+  }
+  .platform-nav .user-menu-name { font-weight: 700; }
+  .platform-nav .user-menu-chev { font-size: 0.7rem; opacity: 0.6; transition: transform 0.15s; }
+  .platform-nav .user-menu.open .user-menu-chev { transform: rotate(180deg); }
+
+  .platform-nav .user-menu-drop {
+    position: absolute; top: calc(100% + 0.5rem); right: 0; z-index: 100;
+    min-width: 240px; padding: 0.5rem;
+    background: #121824; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px; box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+    opacity: 0; visibility: hidden; transform: translateY(-6px);
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    backdrop-filter: blur(12px);
+  }
+  .platform-nav .user-menu.open .user-menu-drop {
+    opacity: 1; visibility: visible; transform: translateY(0);
+  }
+  .platform-nav .user-menu-header {
+    padding: 0.5rem 0.6rem 0.6rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 0.4rem;
+  }
+  .platform-nav .user-menu-class {
+    font-size: 0.7rem; color: #00e5a0; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .platform-nav .user-menu-email {
+    font-size: 0.75rem; color: rgba(200,216,232,0.55); margin-top: 0.1rem;
+  }
+  .platform-nav .user-menu-link {
+    display: flex; align-items: center; gap: 0.55rem;
+    padding: 0.55rem 0.7rem; border-radius: 8px;
+    color: #c8d8e8; font-size: 0.82rem; font-weight: 600;
+    text-decoration: none; background: none; border: none; width: 100%;
+    font-family: inherit; cursor: pointer; transition: background 0.1s;
+    text-align: left;
+  }
+  .platform-nav .user-menu-link:hover { background: rgba(0,229,160,0.08); color: #e8f4ff; }
+  .platform-nav .user-menu-sep { height: 1px; background: rgba(255,255,255,0.08); margin: 0.35rem 0.4rem; }
+  .platform-nav .user-menu-logout { color: rgba(200,216,232,0.55) !important; }
+  .platform-nav .user-menu-logout:hover { color: #ff6b6b !important; background: rgba(255,107,107,0.08); }
+
+  @media (max-width: 680px) {
+    .platform-nav-links { display: none; }
+    .platform-nav .user-menu-name { display: none; }
+    .platform-nav .user-menu-drop { right: 0.5rem; min-width: 220px; }
+  }
+</style>
+
+<script>
+  function togglePlatformMenu() {
+    var menu = document.getElementById('platform-user-menu');
+    if (!menu) return;
+    menu.classList.toggle('open');
+    var btn = menu.querySelector('.user-menu-trigger');
+    if (btn) btn.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
+  }
+  document.addEventListener('click', function(e) {
+    var menu = document.getElementById('platform-user-menu');
+    if (menu && !menu.contains(e.target)) menu.classList.remove('open');
+  });
+</script>

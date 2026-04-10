@@ -386,11 +386,13 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "total_challenges": sum(sum(len(z.get("challenges", [])) for z in p.zones.values()) for p in skill_packs),
             "active_avatar_url": avatar_url,
             "character": character,
+            "platform_character": character,
             "preferences": prefs,
             "done_prefs": done_prefs,
             "done_char": done_char,
             "done_avatar": done_avatar,
             "is_returning": done_prefs or done_char or done_avatar,
+            "first_pack_id": skill_packs[0].id if skill_packs else "letters",
         })
 
     def _platform_base_ctx(request: Request, user: dict | None) -> dict:
@@ -459,6 +461,9 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         return templates.TemplateResponse(request, "preferences.html", {
             "request": request, "current_user": user,
             "existing": existing, "categories": cats,
+            "active_avatar_url": _get_active_avatar_url(user),
+            "platform_character": _get_platform_character(request),
+            "first_pack_id": skill_packs[0].id if skill_packs else "letters",
         })
 
     @hub.post("/preferences/save")
@@ -669,14 +674,17 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         if not recommended:
             recommended = all_courses[:6]
 
+        char = _get_platform_character(request)
         return templates.TemplateResponse(request, "pick_course.html", {
             "request": request, "current_user": user,
             "paths": paths_with_courses,
             "recommended": recommended,
             "preferences": prefs,
-            "character": _get_platform_character(request),
+            "character": char,
+            "platform_character": char,
             "active_avatar_url": _get_active_avatar_url(user),
             "total_courses": len(all_courses),
+            "first_pack_id": skill_packs[0].id if skill_packs else "letters",
         })
 
     # ── Admin analytics (hub-level, cross-game) ────────────────────────────────

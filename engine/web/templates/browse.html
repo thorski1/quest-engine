@@ -183,28 +183,10 @@
 </head>
 <body>
 
-<div class="browse-layout">
+{% set platform_character = character %}
+{% include "_platform_nav.html" %}
 
-  <!-- HEADER -->
-  <div class="browse-header">
-    <div class="brand">🎮 <a href="/">Quest <span>Platform</span></a></div>
-    <nav class="nav-links">
-      <a href="/">Home</a>
-      <a href="/browse">Courses</a>
-      {% if current_user %}
-      <a href="/avatar" style="display:flex;align-items:center;gap:0.45rem;">
-        {% if active_avatar_url %}
-        <img src="{{ active_avatar_url }}" alt="Your avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid #00e5a0;">
-        {% elif character and character.avatar_emoji %}
-        <span style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;background:rgba(255,255,255,0.05);border:1.5px solid #00e5a0;">{{ character.avatar_emoji }}</span>
-        {% endif %}
-        <span>{{ character.name if character.name else current_user.display_name }}</span>
-      </a>
-      {% else %}
-      <a href="/{{ first_pack_id }}/auth/login">Sign In</a>
-      {% endif %}
-    </nav>
-  </div>
+<div class="browse-layout">
 
   <!-- SEARCH + SORT -->
   <div class="search-bar">
