@@ -409,6 +409,7 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             "total_xp": 0,
             "pack_image": "",
             "active_avatar_url": _get_active_avatar_url(user),
+            "platform_character": _get_platform_character(request),
         }
 
     @hub.get("/character", response_class=HTMLResponse)

@@ -262,19 +262,62 @@ function initSoundTriggers() {
 }
 
 // ── TTS playback ────────────────────────────────────────────────────────────
+//
+// Tries backend TTS (ElevenLabs / Google) first for high-quality audio. If the
+// backend returns no audio or errors, falls back to the browser's built-in
+// Web Speech API, which works offline in every modern browser.
 
 var _ttsAudio = null;
+var _ttsSpeech = null;
+
+function _stopTTS() {
+  if (_ttsAudio) {
+    try { _ttsAudio.pause(); } catch (e) {}
+    _ttsAudio = null;
+  }
+  if (_ttsSpeech && window.speechSynthesis) {
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    _ttsSpeech = null;
+  }
+  document.querySelectorAll('.tts-play-btn .tts-icon, .tts-btn .tts-icon').forEach(function(ic) {
+    ic.textContent = '🔊';
+  });
+}
+
+function _resetIcon(iconEl) {
+  iconEl.textContent = '🔊';
+}
+
+function _speakWithBrowser(text, iconEl) {
+  if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+    iconEl.textContent = '🔇';
+    setTimeout(function() { _resetIcon(iconEl); }, 1500);
+    return;
+  }
+  var utter = new SpeechSynthesisUtterance(text.substring(0, 500));
+  // Try to pick a good English voice
+  var voices = window.speechSynthesis.getVoices();
+  var preferred = voices.find(function(v) { return /en-(US|GB)/i.test(v.lang) && /google|samantha|natural|daniel/i.test(v.name); })
+    || voices.find(function(v) { return /en-(US|GB)/i.test(v.lang); })
+    || voices[0];
+  if (preferred) utter.voice = preferred;
+  utter.rate = 1.0;
+  utter.pitch = 1.0;
+  utter.onend = function() { _resetIcon(iconEl); _ttsSpeech = null; };
+  utter.onerror = function() { _resetIcon(iconEl); _ttsSpeech = null; };
+  _ttsSpeech = utter;
+  window.speechSynthesis.speak(utter);
+}
+
 function playTTS(btn) {
   var text = btn.dataset.text;
   if (!text) return;
   var iconEl = btn.querySelector('.tts-icon') || btn;
 
-  // Stop any currently playing audio
-  if (_ttsAudio) {
-    _ttsAudio.pause();
-    _ttsAudio.currentTime = 0;
-    _ttsAudio = null;
-    document.querySelectorAll('.tts-play-btn .tts-icon').forEach(function(ic) { ic.textContent = '🔊'; });
+  // Toggle: clicking while playing stops playback.
+  if (_ttsAudio || _ttsSpeech) {
+    _stopTTS();
+    return;
   }
 
   // Strip Rich markup
@@ -282,11 +325,28 @@ function playTTS(btn) {
   var theme = document.documentElement.dataset.theme || '';
   iconEl.textContent = '⏳';
 
+  // Try server TTS first via fetch so we can cleanly fall back on failure.
   var url = '/api/tts?text=' + encodeURIComponent(text.substring(0, 500)) + '&theme=' + theme;
-  _ttsAudio = new Audio(url);
-  _ttsAudio.onended = function() { iconEl.textContent = '🔊'; _ttsAudio = null; };
-  _ttsAudio.onerror = function() { iconEl.textContent = '🔇'; setTimeout(function(){ iconEl.textContent = '🔊'; }, 2000); _ttsAudio = null; };
-  _ttsAudio.play().catch(function() { iconEl.textContent = '🔊'; _ttsAudio = null; });
+  fetch(url)
+    .then(function(r) {
+      if (!r.ok || r.status === 204) throw new Error('no-audio');
+      var ct = r.headers.get('content-type') || '';
+      if (ct.indexOf('audio') === -1) throw new Error('not-audio');
+      return r.blob();
+    })
+    .then(function(blob) {
+      if (!blob || blob.size < 100) throw new Error('empty');
+      var objUrl = URL.createObjectURL(blob);
+      _ttsAudio = new Audio(objUrl);
+      _ttsAudio.onended = function() { _resetIcon(iconEl); _ttsAudio = null; URL.revokeObjectURL(objUrl); };
+      _ttsAudio.onerror = function() { _resetIcon(iconEl); _ttsAudio = null; URL.revokeObjectURL(objUrl); };
+      return _ttsAudio.play();
+    })
+    .catch(function() {
+      // Backend TTS unavailable — use Web Speech API
+      _ttsAudio = null;
+      _speakWithBrowser(text, iconEl);
+    });
 }
 
 // ── AI Tutor explain ─────────────────────────────────────────────────────────

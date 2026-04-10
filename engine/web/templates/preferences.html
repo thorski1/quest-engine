@@ -68,10 +68,21 @@
 
 <div class="prefs-page">
 
+  <nav class="onboarding-progress" aria-label="Setup progress">
+    <a href="/welcome" class="op-step done"><span class="op-dot">✓</span><span class="op-label">Welcome</span></a>
+    <span class="op-line done"></span>
+    <a href="/preferences" class="op-step current"><span class="op-dot">2</span><span class="op-label">Preferences</span></a>
+    <span class="op-line"></span>
+    <a href="/character" class="op-step"><span class="op-dot">3</span><span class="op-label">Character</span></a>
+    <span class="op-line"></span>
+    <a href="/avatar" class="op-step"><span class="op-dot">4</span><span class="op-label">Avatar</span></a>
+    <span class="op-line"></span>
+    <a href="/pick-course" class="op-step"><span class="op-dot">5</span><span class="op-label">Courses</span></a>
+  </nav>
+
   <div class="prefs-header">
-    <div class="step-label">Step 2 of 5 · Tell Us About You</div>
     <h1 class="prefs-title">Set Your <span>Preferences</span></h1>
-    <p class="prefs-sub">We'll tailor your quest experience — and you can always change this later.</p>
+    <p class="prefs-sub">We'll tailor your quest experience — you can always change this later.</p>
   </div>
 
   <form method="POST" action="/preferences/save">

@@ -187,10 +187,21 @@
   </div>
   {% endif %}
 
+  <nav class="onboarding-progress" aria-label="Setup progress">
+    <a href="/welcome" class="op-step done"><span class="op-dot">✓</span><span class="op-label">Welcome</span></a>
+    <span class="op-line done"></span>
+    <a href="/preferences" class="op-step done"><span class="op-dot">✓</span><span class="op-label">Preferences</span></a>
+    <span class="op-line done"></span>
+    <a href="/character" class="op-step done"><span class="op-dot">✓</span><span class="op-label">Character</span></a>
+    <span class="op-line done"></span>
+    <a href="/avatar" class="op-step done"><span class="op-dot">✓</span><span class="op-label">Avatar</span></a>
+    <span class="op-line done"></span>
+    <span class="op-step current"><span class="op-dot">5</span><span class="op-label">Courses</span></span>
+  </nav>
+
   <div class="pick-header">
-    <div class="step-label">Step 4 of 5 · Pick Your First Quest</div>
-    <h1 class="pick-title">Choose Your <span>Path</span></h1>
-    <p class="pick-sub">{{ total_courses }} courses across {{ paths|length }} paths. Expand any path to browse — click a course to begin.</p>
+    <h1 class="pick-title">Pick Your <span>First Quest</span></h1>
+    <p class="pick-sub">{{ total_courses }} courses across {{ paths|length }} paths. Click any course to jump in.</p>
   </div>
 
   {% if recommended %}

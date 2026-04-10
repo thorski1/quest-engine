@@ -87,6 +87,18 @@
 
 <div class="welcome">
 
+  <nav class="onboarding-progress" aria-label="Setup progress" style="margin-bottom:1.5rem;">
+    <span class="op-step current"><span class="op-dot">1</span><span class="op-label">Welcome</span></span>
+    <span class="op-line"></span>
+    <a href="/preferences" class="op-step{% if done_prefs %} done{% endif %}"><span class="op-dot">{% if done_prefs %}✓{% else %}2{% endif %}</span><span class="op-label">Preferences</span></a>
+    <span class="op-line{% if done_prefs %} done{% endif %}"></span>
+    <a href="/character" class="op-step{% if done_char %} done{% endif %}"><span class="op-dot">{% if done_char %}✓{% else %}3{% endif %}</span><span class="op-label">Character</span></a>
+    <span class="op-line{% if done_char %} done{% endif %}"></span>
+    <a href="/avatar" class="op-step{% if done_avatar %} done{% endif %}"><span class="op-dot">{% if done_avatar %}✓{% else %}4{% endif %}</span><span class="op-label">Avatar</span></a>
+    <span class="op-line{% if done_avatar %} done{% endif %}"></span>
+    <a href="/pick-course" class="op-step"><span class="op-dot">5</span><span class="op-label">Courses</span></a>
+  </nav>
+
   {% if active_avatar_url %}
   <div style="margin-bottom:1rem;">
     <img src="{{ active_avatar_url }}" alt="Your avatar" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #00e5a0;box-shadow:0 0 32px rgba(0,229,160,0.4);">
@@ -105,38 +117,6 @@
     <div><div class="stat-v">Free</div><div class="stat-l">Forever</div></div>
   </div>
 
-  <div class="steps">
-    <div class="step{% if done_prefs %} done{% endif %}">
-      <div class="step-num">1</div>
-      <span class="step-icon">🎛️</span>
-      <div class="step-name">Preferences</div>
-      <div class="step-desc">Age, game type, play style</div>
-    </div>
-    <div class="step{% if done_char %} done{% endif %}">
-      <div class="step-num">2</div>
-      <span class="step-icon">⚔️</span>
-      <div class="step-name">Character</div>
-      <div class="step-desc">Class, alignment, story tone</div>
-    </div>
-    <div class="step{% if done_avatar %} done{% endif %}">
-      <div class="step-num">3</div>
-      <span class="step-icon">🎨</span>
-      <div class="step-name">Avatar</div>
-      <div class="step-desc">AI-generated with Nano Banana</div>
-    </div>
-    <div class="step">
-      <div class="step-num">4</div>
-      <span class="step-icon">📚</span>
-      <div class="step-name">Pick Course</div>
-      <div class="step-desc">Choose a path to start</div>
-    </div>
-    <div class="step">
-      <div class="step-num">5</div>
-      <span class="step-icon">🚀</span>
-      <div class="step-name">Begin Quest</div>
-      <div class="step-desc">Drop into your first zone</div>
-    </div>
-  </div>
 
   {% if is_returning %}
     {% if done_avatar %}

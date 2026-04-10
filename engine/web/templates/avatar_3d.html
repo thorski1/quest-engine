@@ -143,6 +143,20 @@
 {% block content %}
 <div class="av-page">
 
+  {% if not pack_url_prefix %}
+  <nav class="onboarding-progress" aria-label="Setup progress">
+    <a href="/welcome" class="op-step done"><span class="op-dot">✓</span><span class="op-label">Welcome</span></a>
+    <span class="op-line done"></span>
+    <a href="/preferences" class="op-step done"><span class="op-dot">✓</span><span class="op-label">Preferences</span></a>
+    <span class="op-line done"></span>
+    <a href="/character" class="op-step done"><span class="op-dot">✓</span><span class="op-label">Character</span></a>
+    <span class="op-line done"></span>
+    <a href="/avatar" class="op-step current"><span class="op-dot">4</span><span class="op-label">Avatar</span></a>
+    <span class="op-line"></span>
+    <a href="/pick-course" class="op-step"><span class="op-dot">5</span><span class="op-label">Courses</span></a>
+  </nav>
+  {% endif %}
+
   <div class="av-header">
     <h1 class="av-title">Create Your <span>Avatar</span></h1>
     <p class="av-sub">
