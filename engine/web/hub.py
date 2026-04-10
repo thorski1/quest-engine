@@ -557,6 +557,22 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
             store.delete_avatar(user["id"], avatar_id)
         return RedirectResponse("/avatar/gallery", status_code=303)
 
+    @hub.get("/settings", response_class=HTMLResponse)
+    async def platform_settings(request: Request):
+        """Platform-level settings. Preferences (theme, font size, sound,
+        reduced motion) are stored in localStorage so they already carry
+        across every course — this page just edits them in one place."""
+        user = _get_current_user_hub(request)
+        ctx = _platform_base_ctx(request, user)
+        return templates.TemplateResponse(request, "settings.html", ctx)
+
+    @hub.get("/profile", response_class=HTMLResponse)
+    async def platform_profile(request: Request):
+        """Platform profile: reuse the character editor as the identity page.
+        Per-course progress/stats still live at /{pack}/profile and /{pack}/stats.
+        """
+        return RedirectResponse("/character", status_code=303)
+
     # Higher-level learning "paths" — groups of related categories.
     # Order matters: first match wins. Category substrings are matched
     # case-insensitively against pack.category.
