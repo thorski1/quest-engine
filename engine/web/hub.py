@@ -434,17 +434,34 @@ def create_hub_app(skill_packs: list[SkillPack]) -> FastAPI:
         except Exception:
             return Response(status_code=204)
 
-    # ── 3D Avatar generation endpoint ──────────────────────────────────────
+    # ── 3D Avatar generation endpoints ─────────────────────────────────────
     @hub.get("/api/generate-avatar")
     async def generate_3d_avatar(request: Request, prompt: str = "", style: str = "fantasy"):
-        """Generate a 3D avatar from a text prompt using TRELLIS."""
+        """Generate a 3D avatar from a text prompt (FLUX → TRELLIS pipeline)."""
         from .trellis_3d import generate_avatar_from_prompt, is_available
         if not is_available():
             return Response(
-                content=json.dumps({"ok": False, "error": "3D generation not configured"}),
+                content=json.dumps({"ok": False, "error": "Set REPLICATE_API_TOKEN in Vercel to enable 3D generation"}),
                 media_type="application/json"
             )
         result = generate_avatar_from_prompt(prompt, style)
+        return Response(content=json.dumps(result), media_type="application/json")
+
+    @hub.get("/api/image-to-3d")
+    async def image_to_3d_avatar(request: Request, url: str = ""):
+        """Convert a reference image directly to 3D GLB mesh."""
+        from .trellis_3d import generate_avatar_from_image, is_available
+        if not is_available():
+            return Response(
+                content=json.dumps({"ok": False, "error": "Set REPLICATE_API_TOKEN in Vercel to enable 3D generation"}),
+                media_type="application/json"
+            )
+        if not url:
+            return Response(
+                content=json.dumps({"ok": False, "error": "No image URL provided"}),
+                media_type="application/json"
+            )
+        result = generate_avatar_from_image(url)
         return Response(content=json.dumps(result), media_type="application/json")
 
     # ── AI Tutor endpoint ──────────────────────────────────────────────────

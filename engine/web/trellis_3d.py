@@ -1,16 +1,14 @@
 """
-trellis_3d.py — 3D avatar generation via Microsoft TRELLIS.
+trellis_3d.py — 3D avatar generation via Replicate (TRELLIS + FLUX).
 
-Uses Hugging Face Inference API to generate 3D avatars from text prompts
-or reference images. Returns URLs to GLB mesh files that can be rendered
-in the browser with <model-viewer> or three.js.
+Pipeline:
+    text prompt → FLUX Schnell (image) → TRELLIS (3D GLB mesh)
 
-TRELLIS: https://github.com/microsoft/TRELLIS
-HF Space: https://huggingface.co/spaces/Microsoft/TRELLIS
+TRELLIS is image-conditioned (not text-conditioned), so we first generate
+a reference image with FLUX, then feed it to TRELLIS for 3D reconstruction.
 
 Env vars:
-    HUGGINGFACE_TOKEN — HF API token (from https://huggingface.co/settings/tokens)
-    REPLICATE_API_TOKEN — Alternative: use Replicate's hosted TRELLIS
+    REPLICATE_API_TOKEN — from https://replicate.com/account/api-tokens
 """
 
 import json
@@ -20,148 +18,201 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
 
+# Model versions (pinned for reproducibility)
+FLUX_VERSION = "c846a69991daf4c0e5d016514849d14ee5b2e6846ce6b9d6f21369e564cfe51e"
+TRELLIS_VERSION = "e8f6c45206993f297372f5436b90350817bd9b4a0d52d2a76df50c1c8afa2b3c"
+
+
 def is_available() -> bool:
-    """Check if 3D generation is configured."""
-    return bool(
-        os.environ.get("HUGGINGFACE_TOKEN")
-        or os.environ.get("REPLICATE_API_TOKEN")
-    )
+    return bool(os.environ.get("REPLICATE_API_TOKEN"))
+
+
+# Style prompts enhance the base description
+STYLE_PROMPTS = {
+    "fantasy": "epic fantasy RPG character, full body portrait, detailed armor and weapons, magical aura, centered on plain gray background, studio lighting, game asset reference sheet",
+    "cyberpunk": "cyberpunk character, full body, neon accents, futuristic gear, glowing implants, centered on plain gray background, studio lighting, game asset reference",
+    "cute": "chibi cute stylized character, full body, big eyes, vibrant pastel colors, centered on plain gray background, studio lighting, 3D model reference",
+    "realistic": "photorealistic character, full body portrait, detailed face and clothing, centered on plain gray background, professional studio lighting, concept art",
+    "anime": "anime style character, full body, bright colors, clean lines, dynamic pose, centered on plain gray background, studio lighting",
+    "pixel": "low-poly voxel character, full body, retro pixel art aesthetic, blocky features, centered on plain gray background, isometric view",
+    "steampunk": "steampunk character, full body, brass gears and copper mechanical parts, Victorian era clothing, centered on plain gray background, studio lighting",
+    "dark": "dark gothic character, full body, dramatic shadows, ornate details, brooding expression, centered on plain gray background, cinematic lighting",
+}
+
+
+def _replicate_request(method: str, path: str, payload: dict = None) -> dict:
+    """Make an authenticated request to the Replicate API."""
+    token = os.environ.get("REPLICATE_API_TOKEN", "")
+    url = f"https://api.replicate.com/v1{path}"
+    data = json.dumps(payload).encode() if payload else None
+
+    req = Request(url, data=data, method=method)
+    req.add_header("Authorization", f"Token {token}")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("Prefer", "wait=60")  # Replicate will wait up to 60s for completion
+
+    try:
+        with urlopen(req, timeout=90) as resp:
+            return json.loads(resp.read())
+    except HTTPError as e:
+        try:
+            err_body = json.loads(e.read())
+            return {"error": err_body.get("detail", str(e))}
+        except Exception:
+            return {"error": f"HTTP {e.code}: {e.reason}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _poll_prediction(prediction_id: str, max_wait: int = 180) -> dict:
+    """Poll a prediction until it completes."""
+    start = time.time()
+    while time.time() - start < max_wait:
+        result = _replicate_request("GET", f"/predictions/{prediction_id}")
+        status = result.get("status")
+        if status == "succeeded":
+            return result
+        if status in ("failed", "canceled"):
+            return {"error": result.get("error", f"Prediction {status}")}
+        time.sleep(2)
+    return {"error": "Timeout"}
+
+
+def generate_image_from_prompt(prompt: str, style: str = "fantasy") -> dict:
+    """Step 1: Generate a reference image with FLUX Schnell."""
+    enhanced = f"{prompt}, {STYLE_PROMPTS.get(style, STYLE_PROMPTS['fantasy'])}"
+
+    result = _replicate_request("POST", "/predictions", {
+        "version": FLUX_VERSION,
+        "input": {
+            "prompt": enhanced,
+            "aspect_ratio": "1:1",
+            "num_outputs": 1,
+            "output_format": "webp",
+            "output_quality": 90,
+            "num_inference_steps": 4,
+        },
+    })
+
+    if "error" in result:
+        return {"ok": False, "error": f"FLUX: {result['error']}"}
+
+    # If not completed yet, poll
+    if result.get("status") != "succeeded":
+        result = _poll_prediction(result.get("id", ""), max_wait=60)
+        if "error" in result:
+            return {"ok": False, "error": f"FLUX: {result['error']}"}
+
+    output = result.get("output")
+    if isinstance(output, list) and output:
+        return {"ok": True, "image_url": output[0]}
+    if isinstance(output, str):
+        return {"ok": True, "image_url": output}
+    return {"ok": False, "error": "FLUX returned no output"}
+
+
+def generate_3d_from_image(image_url: str) -> dict:
+    """Step 2: Generate 3D GLB mesh from a reference image with TRELLIS."""
+    result = _replicate_request("POST", "/predictions", {
+        "version": TRELLIS_VERSION,
+        "input": {
+            "images": [image_url],
+            "texture_size": 1024,
+            "mesh_simplify": 0.9,
+            "generate_color": True,
+            "generate_model": True,
+            "generate_normal": False,
+            "save_gaussian_ply": False,
+            "ss_sampling_steps": 12,
+            "slat_sampling_steps": 12,
+            "return_no_background": True,
+            "ss_guidance_strength": 7.5,
+            "slat_guidance_strength": 3.0,
+            "randomize_seed": True,
+        },
+    })
+
+    if "error" in result:
+        return {"ok": False, "error": f"TRELLIS: {result['error']}"}
+
+    # TRELLIS takes longer — poll up to 3 minutes
+    if result.get("status") != "succeeded":
+        result = _poll_prediction(result.get("id", ""), max_wait=180)
+        if "error" in result:
+            return {"ok": False, "error": f"TRELLIS: {result['error']}"}
+
+    output = result.get("output") or {}
+    if isinstance(output, dict):
+        return {
+            "ok": True,
+            "glb_url": output.get("model_file", ""),
+            "preview_url": output.get("color_video", output.get("preview_video", "")),
+        }
+    return {"ok": False, "error": "TRELLIS returned unexpected output"}
 
 
 def generate_avatar_from_prompt(prompt: str, style: str = "fantasy") -> dict:
-    """Generate a 3D avatar from a text description.
+    """Full pipeline: text prompt → 3D GLB avatar.
 
-    Returns: {"ok": bool, "glb_url": str, "preview_url": str, "error": str}
+    Returns: {"ok": bool, "glb_url": str, "preview_url": str, "image_url": str, "error": str}
     """
-    # Enhance prompt with style
-    style_prompts = {
-        "fantasy": "epic fantasy RPG character, detailed armor, magical aura, game asset, 3D model",
-        "cyberpunk": "cyberpunk hacker with neon accents, futuristic gear, glowing visor, game asset",
-        "cute": "cute chibi cartoon character, big eyes, vibrant colors, stylized 3D model",
-        "realistic": "photorealistic human character, detailed face, professional attire",
-        "anime": "anime style character, bright colors, large eyes, dynamic pose, 3D model",
-        "pixel": "pixel art character, retro 8-bit style, voxel 3D model",
-    }
-    full_prompt = f"{prompt}, {style_prompts.get(style, style_prompts['fantasy'])}"
-
-    # Try Replicate first (easier API)
-    if os.environ.get("REPLICATE_API_TOKEN"):
-        return _generate_via_replicate(full_prompt)
-
-    # Fallback to Hugging Face Inference API
-    if os.environ.get("HUGGINGFACE_TOKEN"):
-        return _generate_via_hf(full_prompt)
-
-    return {"ok": False, "error": "No 3D generation API configured"}
-
-
-def _generate_via_replicate(prompt: str) -> dict:
-    """Use Replicate's hosted TRELLIS endpoint."""
-    api_token = os.environ.get("REPLICATE_API_TOKEN", "")
-    if not api_token:
+    if not is_available():
         return {"ok": False, "error": "REPLICATE_API_TOKEN not set"}
 
-    # Replicate TRELLIS model
-    model_version = "firtoz/trellis:e8f6c45206993f297372f5436b90350817bd9b4a0d52d2a76df50c1c8afa2b3c"
+    # Step 1: Generate reference image
+    img = generate_image_from_prompt(prompt, style)
+    if not img.get("ok"):
+        return img
 
-    try:
-        payload = json.dumps({
-            "version": model_version,
-            "input": {
-                "prompt": prompt,
-                "images": [],  # text-to-3D mode
-                "slat_sampling_steps": 12,
-                "mesh_simplify": 0.9,
-                "texture_size": 1024,
-            }
-        }).encode()
+    # Step 2: Generate 3D from image
+    mesh = generate_3d_from_image(img["image_url"])
+    if not mesh.get("ok"):
+        return {**mesh, "image_url": img["image_url"]}
 
-        req = Request("https://api.replicate.com/v1/predictions", data=payload, method="POST")
-        req.add_header("Authorization", f"Token {api_token}")
-        req.add_header("Content-Type", "application/json")
-
-        with urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read())
-
-        prediction_id = data.get("id")
-        if not prediction_id:
-            return {"ok": False, "error": "No prediction ID returned"}
-
-        # Poll for completion (max 60s)
-        status_url = f"https://api.replicate.com/v1/predictions/{prediction_id}"
-        for _ in range(60):
-            time.sleep(2)
-            req = Request(status_url)
-            req.add_header("Authorization", f"Token {api_token}")
-            with urlopen(req, timeout=10) as resp:
-                status_data = json.loads(resp.read())
-
-            status = status_data.get("status")
-            if status == "succeeded":
-                output = status_data.get("output", {})
-                return {
-                    "ok": True,
-                    "glb_url": output.get("model_file", ""),
-                    "preview_url": output.get("preview_video", ""),
-                    "prediction_id": prediction_id,
-                }
-            elif status in ("failed", "canceled"):
-                return {"ok": False, "error": status_data.get("error", "Generation failed")}
-
-        return {"ok": False, "error": "Timeout waiting for generation"}
-
-    except HTTPError as e:
-        return {"ok": False, "error": f"HTTP {e.code}: {e.reason}"}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+    return {
+        "ok": True,
+        "glb_url": mesh["glb_url"],
+        "preview_url": mesh.get("preview_url", ""),
+        "image_url": img["image_url"],
+    }
 
 
-def _generate_via_hf(prompt: str) -> dict:
-    """Use Hugging Face Inference API for TRELLIS."""
-    token = os.environ.get("HUGGINGFACE_TOKEN", "")
-    if not token:
-        return {"ok": False, "error": "HUGGINGFACE_TOKEN not set"}
-
-    # HF Spaces API via Gradio
-    # Note: HF Spaces can be slow/unavailable; production should use dedicated inference
-    try:
-        payload = json.dumps({"inputs": prompt, "parameters": {"style": "3d"}}).encode()
-        req = Request(
-            "https://api-inference.huggingface.co/models/Microsoft/TRELLIS-text-xlarge",
-            data=payload, method="POST",
-        )
-        req.add_header("Authorization", f"Bearer {token}")
-        req.add_header("Content-Type", "application/json")
-
-        with urlopen(req, timeout=120) as resp:
-            data = resp.read()
-            # HF returns the GLB bytes directly or a URL
-            if resp.headers.get("Content-Type", "").startswith("application/json"):
-                result = json.loads(data)
-                return {"ok": True, "glb_url": result.get("url", ""), "preview_url": ""}
-            else:
-                # Raw bytes — would need to save and serve
-                return {"ok": False, "error": "HF returned raw bytes (needs file handler)"}
-
-    except HTTPError as e:
-        return {"ok": False, "error": f"HF Error {e.code}: {e.reason}"}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+def generate_avatar_from_image(image_url: str) -> dict:
+    """Skip text-to-image; go directly from user-provided image to 3D."""
+    if not is_available():
+        return {"ok": False, "error": "REPLICATE_API_TOKEN not set"}
+    return generate_3d_from_image(image_url)
 
 
-# Preset avatar library (fallback when no API is available)
+# ── Preset avatar library (fallback) ─────────────────────────────────────
+
 PRESET_AVATARS = [
-    {"id": "wizard", "name": "Wizard", "glb_url": "/static/avatars/wizard.glb", "preview": "🧙", "desc": "Master of arcane knowledge"},
-    {"id": "knight", "name": "Knight", "glb_url": "/static/avatars/knight.glb", "preview": "🛡️", "desc": "Honorable warrior"},
-    {"id": "rogue", "name": "Rogue", "glb_url": "/static/avatars/rogue.glb", "preview": "🥷", "desc": "Shadow operative"},
-    {"id": "bard", "name": "Bard", "glb_url": "/static/avatars/bard.glb", "preview": "🎭", "desc": "Charismatic storyteller"},
-    {"id": "druid", "name": "Druid", "glb_url": "/static/avatars/druid.glb", "preview": "🌿", "desc": "Nature guardian"},
-    {"id": "cyborg", "name": "Cyborg", "glb_url": "/static/avatars/cyborg.glb", "preview": "🤖", "desc": "Tech-enhanced warrior"},
-    {"id": "hacker", "name": "Hacker", "glb_url": "/static/avatars/hacker.glb", "preview": "💻", "desc": "Digital infiltrator"},
-    {"id": "scholar", "name": "Scholar", "glb_url": "/static/avatars/scholar.glb", "preview": "📚", "desc": "Pursuer of wisdom"},
+    {"id": "wizard", "name": "Wizard", "preview": "🧙", "desc": "Master of arcane knowledge",
+     "prompt": "wise old wizard with long white beard, blue robes, magical staff, stars on hat"},
+    {"id": "knight", "name": "Knight", "preview": "🛡️", "desc": "Honorable warrior",
+     "prompt": "noble knight in shining silver plate armor, red cape, holding sword and shield"},
+    {"id": "rogue", "name": "Rogue", "preview": "🥷", "desc": "Shadow operative",
+     "prompt": "stealthy rogue assassin in dark leather armor, hood covering face, twin daggers"},
+    {"id": "bard", "name": "Bard", "preview": "🎭", "desc": "Charismatic storyteller",
+     "prompt": "charismatic bard in colorful medieval clothing, holding a lute, flamboyant pose"},
+    {"id": "druid", "name": "Druid", "preview": "🌿", "desc": "Nature guardian",
+     "prompt": "forest druid in leaf-covered robes, wooden staff with crystal, vines wrapping around"},
+    {"id": "cyborg", "name": "Cyborg", "preview": "🤖", "desc": "Tech-enhanced warrior",
+     "prompt": "cyberpunk cyborg warrior with glowing blue neon implants, mechanical arm, tactical gear"},
+    {"id": "hacker", "name": "Hacker", "preview": "💻", "desc": "Digital infiltrator",
+     "prompt": "cyberpunk hacker with hood, holographic glasses, glowing laptop, neon city background"},
+    {"id": "scholar", "name": "Scholar", "preview": "📚", "desc": "Pursuer of wisdom",
+     "prompt": "scholar in academic robes, carrying books, round glasses, thoughtful expression"},
+    {"id": "ninja", "name": "Ninja", "preview": "🥷", "desc": "Silent assassin",
+     "prompt": "Japanese ninja in black shinobi outfit, katana on back, mask covering face"},
+    {"id": "mage", "name": "Battle Mage", "preview": "🔮", "desc": "Combat sorcerer",
+     "prompt": "powerful battle mage in purple robes with gold trim, floating crystal orb, glowing hands"},
+    {"id": "paladin", "name": "Paladin", "preview": "⚔️", "desc": "Holy warrior",
+     "prompt": "holy paladin in gold plate armor, white cape, glowing holy warhammer, radiant aura"},
+    {"id": "ranger", "name": "Ranger", "preview": "🏹", "desc": "Wilderness tracker",
+     "prompt": "forest ranger in green cloak and leather armor, bow and quiver, wolf companion"},
 ]
 
 
 def get_preset_avatars() -> list[dict]:
-    """Get the preset avatar library (always available)."""
     return PRESET_AVATARS
