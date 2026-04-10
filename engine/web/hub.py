@@ -1321,26 +1321,144 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         "playful":    {"id": "boss_shadow", "name": "Shade"},
     }
 
-    def _intro_to_dialogue(raw: str, theme_name: str, zone_name: str, is_boss: bool) -> list[dict]:
-        """Split a narrative intro into alternating chat messages between
+    # ── Player reaction bank (class × tone) ─────────────────────────────
+    # Each list is a rotation of natural reactions a player might type into
+    # a chat with the narrator. Used to make zone intros feel like a
+    # two-sided conversation instead of a monologue.
+    PLAYER_RESPONSES = {
+        ("scholar", "epic"): [
+            "Fascinating. Pray, tell me more.",
+            "I have read of places like this in ancient tomes.",
+            "What lore must I know to survive here?",
+            "Knowledge will be my weapon.",
+            "I'm taking notes. Continue.",
+            "Every word matters. Go on.",
+        ],
+        ("scholar", "dark"): [
+            "Speak. I must understand this place.",
+            "Knowledge is the only way out of the dark.",
+            "Tell me what you fear most here.",
+            "I will study every shadow if I must.",
+            "Go on. I am listening.",
+        ],
+        ("scholar", "funny"): [
+            "Ooh! Is this gonna be on the test?",
+            "Let me pull out my tiny scholar notebook…",
+            "Wait, wait — say that last part again?",
+            "Got it. I'll remember none of this.",
+            "Nerd mode: activated.",
+        ],
+        ("scholar", "chill"): [
+            "Cool, cool. What else should I know?",
+            "I'm following. No rush.",
+            "Nice. Lay it on me.",
+            "Alright, I'm picking up what you're putting down.",
+            "Keep going, I'm with you.",
+        ],
+        ("speedrunner", "epic"): [
+            "Quickly now — what must I do?",
+            "I will not tarry. Speak, and I shall act.",
+            "Every second counts. Go on.",
+            "Fast. Sharp. Ready.",
+        ],
+        ("speedrunner", "dark"): [
+            "Cut to it. What kills the boss here?",
+            "No time for stories. The point?",
+            "Less lore, more action.",
+            "I blink fast. I strike faster. Continue.",
+        ],
+        ("speedrunner", "funny"): [
+            "Skip cutscene? Kidding. Sorta.",
+            "Give me the TL;DR version!",
+            "Faster, faster! I want to go fast!",
+            "Are we there yet?",
+        ],
+        ("speedrunner", "chill"): [
+            "Cool, cool, what's the short version?",
+            "I'll keep it moving, just tell me what matters.",
+            "Gotcha. Next bit?",
+            "Alright, skip to the good part.",
+        ],
+        ("explorer", "epic"): [
+            "I shall map every corridor of this realm.",
+            "Tell me what lies beyond the next door.",
+            "I wish to see all of it.",
+            "Every hidden path, I will walk.",
+        ],
+        ("explorer", "dark"): [
+            "Show me what hides in the shadows.",
+            "I want to see the worst of it.",
+            "No secret escapes me. Continue.",
+            "What have others missed here?",
+        ],
+        ("explorer", "funny"): [
+            "Oh! Is there a secret room?",
+            "Wait, can I touch everything?",
+            "I'm gonna poke the suspicious thing.",
+            "What's behind door number three?",
+        ],
+        ("explorer", "chill"): [
+            "I like to take the scenic route. What's around?",
+            "Tell me about the side paths.",
+            "I'll explore at my own pace. Go on.",
+            "Cool, what's this place all about?",
+        ],
+        ("champion", "epic"): [
+            "My blade is ready. What must fall?",
+            "Let glory come. Speak on.",
+            "I fear nothing that stands before me.",
+            "Tell me who I must defeat.",
+        ],
+        ("champion", "dark"): [
+            "I will break whoever stands in the way.",
+            "Tell me the name of my enemy.",
+            "I'm no stranger to hard battles. Go on.",
+            "My streak ends for no one.",
+        ],
+        ("champion", "funny"): [
+            "Let's gooo! I'm hyped already.",
+            "Boss? I eat bosses for breakfast.",
+            "I came here to win. You're welcome.",
+            "Any rewards? Asking for a friend.",
+        ],
+        ("champion", "chill"): [
+            "Cool. Bring it on.",
+            "I've got this. Keep talking.",
+            "Whatever it is, I'll handle it.",
+            "No stress. Let me hear the rest.",
+        ],
+    }
+
+    def _player_response_bank(player_class: str, tone: str) -> list[str]:
+        """Return the reaction list for this character, with fallbacks."""
+        key = ((player_class or "scholar").lower(), (tone or "epic").lower())
+        if key in PLAYER_RESPONSES:
+            return PLAYER_RESPONSES[key]
+        # Fallbacks: try same class different tone, then generic
+        for fallback_tone in ("epic", "chill", "funny", "dark"):
+            alt = ((player_class or "scholar").lower(), fallback_tone)
+            if alt in PLAYER_RESPONSES:
+                return PLAYER_RESPONSES[alt]
+        return ["Tell me more.", "I'm listening.", "And then?", "Go on.", "Got it."]
+
+    def _intro_to_dialogue(raw: str, theme_name: str, zone_name: str, is_boss: bool, character: dict | None = None) -> list[dict]:
+        """Split a narrative intro into a two-sided chat conversation between
         the narrator/boss and the player.
 
-        Strategy: split paragraphs; alternate speakers starting with narrator.
-        If there are no paragraphs, fall back to sentence-level splits.
-        Each message gets a rotating "expression" based on position.
+        Strategy:
+        1. Split the narrative into paragraphs (or sentence chunks).
+        2. Alternate: narrator paragraph → player reaction (pulled from a
+           class/tone-aware bank) → narrator paragraph → ...
+        3. Each narrator bubble rotates its expression for visual variety.
         """
         import re as _re
-        # Strip rich markup
         clean = _re.sub(r'\[/?[^\]]+\]', '', raw or '').strip()
         if not clean:
             return []
 
-        # Split by double-newline first, then fall back to sentence splits
         paragraphs = [p.strip() for p in _re.split(r'\n\s*\n', clean) if p.strip()]
         if len(paragraphs) < 2:
-            # Sentence split
             sentences = _re.split(r'(?<=[.!?])\s+', clean)
-            # Group sentences into chunks of ~2-3 per bubble
             paragraphs = []
             buf = []
             for s in sentences:
@@ -1356,11 +1474,21 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             if is_boss
             else _NARRATOR_BY_THEME.get(theme_name, {"id": "narrator", "name": "Narrator"})
         )
-
-        # Expression rotation for narrator bubbles
         expressions = ["neutral", "excited", "thinking", "happy", "surprised", "concerned"]
 
+        # Pull a class/tone-appropriate response bank for the player
+        char = character or {}
+        player_responses = _player_response_bank(char.get("class", "scholar"), char.get("tone", "epic"))
+
+        # Deterministic but varied selection so the player doesn't see the
+        # exact same replies every zone.
+        import hashlib as _hashlib
+        seed = int(_hashlib.md5(zone_name.encode() if zone_name else b'').hexdigest()[:8], 16)
+        def _pick(i: int) -> str:
+            return player_responses[(seed + i * 7) % len(player_responses)]
+
         dialogue = []
+        last_idx = len(paragraphs) - 1
         for i, text in enumerate(paragraphs):
             dialogue.append({
                 "speaker": "narrator",
@@ -1369,6 +1497,16 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
                 "expression": expressions[i % len(expressions)],
                 "text": text,
             })
+            # Insert a player reaction after every narrator line except the
+            # very last one (player gets the "ready to begin" feeling at end).
+            if i < last_idx:
+                dialogue.append({
+                    "speaker": "player",
+                    "speaker_id": "player",
+                    "speaker_name": char.get("name", "You"),
+                    "expression": "neutral",
+                    "text": _pick(i),
+                })
         return dialogue
 
     @hub.get(f"{prefix}/zone/{{zone_id}}/intro", response_class=HTMLResponse)
@@ -1400,8 +1538,16 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         # Detect boss zones heuristically (name contains "boss" or "final")
         is_boss = "boss" in (zone.get("name", "") + " " + zone_id).lower() or "final" in zone_id.lower()
 
+        # Load the player's platform character so the dialogue can use
+        # class/tone-specific response lines.
+        try:
+            _raw_char = request.cookies.get("quest_character", "")
+            _character = json.loads(_raw_char) if _raw_char else {}
+        except Exception:
+            _character = {}
+
         # Build chat-style dialogue from the intro text
-        dialogue = _intro_to_dialogue(intro_text, theme, zone.get("name", ""), is_boss)
+        dialogue = _intro_to_dialogue(intro_text, theme, zone.get("name", ""), is_boss, _character)
 
         return templates.TemplateResponse(request, "zone_intro.html", _ctx(
             request, zone=zone_with_image, zone_id=zone_id,
@@ -1495,6 +1641,12 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
                 "damage": stats["damage"],
             }
 
+        # Study notes: the plain-text zone intro so the user can glance back
+        # at the material while answering. Referenced by the new Notes panel
+        # and the hint fallback.
+        study_notes_raw = skill_pack.zone_intros.get(s.engine.current_zone, "")
+        study_notes_html = rich_to_html(study_notes_raw) if study_notes_raw else ""
+
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge, challenge_num=num, challenge_total=total,
@@ -1502,6 +1654,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             ctype=ctype, options=options,
             is_boss=is_boss, boss_intro=boss_intro,
             boss_fight=boss_fight,
+            study_notes_html=study_notes_html,
             prompt_html=rich_to_html(challenge.get("prompt", challenge.get("question", ""))),
             lesson_html=rich_to_html(challenge.get("lesson", "")),
             url=challenge.get("url", ""),
@@ -1645,6 +1798,9 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             result_options, rlmap = _shuffle_options(result_options, challenge.get("answer", "a"), seed)
             result_shuffle_map = json.dumps(rlmap)
 
+        study_notes_raw = skill_pack.zone_intros.get(zone_id, "")
+        study_notes_html = rich_to_html(study_notes_raw) if study_notes_raw else ""
+
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge,
@@ -1654,6 +1810,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             ctype=ctype, options=result_options,
             is_boss=challenge.get("is_boss", False), boss_intro="",
             boss_fight=boss_fight,
+            study_notes_html=study_notes_html,
             prompt_html=rich_to_html(challenge.get("prompt", challenge.get("question", ""))),
             lesson_html=rich_to_html(challenge.get("lesson", "")),
             url=challenge.get("url", ""),
@@ -1674,6 +1831,30 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
         ctype = challenge.get("type", "quiz") if challenge else "quiz"
         if ctype == "live":
             ctype = "text"
+
+        # Hint fallback: if no native hint, pull a relevant sentence from
+        # the zone's study notes (the intro text). We look for sentences
+        # containing words from the question / answer.
+        zone_id = s.engine.current_zone
+        study_notes_raw = skill_pack.zone_intros.get(zone_id, "")
+        if (not hint_text or "No hints available" in (hint_text or "")) and study_notes_raw and challenge:
+            import re as _re
+            clean_notes = _re.sub(r'\[/?[^\]]+\]', '', study_notes_raw)
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean_notes) if s.strip()]
+            # Score sentences by keyword overlap with the question
+            q_text = (challenge.get("question") or challenge.get("prompt") or "").lower()
+            q_words = set(_re.findall(r'\b[a-z]{4,}\b', q_text))
+            if q_words and sentences:
+                scored = []
+                for sent in sentences:
+                    sw = set(_re.findall(r'\b[a-z]{4,}\b', sent.lower()))
+                    overlap = len(q_words & sw)
+                    if overlap > 0:
+                        scored.append((overlap, sent))
+                if scored:
+                    scored.sort(key=lambda x: -x[0])
+                    hint_text = "📖 From the zone notes: " + scored[0][1]
+
         # Shuffle options consistently for hint display
         hint_options = challenge.get("options", []) if challenge else []
         hint_shuffle_map = ""
@@ -1684,6 +1865,8 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             hint_options, hlmap = _shuffle_options(hint_options, challenge.get("answer", "a"), seed)
             hint_shuffle_map = json.dumps(hlmap)
 
+        study_notes_html = rich_to_html(study_notes_raw) if study_notes_raw else ""
+
         return templates.TemplateResponse(request, "challenge.html", _ctx(
             request,
             challenge=challenge, challenge_num=num, challenge_total=total,
@@ -1691,6 +1874,7 @@ def _register_pack_routes(hub: FastAPI, skill_pack: SkillPack, templates: "Jinja
             ctype=ctype,
             options=hint_options,
             is_boss=challenge.get("is_boss", False) if challenge else False, boss_intro="",
+            study_notes_html=study_notes_html,
             prompt_html=rich_to_html(challenge.get("prompt", challenge.get("question", ""))) if challenge else "",
             lesson_html=rich_to_html(challenge.get("lesson", "")) if challenge else "",
             url=challenge.get("url", "") if challenge else "",

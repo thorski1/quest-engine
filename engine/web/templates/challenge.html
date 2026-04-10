@@ -160,6 +160,66 @@
     letter-spacing: 0.02em; margin-bottom: 0.5rem;
   }
   .victory-sub { font-size: 1rem; color: rgba(10,14,26,0.85); font-weight: 700; }
+
+  /* ── Study Notes slide-out panel ────────────────────────────── */
+  .study-notes-backdrop {
+    position: fixed; inset: 0; z-index: 9500;
+    background: rgba(10,14,26,0.55);
+    opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s;
+    backdrop-filter: blur(4px);
+  }
+  .study-notes-backdrop.open { opacity: 1; visibility: visible; }
+
+  .study-notes-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 9600;
+    width: min(420px, 92vw);
+    background: var(--bg-raised);
+    border-left: 1px solid var(--border);
+    box-shadow: -16px 0 48px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .study-notes-panel.open { transform: translateX(0); }
+
+  .study-notes-head {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 1.25rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .study-notes-title {
+    font-size: 0.7rem; font-weight: 800; color: var(--primary);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .study-notes-sub {
+    font-size: 1.1rem; font-weight: 800; color: var(--text-bright);
+    margin-top: 0.15rem;
+  }
+  .study-notes-close {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: none; border: 1px solid var(--border);
+    color: var(--text-dim); font-size: 1.3rem; line-height: 1;
+    cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+    font-family: inherit;
+  }
+  .study-notes-close:hover { border-color: var(--primary); color: var(--primary); }
+
+  .study-notes-body {
+    flex: 1; overflow-y: auto;
+    padding: 1.25rem 1.5rem;
+    color: var(--text);
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+  .study-notes-body > *:first-child { margin-top: 0; }
+  .study-notes-body p { margin-bottom: 0.75rem; }
+
+  .study-notes-foot {
+    padding: 0.85rem 1.25rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.72rem; color: var(--text-dim);
+    background: rgba(0,229,160,0.04);
+  }
 </style>
 {% endblock %}
 
@@ -451,6 +511,12 @@
       </button>
     </form>
 
+    {% if study_notes_html %}
+    <button type="button" class="action-btn" title="Open the zone's study notes" onclick="toggleStudyNotes()">
+      📖 <span class="action-label">Notes</span>
+    </button>
+    {% endif %}
+
     {% if url %}
     <a href="{{ url }}" target="_blank" rel="noopener" class="action-btn" title="Open reference resource">
       🔗 <span class="action-label">Reference</span>
@@ -485,6 +551,49 @@
     <span>Enter</span> next/focus
   </div>
   {% endif %}
+
+{% if study_notes_html %}
+<!-- ── Study Notes slide-out panel ──────────────────────────────────── -->
+<div class="study-notes-panel" id="study-notes-panel" aria-hidden="true">
+  <div class="study-notes-head">
+    <div>
+      <div class="study-notes-title">📖 Zone Notes</div>
+      <div class="study-notes-sub">{{ zone.name if zone else "" }}</div>
+    </div>
+    <button type="button" class="study-notes-close" onclick="toggleStudyNotes()" aria-label="Close notes">×</button>
+  </div>
+  <div class="study-notes-body narrative-text">
+    {{ study_notes_html | safe }}
+  </div>
+  <div class="study-notes-foot">
+    Everything you need to answer the questions in this zone is in these notes.
+  </div>
+</div>
+<div class="study-notes-backdrop" id="study-notes-backdrop" onclick="toggleStudyNotes()"></div>
+
+<script>
+  function toggleStudyNotes() {
+    var panel = document.getElementById('study-notes-panel');
+    var back = document.getElementById('study-notes-backdrop');
+    if (!panel) return;
+    var open = !panel.classList.contains('open');
+    panel.classList.toggle('open', open);
+    back.classList.toggle('open', open);
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var panel = document.getElementById('study-notes-panel');
+      if (panel && panel.classList.contains('open')) toggleStudyNotes();
+    }
+    if (e.key === 'n' || e.key === 'N') {
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        toggleStudyNotes();
+      }
+    }
+  });
+</script>
+{% endif %}
 
 {% if boss_fight %}
 <!-- ── Player status bar (boss mode) ────────────────────────────────── -->
